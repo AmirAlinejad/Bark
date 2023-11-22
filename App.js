@@ -1,15 +1,15 @@
 import { StyleSheet, Text, View, TouchableOpacity} from 'react-native';
 import SignUp from "./screens/SignUp";
 import SignIn from "./screens/SignIn";
-import HomeScreen from './screens/HomeScreen';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import Home from './screens/Home';
+import NewClub from './screens/NewClub';
+import ClubList from './screens/ClubList';
+import ClubScreen  from './screens/ClubScreen';
+import { NativeStackView, createNativeStackNavigator } from '@react-navigation/native-stack';
 import { NavigationContainer } from '@react-navigation/native';
 import React, { useEffect, useMemo, useRef, useState } from "react";
- 
 
 const Stack = createNativeStackNavigator();
-
-
 
 export default class App extends React.Component {
   render() {
