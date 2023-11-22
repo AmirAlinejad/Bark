@@ -8,6 +8,7 @@ import Icon from 'react-native-vector-icons/Feather';
 
 const SignIn = ({ navigation }) => {
   const [email, setEmail] = useState('');
+  const [username, setUserName] = useState(''); // State for username
   const [password, setPassword] = useState('');
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -27,8 +28,13 @@ const SignIn = ({ navigation }) => {
     }
 
     try {
+      
       const response = await signInWithEmailAndPassword(auth, email, password);
-      navigation.navigate("Home");
+      const user = response.user;
+
+      // Retrieve the username from the signed-in user
+      const username = user.displayName || ''; // If the username field exist
+      navigation.navigate("HomeScreen");
     } catch (error) {
       console.log(error);
       alert('Sign-in failed: ' + error.message);

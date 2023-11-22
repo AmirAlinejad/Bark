@@ -1,81 +1,71 @@
-import React from 'react'
-import { useState } from 'react'
+import React, { useState } from 'react';
 import {
   Text,
   View,
   Image,
   StyleSheet,
-  useWindowDimensions,
-  ActivityIndicator
+  ActivityIndicator,
 } from 'react-native';
-import Logo from '../assets/images/Heart.png'
+import Logo from '../assets/images/Heart.png';
 import CustomInput from '../components/CustomInput';
 import CustomButton from '../components/CustomButton';
-import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { FIREBASE_AUTH } from './auth/FirebaseConfig';
 
-
-const SignUp = ({ onAdd, navigation }) => {
-  const [userName, setUserName] = useState("")
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
+const SignUp = ({ navigation }) => {
+  const [userName, setUserName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [passwordVisible, setPasswordVisible] = useState(false);
-  const [confirmPassword, setConfirmPassword] = useState("")
-  const[loading, setLoading] = useState(false);
-  const {height} = useWindowDimensions();
-  const auth = FIREBASE_AUTH;
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [loading, setLoading] = useState(false);
 
+  const auth = FIREBASE_AUTH;
 
   const togglePasswordVisibility = () => {
     setPasswordVisible(!passwordVisible);
   };
-  //const navigate = useNavigate()
+
   const onLoginIn = () => {
-    // Navigate to the sign-up screen
     navigation.navigate("SignIn");
   }
+
   const onSignUpPressed = async (e) => {
     setLoading(true);
-    e.preventDefault()
+    e.preventDefault();
 
-    if(!userName) {
-      alert("Please add a username")
-      setLoading(false)
-      return
+    if (!userName || !email || !password || !confirmPassword) {
+      alert("Please fill in all fields");
+      setLoading(false);
+      return;
     }
-    if(!email) {
-      alert("Please add a email")
-      setLoading(false)
-      return
+
+    if (password !== confirmPassword) {
+      alert("Passwords do not match");
+      setLoading(false);
+      return;
     }
-    if(!password) {
-      alert("Please add a password")
-      setLoading(false)
-      return
-    }
-    if(password !== confirmPassword) {
-      alert("Passwords do not match")
-      setLoading(false)
-      return
-    }
-    
+
     try {
       const response = await createUserWithEmailAndPassword(auth, email, password);
-      navigation.navigate("Home");
+      const user = response.user;
+
+      // Set the username in the user's profile
+      await updateProfile(user, { displayName: userName });
+
+      navigation.navigate("HomeScreen");
     } catch (error) {
-      console.log(error)
+      console.log(error);
       alert('Signup failed: ' + error.message);
     } finally {
       setLoading(false);
+      setUserName('');
+      setEmail('');
+      setPassword('');
+      setConfirmPassword('');
     }
-    
-    setUserName('')
-    setEmail('')
-    setPassword('')
-    setConfirmPassword('')
-    //navigate("/")
-  }
-  
+  };
+
   return (
     <View style={styles.container}>
       <Image
@@ -84,44 +74,45 @@ const SignUp = ({ onAdd, navigation }) => {
         resizeMode="contain"
       />
 
-
       <Text style={styles.title}>Sign Up!</Text>
 
-
-      <CustomInput placeholder="School Email"
-       value={email} 
-       setValue={setEmail} 
-       
-       />
-      <CustomInput 
-        placeholder="Password" 
-        value={password} 
+      <CustomInput placeholder="School Email" value={email} setValue={setEmail} />
+      <CustomInput
+        placeholder="Password"
+        value={password}
         setValue={setPassword}
-        secureTextEntry = {!passwordVisible}
+        secureTextEntry={!passwordVisible}
         onEyeIconPress={togglePasswordVisibility}
       />
-      <CustomInput placeholder="Confirm Password" 
-      value={confirmPassword} 
-      setValue={setConfirmPassword}
-      secureTextEntry = {!passwordVisible}
-      onEyeIconPress={togglePasswordVisibility}
+      <CustomInput
+        placeholder="Confirm Password"
+        value={confirmPassword}
+        setValue={setConfirmPassword}
+        secureTextEntry={!passwordVisible}
+        onEyeIconPress={togglePasswordVisibility}
       />
-      <CustomInput placeholder="Username" 
-      value={userName} 
-      setValue={setUserName}
+      <CustomInput
+        placeholder="Username"
+        value={userName}
+        setValue={setUserName}
       />
-      
-      { loading ? ( <ActivityIndicator size = "large"/>
-      ) : ( 
+
+      {loading ? (
+        <ActivityIndicator size="large" />
+      ) : (
         <CustomButton text="Sign Up" onPress={onSignUpPressed} />
       )}
-       
-       <Text style={styles.signupText}>Have an account already?  <Text style={styles.signupLink} onPress={onLoginIn}>Login In</Text></Text>
 
+      <Text style={styles.signupText}>
+        Have an account already?{' '}
+        <Text style={styles.signupLink} onPress={onLoginIn}>
+          Login In
+        </Text>
+      </Text>
     </View>
-    
-  )
-}
+  );
+};
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -149,6 +140,6 @@ const styles = StyleSheet.create({
     color: '#3498db',
     fontWeight: 'bold',
   },
-})
+});
 
-export default SignUp
+export default SignUp;

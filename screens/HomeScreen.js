@@ -2,50 +2,49 @@ import React from 'react';
 import { View, Text } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-
+import Profile from './Profile';
 
 
 const Tab = createBottomTabNavigator();
+function HomeScreen({navigation}) { 
+  function Search() {
+    return (
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+        <Text>Search</Text>
+        {/* Add tab-specific content here */}
+      </View>
+    );
+  }
 
-function Search() {
-  return (
-    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-      <Text>Search</Text>
-      {/* Add tab-specific content here */}
-    </View>
-  );
-}
 
-function HomeScreen() {
-  return (
-    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-      <Text>Home</Text>
-      {
+
+  function Calendar() {
+    return (
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+        <Text>Calendar</Text>
+        {/* Add tab-specific content here */}
+      </View>
+    );
+  }
+
+  function ProfileTab() {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center' }}>
+        <Profile navigation={navigation} />
+        {}
+      </View>
+    );
+  }
+  function HomeScreen() {
+    return (
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
         
-      }
-    </View>
-  );
-}
+        {}
+      </View>
+    );
 
-function Calendar() {
-  return (
-    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-      <Text>Calendar</Text>
-      {/* Add tab-specific content here */}
-    </View>
-  );
-}
+  }
 
-function ProfileTab() {
-  return (
-    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-      <Text>Profile Tab</Text>
-      {}
-    </View>
-  );
-}
-
-function Chats() {
     return (
         <Tab.Navigator
           screenOptions={({ route }) => ({
@@ -79,6 +78,8 @@ function Chats() {
           <Tab.Screen name="Profile" component={ProfileTab} options={{ headerShown: false }} />
         </Tab.Navigator>
       );
-}
+      }
 
-export default Chats;
+export default HomeScreen;
+
+
