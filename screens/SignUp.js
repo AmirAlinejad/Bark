@@ -61,7 +61,7 @@ const SignUp = ({ onAdd, navigation }) => {
     
     try {
       const response = await createUserWithEmailAndPassword(auth, email, password);
-      navigation.navigate("Home");
+      navigation.navigate("HomeScreen");
     } catch (error) {
       console.log(error)
       alert('Signup failed: ' + error.message);

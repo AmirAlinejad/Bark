@@ -3,6 +3,7 @@ import { View, Text } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import Profile from './Profile';
+import ClubList from './ClubList';
 
 
 const Tab = createBottomTabNavigator();
@@ -20,7 +21,7 @@ function HomeScreen({navigation}) {
 
   function Calendar() {
     return (
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+      <View style={{ flex: 1, justifyContent: 'center' }}>
         <Text>Calendar</Text>
         {/* Add tab-specific content here */}
       </View>
@@ -37,9 +38,9 @@ function HomeScreen({navigation}) {
   }
   function HomeScreen() {
     return (
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+      <View style={{ flex: 1,  justifyContent: 'center' }}>
         
-        {}
+        {<ClubList navigation={navigation} />}
       </View>
     );
 
