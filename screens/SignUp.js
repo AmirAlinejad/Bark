@@ -12,7 +12,7 @@ import Logo from '../assets/images/Heart.png'
 import CustomInput from '../components/CustomInput';
 import CustomButton from '../components/CustomButton';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
-import { FIREBASE_AUTH } from './backend/FirebaseConfig';
+import { FIREBASE_AUTH } from '../backend/FirebaseConfig';
 
 
 const SignUp = ({ onAdd, navigation }) => {
@@ -61,7 +61,7 @@ const SignUp = ({ onAdd, navigation }) => {
     
     try {
       const response = await createUserWithEmailAndPassword(auth, email, password);
-      navigation.navigate("HomeScreen");
+      navigation.navigate("Home");
     } catch (error) {
       console.log(error)
       alert('Signup failed: ' + error.message);
