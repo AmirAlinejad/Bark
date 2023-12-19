@@ -13,6 +13,10 @@ const ClubScreen = ({ route, navigation }) => {
   const onBackPress = () => {
     navigation.goBack();
   }
+  const onButtonPress = () => {
+    // Define the action you want to perform here
+    navigation.navigate('Chat');
+  };
 
   return ( 
     <View style={styles.container}>
@@ -41,6 +45,12 @@ const ClubScreen = ({ route, navigation }) => {
             <Text style={[styles.textNormal, {textAlign: 'center'}]}>{description}</Text>
           </View>
         </View>
+        <TouchableOpacity
+        style={styles.button}
+        onPress={onButtonPress}
+      >
+        <Text style={styles.buttonText}>Chat</Text>
+      </TouchableOpacity>
       </View>   
   );
 }
@@ -50,6 +60,21 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: '#D3D3D3',
     flex: 1,
+  },
+  button: {
+    position: 'absolute',
+    bottom: 20,
+    right: 20,
+    backgroundColor: '#F5F5DC',
+    borderRadius: 30,
+    width: 60,
+    height: 60,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  buttonText: {
+    color: 'black',
+    fontWeight: 'bold',
   },
   clubContent: {
     justifyContent: 'center',
@@ -68,6 +93,7 @@ const styles = StyleSheet.create({
   },
   title: title,
   textNoraml: textNormal,
+  
 });
 
 export default ClubScreen;

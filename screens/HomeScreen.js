@@ -6,6 +6,7 @@ import Profile from './Profile';
 import ClubList from './ClubList';
 
 
+
 const Tab = createBottomTabNavigator();
 function HomeScreen({navigation}) { 
   function Search() {
@@ -22,8 +23,8 @@ function HomeScreen({navigation}) {
   function Calendar() {
     return (
       <View style={{ flex: 1, justifyContent: 'center' }}>
-        <Text>Calendar</Text>
-        {/* Add tab-specific content here */}
+        
+        {}
       </View>
     );
   }
