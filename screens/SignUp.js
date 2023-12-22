@@ -78,6 +78,7 @@ const SignUp = ({ onAdd, navigation }) => {
   
   return (
     <View style={styles.container}>
+      
       <Image
         source={Logo}
         style={styles.logo}
@@ -117,6 +118,7 @@ const SignUp = ({ onAdd, navigation }) => {
        <Text style={styles.signupText}>Have an account already?  <Text style={styles.signupLink} onPress={onLoginIn}>Login In</Text></Text>
 
     </View>
+    
     
   )
 }

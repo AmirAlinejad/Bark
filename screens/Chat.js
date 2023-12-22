@@ -15,6 +15,8 @@ import { auth,firestore, db } from './backend/FirebaseConfig';
 import { useNavigation } from '@react-navigation/native';
 import { AntDesign } from '@expo/vector-icons';
 import colors from '../colors';
+import { View } from 'react-native';
+import { IconButton } from 'react-native-paper';
 
 export default function Chat() {
   const [messages, setMessages] = useState([]);
@@ -23,7 +25,9 @@ export default function Chat() {
   const onSignOut = () => {
     signOut(auth).catch(error => console.log('Error logging out: ', error));
   };
-
+  const onBackPress = () => {
+    navigation.goBack();
+  }
   useLayoutEffect(() => {
     navigation.setOptions({
       headerRight: () => (
@@ -71,6 +75,14 @@ export default function Chat() {
   }, []);
 
   return (
+    <View style={{ flex: 1 }}>
+    <View style={{ marginTop: 30, paddingHorizontal: 10 }}>
+      <IconButton
+        onPress={onBackPress}
+        icon="arrow-left"
+        size={30}
+      />
+    </View>
     <GiftedChat
       messages={messages}
       showAvatarForEveryMessage={false}
@@ -88,5 +100,6 @@ export default function Chat() {
         avatar: 'https://i.pravatar.cc/300'
       }}
     />
+  </View>
   );
 }

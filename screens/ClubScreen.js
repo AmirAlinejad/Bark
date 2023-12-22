@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Image, StyleSheet, TouchableOpacity } from 'react-native';
 import { Text, Avatar, IconButton, Chip } from 'react-native-paper';
-import { db } from './backend/FirebaseConfig';
-import { ref, onValue } from "firebase/database";
+
 import { textNormal, title} from '../styles/fontstyles';
 
 const ClubScreen = ({ route, navigation }) => {
@@ -16,6 +15,9 @@ const ClubScreen = ({ route, navigation }) => {
   const onButtonPress = () => {
     // Define the action you want to perform here
     navigation.navigate('Chat');
+  };
+  const onButtonPressRequest = () => {
+    //request
   };
 
   return ( 
@@ -46,10 +48,17 @@ const ClubScreen = ({ route, navigation }) => {
           </View>
         </View>
         <TouchableOpacity
-        style={styles.button}
+        style={styles.rightButton}
         onPress={onButtonPress}
       >
         <Text style={styles.buttonText}>Chat</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={styles.leftButton}
+        onPress={onButtonPressRequest}
+      >
+        <Text style={styles.buttonText}>Request</Text>
       </TouchableOpacity>
       </View>   
   );
@@ -61,7 +70,18 @@ const styles = StyleSheet.create({
     backgroundColor: '#D3D3D3',
     flex: 1,
   },
-  button: {
+  leftButton: {
+    position: 'absolute',
+    bottom: 20,
+    left: 20, // Changed to left
+    backgroundColor: '#F5F5DC',
+    borderRadius: 30,
+    width: 60,
+    height: 60,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  rightButton: {
     position: 'absolute',
     bottom: 20,
     right: 20,

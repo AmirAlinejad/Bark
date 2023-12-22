@@ -10,6 +10,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import Club from './screens/Club';
 import Chat from './screens/Chat';
+import SignupPages from './screens/SignupPages';
 const Stack = createNativeStackNavigator();
 
 export default class App extends React.Component {
@@ -25,6 +26,7 @@ export default class App extends React.Component {
             <Stack.Screen name="ClubScreen" component={ClubScreen} options={{ headerShown: false }} />
             <Stack.Screen name="NewClub" component={NewClub} options={{ headerShown: false }} />
             <Stack.Screen name="Chat" component={Chat} options={{ headerShown: false }} />
+            <Stack.Screen name="SignupPages" component={SignupPages} options={{ headerShown: false }} />
           </Stack.Navigator>
           
         </NavigationContainer>
