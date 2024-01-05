@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 // react native components
-import { View, StyleSheet, TouchableOpacity, Button } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Button, ScrollView } from 'react-native';
 import { Text, IconButton } from 'react-native-paper';
 // my components
 import CustomInput from '../../components/CustomInput';
 import CustomButton from '../../components/CustomButton';
+import Header from '../../components/Header';
 // backend
 import { db } from '../../backend/FirebaseConfig';
 // date time picker
@@ -14,7 +15,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import MapView from 'react-native-maps';
 import { Marker } from 'react-native-maps';
 // fonts
-import { textNormal, title} from '../../styles/fontstyles';
+import { textNormal, title} from '../../styles/FontStyles';
 
 const NewEvent = ({ route, navigation }) => {
 
@@ -34,11 +35,6 @@ const NewEvent = ({ route, navigation }) => {
   });
   const [mapSelected, setMapSelected] = useState(false); // if map is editable
   const [loading, setLoading] = useState(false);
-
-  // go back to club screen
-  const onBackPress = () => {
-    navigation.goBack();
-  }
 
   // datetime picker
   const onDateTimeChange = (event, selectedDateTime) => {
@@ -66,7 +62,8 @@ const NewEvent = ({ route, navigation }) => {
     
     // try to submit the form
     try {
-      set(ref(db, 'clubs/' + clubName + '/events/' + eventName), {
+      set(ref(db, 'events/' + eventName), {
+        clubName: clubName,
         eventName: eventName,
         eventDescription: eventDescription,
         eventDateTime: dateTime.toLocaleString(),
@@ -84,33 +81,22 @@ const NewEvent = ({ route, navigation }) => {
 
   return (
     <View style={styles.container}>
-      <View style={{marginTop: 30}}>
-        <IconButton
-          onPress={onBackPress}
-          icon="arrow-left"
-          size={30}
-        />
-      </View>
-      <View style={styles.elementsContainer}>
-        <Text style={styles.title}> Create a new Event</Text>
-        <CustomInput
-          placeholder="Event Name"
-          value={eventName}
-          setValue={setName}
-        />
-        <CustomInput
-          placeholder="Event Description"
-          value={eventDescription}
-          setValue={setDescription}
-        />
-
-        <DateTimePicker
-            testID="dateTimePicker"
-            value={dateTime}
-            mode={'datetime'}
-            is24Hour={true}
-            onChange={onDateTimeChange}
+      <Header text='New Event' back navigation={navigation}></Header>
+      <ScrollView>
+        <View style={styles.elementsContainer}>
+          <CustomInput
+            placeholder="Event Name"
+            value={eventName}
+            setValue={setName}
           />
+
+          <DateTimePicker
+              testID="dateTimePicker"
+              value={dateTime}
+              mode={'datetime'}
+              is24Hour={true}
+              onChange={onDateTimeChange}
+            />
         </View>
           
         {!mapSelected ? ( // if map is not editable
@@ -126,6 +112,11 @@ const NewEvent = ({ route, navigation }) => {
                 />
               </MapView>
             </TouchableOpacity>
+            <CustomInput
+              placeholder="What's happening?"
+              value={eventDescription}
+              setValue={setDescription}
+            />
             <CustomButton text="Submit" onPress={onSubmitPressed} type="primary"/>
           </View>
         ) : ( // if map is editable
@@ -145,6 +136,7 @@ const NewEvent = ({ route, navigation }) => {
             </View>
           </View>
         )}
+      </ScrollView>
     </View>
   );
 }
@@ -153,15 +145,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: 'center',
-    backgroundColor: '#D3D3D3',
+    backgroundColor: '#FAFAFA',
     gap: 10,
   },
   elementsContainer: {
-    flex: 2,
+    marginTop: 50,
     justifyContent: 'flex-end',
     alignItems: 'center',
-    backgroundColor: '#D3D3D3',
-    gap: 10,
     marginBottom: 20,
   },
   title: title,
@@ -178,9 +168,9 @@ const styles = StyleSheet.create({
     width: 200,
     height: 200,
     borderRadius: 20,
+    marginBottom: 20,
   },
   biggerMapView: {
-    flex: 2,
     alignItems: 'center',
     justifyContent: 'flex-start',
   },

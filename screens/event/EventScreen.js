@@ -1,12 +1,14 @@
 import React from 'react';
 // react native components
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, ScrollView } from 'react-native';
 import { Text, IconButton} from 'react-native-paper';
+// my components
+import Header from '../../components/Header';
 // maps
 import MapView from 'react-native-maps';
 import { Marker } from 'react-native-maps';
 // fonts
-import { textNormal, title} from '../../styles/fontstyles';
+import { textNormal, title} from '../../styles/FontStyles';
 
 const EventScreen = ({ route, navigation }) => {
 
@@ -24,16 +26,10 @@ const EventScreen = ({ route, navigation }) => {
 
   return ( 
     <View style={styles.container}>
-      <View style={{marginTop: 30, flex: 1}}>
-        <IconButton
-          onPress={onBackPress}
-          icon="arrow-left"
-          size={30}
-        />
-      </View>
+      <Header text={name} back navigation={navigation}></Header>
 
-      <View style={styles.eventContent}>
-          <Text style={[styles.title, {textAlign: 'center'}]}>{name}</Text>
+      <ScrollView style={styles.eventContent}>
+        <View style={{alignItems: 'center'}}>
           <Text style={[styles.title, {textAlign: 'center'}]}>{dateStr}, {timeStr}</Text>
 
           <Text style={[styles.textNormal, {textAlign: 'center', marginBottom: 20}]}>{description}</Text>
@@ -49,7 +45,8 @@ const EventScreen = ({ route, navigation }) => {
               />
             </MapView>
           </View>
-      </View>
+        </View>
+      </ScrollView>
     </View>   
   );
 }
@@ -57,13 +54,10 @@ const EventScreen = ({ route, navigation }) => {
 const styles = StyleSheet.create({
   container: {
     justifyContent: 'center',
-    backgroundColor: '#D3D3D3',
+    backgroundColor: '#FAFAFA',
     flex: 1,
   },
   eventContent: {
-    justifyContent: 'flex-start',
-    alignItems: 'center',
-    backgroundColor: '#D3D3D3',
     flex: 4,
   },
   biggerMapStyle: {

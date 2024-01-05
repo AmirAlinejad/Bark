@@ -1,20 +1,21 @@
 import React, { useState } from 'react';
 // react native components
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, ScrollView } from 'react-native';
 import { Text, IconButton } from 'react-native-paper';
 // my components
 import CustomInput from '../../components/CustomInput';
 import CustomButton from '../../components/CustomButton';
 import UploadImage from '../../components/UploadImage';
+import Header from '../../components/Header';
 // multiple select list
 import { MultipleSelectList } from 'react-native-dropdown-select-list'
 // backend
 import { db } from '../../backend/FirebaseConfig';
 import { ref, set } from "firebase/database";
 // macros
-import { clubCategories } from '../../.expo/macros/clubCategories';
+import { clubCategories } from '../../macros/macros';
 // fonts
-import { textNormal, title} from '../../styles/fontstyles';
+import { textNormal, title} from '../../styles/FontStyles';
 
 const NewClub = ({ navigation }) => {
   // create states for club info
@@ -64,39 +65,34 @@ const NewClub = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      <View style={{marginTop: 30, flex: 1}}>
-        <IconButton
-          onPress={onBackPress}
-          icon="arrow-left"
-          size={30}
-        />
-      </View>
-      <View style={{flex: 5, alignItems: 'center'}}>
-        <Text style={styles.title}> Create a new Club</Text>
-        <CustomInput
-          placeholder="Club Name"
-          value={clubName}
-          setValue={setName}
-        />
-        <CustomInput
-          placeholder="Club Description"
-          value={clubDescription}
-          setValue={setDescription}
-        />
+      <Header text='New Club' back navigation={navigation}></Header>
+      <ScrollView>
+        <View style={{marginTop: 50, alignItems: 'center'}}>
+          <CustomInput
+            placeholder="Club Name"
+            value={clubName}
+            setValue={setName}
+          />
+          <CustomInput
+            placeholder="Club Description"
+            value={clubDescription}
+            setValue={setDescription}
+          />
 
-        <Text style={styles.textNormal}>Upload a club image</Text>
-        <UploadImage parentCallback={handleCallback}/>
+          <Text style={styles.textNormal}>Upload a club image</Text>
+          <UploadImage parentCallback={handleCallback}/>
 
-        <Text style={styles.textNormal}>Select categories for your club</Text>
-        <MultipleSelectList 
-          setSelected={(val) => setSelected(val)} 
-          data={clubCategories} 
-          save="value"
-          label="Categories"
-        />
+          <Text style={styles.textNormal}>Select categories for your club</Text>
+          <MultipleSelectList 
+            setSelected={(val) => setSelected(val)} 
+            data={clubCategories} 
+            save="value"
+            label="Categories"
+          />
 
-        <CustomButton text="Submit" onPress={onSubmitPressed} type="primary" />
-      </View>
+          <CustomButton text="Submit" onPress={onSubmitPressed} type="primary" />
+        </View>
+      </ScrollView>
     </View>
   );
 }
@@ -105,7 +101,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: 'center',
-    backgroundColor: '#D3D3D3',
+    backgroundColor: '#FAFAFA',
   },
   title: title,
   textNormal: {

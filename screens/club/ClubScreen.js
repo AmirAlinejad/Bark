@@ -1,20 +1,17 @@
 import React from 'react';
 // react native components
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, ScrollView } from 'react-native';
 import { Text, Avatar, IconButton, Chip } from 'react-native-paper';
 // my components
 import EventCard from '../../components/events/EventCard';
+import Header from '../../components/Header';
+import UpcomingEvents from '../../components/events/UpcomingEvents';
 // fonts
-import { textNormal, title} from '../../styles/fontstyles';
+import { textNormal, title} from '../../styles/FontStyles';
 
 const ClubScreen = ({ route, navigation }) => {
 
   const { name, description, categories, img, events } = route.params;
-
-  // go back to club list screen
-  const onBackPress = () => {
-    navigation.goBack();
-  }
 
   // go to add event screen for this club
   const onAddEventPress = () => {
@@ -29,69 +26,38 @@ const ClubScreen = ({ route, navigation }) => {
    eventsArray = Object.values(events);
   }
 
+  // filter function for upcoming events
+  const filterByThisClub = (event) => {
+    return event.clubName === name;
+  }
+
   return ( 
     <View style={styles.container}>
-      <View style={{marginTop: 30}}>
-        <IconButton
-          onPress={onBackPress}
-          icon="arrow-left"
-          size={30}
-        />
-      </View>
-
-      {/* Club content */}
-      <View style={styles.clubContent}>
-        {/* Avatar */}
-        <View style={styles.avatarContainer}> 
-          <Avatar.Image source={{uri: img}} size={120}></Avatar.Image>
-        </View>
-        {/* Basic info */}
-        <View style={styles.basicInfo}> 
-          <Text style={[styles.title, {textAlign: 'center'}]}>{name}</Text>
-          <View style={styles.categoriesContent}>
-          {
-            categories.length !== 0 && categories.map((item) => {
-              return (
-                <Chip style={{margin: 5}}>{item}</Chip>
-              )
-            })
-          }
+      <Header text={name} back navigation={navigation}></Header>
+      <ScrollView>
+        {/* Club content */}
+        <View style={styles.clubContent}>
+          {/* Avatar */}
+          <View style={styles.avatarContainer}> 
+            <Avatar.Image source={{uri: img}} size={150}></Avatar.Image>
           </View>
-          <Text style={[styles.textNormal, {textAlign: 'center'}]}>{description}</Text>
-        </View>
-        {/* Events */}
-        <View style={{flex: 2}}>
-          <Text style={[styles.title, {textAlign: 'center'}]}>Upcoming Events</Text>
-          {
-            // map through the club data and display each club
-            eventsArray.map((item, index) => {
-
-              const onPress = () => {
-              // Navigate to the event screen
-              navigation.navigate("EventScreen", {
-                key: index,
-                name: item.eventName,
-                description: item.eventDescription,
-                datetime: item.eventDateTime,
-                location: item.eventLocation,
-              });
+          {/* Basic info */}
+          <View style={styles.basicInfo}> 
+            <View style={styles.categoriesContent}>
+            {
+              categories.length !== 0 && categories.map((item) => {
+                return (
+                  <Chip style={{margin: 5}}>{item}</Chip>
+                )
+              })
             }
-
-            return (
-              <View key={index}>
-                <EventCard 
-                  onPress={onPress} 
-                  name={item.eventName} 
-                  description={item.eventDescription} 
-                  date={item.eventDateTime.substring(0, item.eventDateTime.indexOf(','))} // just gives date
-                  />
-              </View>
-            )
-            })
-          }
+            </View>
+            <Text style={[styles.textNormal, {textAlign: 'center'}]}>{description}</Text>
+          </View>
+          {/* Events */}
+          <UpcomingEvents filter={filterByThisClub} navigation={navigation}/>
         </View>
-      </View>
-
+      </ScrollView>
       {/* Add event button */}
       <View style={styles.addEventButton}>
         <IconButton
@@ -99,7 +65,7 @@ const ClubScreen = ({ route, navigation }) => {
           icon="plus-circle"
           size={30}
         />
-      </View>
+        </View>
     </View>
   );
 }
@@ -107,36 +73,35 @@ const ClubScreen = ({ route, navigation }) => {
 const styles = StyleSheet.create({
   container: {
     justifyContent: 'center',
-    backgroundColor: '#D3D3D3',
+    backgroundColor: '#FAFAFA',
     flex: 1,
   },
   clubContent: {
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#D3D3D3',
-    flex: 1,
   },
   basicInfo: {
     marginTop: 20,
-    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
   categoriesContent: {
-    marginBottom: 10,
+    marginBottom: 20,
     justifyContent: 'center',
     flexDirection: 'row',
   },
   avatarContainer: {
-    marginTop: 100,
-    flex: 1,
+    marginTop: 50,
   },
   eventsContent: {
     alignItems: 'center',
+    marginTop: 20,
   },
   addEventButton: {
-    alignItems: 'flex-end', 
-    padding: 20
+    bottom: 0,
+    right: 0,
+    padding: 20,
+    position: 'absolute',
   },
   title: title,
   textNoraml: textNormal,

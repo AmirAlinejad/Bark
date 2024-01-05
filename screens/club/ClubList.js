@@ -7,10 +7,11 @@ import { db } from '../../backend/FirebaseConfig';
 import { ref, onValue } from "firebase/database";
 // my components
 import ClubCategory from '../../components/clubs/ClubCategory';
+import Header from '../../components/Header';
 // macros
-import { clubCategories } from '../../.expo/macros/clubCategories';
+import { clubCategories } from '../../macros/macros';
 // fonts
-import { title } from '../../styles/fontstyles';
+import { title } from '../../styles/FontStyles';
 
 // club list screen
 const ClubList = ({ navigation }) => {
@@ -46,8 +47,8 @@ const ClubList = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      <Text style={[styles.title, {marginTop: 80}]}>Club List</Text>
-      <ScrollView>
+      <Header text='Club List'></Header>
+      <ScrollView style={styles.clubCategories}>
       { 
         // create a club category component for each category
         sortedClubs.map((category) => {
@@ -59,8 +60,8 @@ const ClubList = ({ navigation }) => {
         })
       }
       </ScrollView>
-       {/* Add event button */}
-       <View style={styles.addClubButton}>
+      {/* Add event button */}
+      <View style={styles.addClubButton}>
         <IconButton
           onPress={onAddClubPress}
           icon="plus-circle"
@@ -74,18 +75,16 @@ const ClubList = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#D3D3D3',
+    backgroundColor: '#FAFAFA',
   },
-  clubCategory: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'left',
+  clubCategories: {
+    marginLeft: 20,
   },
   addClubButton: {
-    alignItems: 'flex-end', 
-    padding: 20
+    bottom: 0,
+    right: 0,
+    padding: 20,
+    position: 'absolute',
   },
   title: title,
 });
