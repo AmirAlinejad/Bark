@@ -5,7 +5,7 @@ import { Text} from 'react-native-paper';
 // my components
 import ClubCard from './ClubCard';
 // fonts
-import { title } from '../../styles/fontstyles';
+import { title } from '../../styles/FontStyles';
 
 const ClubCategory = ({name, data, navigation}) => {
     return (
@@ -39,15 +39,9 @@ const ClubCategory = ({name, data, navigation}) => {
 }
 
 const styles = StyleSheet.create({
-    container: {
-      flex: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
-      backgroundColor: '#D3D3D3',
-    },
     clubCategory: {
       flex: 1,
-      justifyContent: 'center',
+      justifyContent: 'flex-start',
       alignItems: 'left',
     },
     title: title,

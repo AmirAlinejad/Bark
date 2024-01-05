@@ -1,46 +1,40 @@
 import React from 'react';
 // react native components
-import { View, StyleSheet} from 'react-native';
+import { View, StyleSheet, Pressable } from 'react-native';
 import { Text, Card, Avatar } from 'react-native-paper';
 // fonts
-import { textNormal, title} from '../../styles/fontstyles';
+import { textNormal, title} from '../../styles/FontStyles';
 
 // club card displayed on the club list screen
 const ClubCard = ({ onPress, name, description, img }) => {
   
   return (
-    <Card style={styles.clubCard} onPress={onPress}>   
+    <Pressable style={styles.clubCard} mode='elavated' onPress={onPress}>   
       <View style={styles.container}>
-        <View style={{flex: 1}}> 
-          <Avatar.Image source={{uri: img}} />
+        <View> 
+          <Avatar.Image size={80} source={{uri: img}} />
         </View>
         
-        <View style={{flex: 2}}> 
-          <Text style={styles.title}>{name}</Text>
-          <Text style={styles.textNormal} numberOfLines={2}>{description}</Text>
+        <View> 
+          <Text style={[styles.textNormal, {marginBottom: 0}]} numberOfLines={1}>{name}</Text>
+          <Text style={styles.textNormal} numberOfLines={1}>{description}</Text>
         </View>
       </View>   
-    </Card>
+    </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   clubCard: {
-    margin: 10,
     padding: 20,
-    backgroundColor: '#ECF0F1',
+    backgroundColor: '#FAFAFA',
     borderRadius: 10,
     shadowColor: '#0010',
-    shadowOffset: { width: 0, height: 1},
-    shadowOpacity: 0.8,
-    shadowRadius: 2,
-    elevation: 5,
-    width: 300,
   },
   container: {
-    flexDirection: 'row',
     justifyContent: 'center',
-    alignItems: 'center'
+    alignItems: 'center',
+    gap: 10,
   },
   title: title,
   textNormal: textNormal,
