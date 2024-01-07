@@ -12,7 +12,7 @@ import Logo from '../assets/images/Heart.png'
 import CustomInput from '../components/CustomInput';
 import CustomButton from '../components/CustomButton';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
-import { FIREBASE_AUTH } from './auth/FirebaseConfig';
+import { FIREBASE_AUTH } from '../backend/FirebaseConfig';
 
 
 const SignUp = ({ onAdd, navigation }) => {
@@ -84,9 +84,7 @@ const SignUp = ({ onAdd, navigation }) => {
         resizeMode="contain"
       />
 
-
       <Text style={styles.title}>Sign Up!</Text>
-
 
       <CustomInput placeholder="School Email"
        value={email} 
@@ -101,14 +99,14 @@ const SignUp = ({ onAdd, navigation }) => {
         onEyeIconPress={togglePasswordVisibility}
       />
       <CustomInput placeholder="Confirm Password" 
-      value={confirmPassword} 
-      setValue={setConfirmPassword}
-      secureTextEntry = {!passwordVisible}
-      onEyeIconPress={togglePasswordVisibility}
+        value={confirmPassword} 
+        setValue={setConfirmPassword}
+        secureTextEntry = {!passwordVisible}
+        onEyeIconPress={togglePasswordVisibility}
       />
       <CustomInput placeholder="Username" 
-      value={userName} 
-      setValue={setUserName}
+        value={userName} 
+        setValue={setUserName}
       />
       
       { loading ? ( <ActivityIndicator size = "large"/>
