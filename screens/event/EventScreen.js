@@ -5,8 +5,7 @@ import { Text, IconButton} from 'react-native-paper';
 // my components
 import Header from '../../components/Header';
 // maps
-import MapView from 'react-native-maps';
-import { Marker } from 'react-native-maps';
+import MapView, { Marker } from 'react-native-maps';
 // fonts
 import { textNormal, title} from '../../styles/FontStyles';
 

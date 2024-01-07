@@ -18,7 +18,7 @@ export default class App extends React.Component {
   render() {
       return (
         <NavigationContainer >
-          <Stack.Navigator initialRouteName='CalendarScreen'>
+          <Stack.Navigator initialRouteName='ClubList'>
             <Stack.Screen name="ClubList" component={ClubList} options={{ headerShown: false }} />
             <Stack.Screen name="ClubScreen" component={ClubScreen} options={{ headerShown: false }} />
             <Stack.Screen name="NewClub" component={NewClub} options={{ headerShown: false }} />

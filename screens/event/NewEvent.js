@@ -12,8 +12,7 @@ import { db } from '../../backend/FirebaseConfig';
 import { ref, set } from "firebase/database";
 import DateTimePicker from '@react-native-community/datetimepicker';
 // maps
-import MapView from 'react-native-maps';
-import { Marker } from 'react-native-maps';
+import MapView, { Marker } from 'react-native-maps';
 // fonts
 import { textNormal, title} from '../../styles/FontStyles';
 
