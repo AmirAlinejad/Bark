@@ -15,7 +15,7 @@ import { ref, set } from "firebase/database";
 // macros
 import { clubCategories } from '../../macros/macros';
 // fonts
-import { textNormal, title} from '../../styles/FontStyles';
+import { textNormal, title} from '../../styles/fontstyles';
 
 const NewClub = ({ navigation }) => {
   // create states for club info
@@ -54,7 +54,7 @@ const NewClub = ({ navigation }) => {
         clubImg: clubImg,
       });
   
-      navigation.navigate("ClubList");
+      navigation.goBack();
     } catch (error) {
       console.log(error);
       alert('Club creation failed: ' + error.message);

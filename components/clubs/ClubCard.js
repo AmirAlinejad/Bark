@@ -3,7 +3,7 @@ import React from 'react';
 import { View, StyleSheet, Pressable } from 'react-native';
 import { Text, Card, Avatar } from 'react-native-paper';
 // fonts
-import { textNormal, title} from '../../styles/FontStyles';
+import { textNormal, title} from '../../styles/fontstyles';
 
 // club card displayed on the club list screen
 const ClubCard = ({ onPress, name, description, img }) => {

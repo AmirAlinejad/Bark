@@ -17,7 +17,7 @@ import UpcomingEvents from '../../components/events/UpcomingEvents';
 // macros
 import { clubCategories } from '../../macros/macros';
 // fonts
-import { title } from '../../styles/FontStyles';
+import { title } from '../../styles/fontstyles';
 
 // club list screen
 const CalendarScreen = ({ navigation }) => {

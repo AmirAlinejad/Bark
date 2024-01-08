@@ -11,7 +11,7 @@ import Header from '../../components/Header';
 // macros
 import { clubCategories } from '../../macros/macros';
 // fonts
-import { title } from '../../styles/FontStyles';
+import { title } from '../../styles/fontstyles';
 
 // club list screen
 const ClubList = ({ navigation }) => {

@@ -1,13 +1,13 @@
 import React from 'react';
 // react native components
-import { View, StyleSheet, ScrollView } from 'react-native';
+import { View, StyleSheet, ScrollView, TouchableOpacity} from 'react-native';
 import { Text, Avatar, IconButton, Chip } from 'react-native-paper';
 // my components
 import EventCard from '../../components/events/EventCard';
 import Header from '../../components/Header';
 import UpcomingEvents from '../../components/events/UpcomingEvents';
 // fonts
-import { textNormal, title} from '../../styles/FontStyles';
+import { textNormal, title} from '../../styles/fontstyles';
 
 const ClubScreen = ({ route, navigation }) => {
 
@@ -30,6 +30,15 @@ const ClubScreen = ({ route, navigation }) => {
   const filterByThisClub = (event) => {
     return event.clubName === name;
   }
+
+  const onButtonPress = () => {
+    // Define the action you want to perform here
+    navigation.navigate('Chat');
+  };
+  const onButtonPressRequest = () => {
+    //request
+  };
+
 
   return ( 
     <View style={styles.container}>
@@ -65,7 +74,20 @@ const ClubScreen = ({ route, navigation }) => {
           icon="plus-circle"
           size={30}
         />
-        </View>
+      </View>
+      <TouchableOpacity
+        style={styles.rightButton}
+        onPress={onButtonPress}
+        >
+          <Text style={styles.buttonText}>Chat</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.leftButton}
+          onPress={onButtonPressRequest}
+        >
+          <Text style={styles.buttonText}>Request</Text>
+        </TouchableOpacity>
     </View>
   );
 }
@@ -102,6 +124,33 @@ const styles = StyleSheet.create({
     right: 0,
     padding: 20,
     position: 'absolute',
+  },
+  leftButton: {
+    position: 'absolute',
+    bottom: 20,
+    left: 20, // Changed to left
+    backgroundColor: '#F5F5DC',
+    borderRadius: 30,
+    width: 60,
+    height: 60,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  rightButton: {
+    position: 'absolute',
+    bottom: 0,
+    left: '50%',
+    bottom: 20,
+    backgroundColor: '#F5F5DC',
+    borderRadius: 30,
+    width: 60,
+    height: 60,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  buttonText: {
+    color: 'black',
+    fontWeight: 'bold',
   },
   title: title,
   textNoraml: textNormal,

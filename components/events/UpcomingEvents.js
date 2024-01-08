@@ -8,7 +8,7 @@ import { ref, onValue } from "firebase/database";
 // my components
 import EventCard from './EventCard';
 // fonts
-import { textNormal, title} from '../../styles/FontStyles';
+import { textNormal, title} from '../../styles/fontstyles';
 
 const UpcomingEvents = ({ filter, navigation }) => {
 

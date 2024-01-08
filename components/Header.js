@@ -3,7 +3,7 @@ import React from 'react';
 import { View, StyleSheet, Button } from 'react-native';
 import { Text} from 'react-native-paper';
 // fonts
-import { textNormal, title, back} from '../styles/FontStyles';
+import { textNormal, title, back} from '../styles/fontstyles';
 
 const Header = ({ navigation, text, back }) => {
 
