@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { View, Image, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Image, Text, StyleSheet } from 'react-native';
 import Logo from '../assets/images/Heart.png';
 import CustomInput from '../components/CustomInput';
 import CustomButton from '../components/CustomButton';
 import { signInWithEmailAndPassword, getAuth } from 'firebase/auth';
-import Icon from 'react-native-vector-icons/Feather';
+import { get, ref } from 'firebase/database';
+import { auth, db } from '../backend/FirebaseConfig';
 
 const SignIn = ({ navigation }) => {
   const [email, setEmail] = useState('');
@@ -12,11 +13,12 @@ const SignIn = ({ navigation }) => {
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  const auth = getAuth();
+
   const togglePasswordVisibility = () => {
     setPasswordVisible(!passwordVisible);
   };
 
-  const auth = getAuth();
   const onSignInPressed = async () => {
     setLoading(true);
 
@@ -28,26 +30,40 @@ const SignIn = ({ navigation }) => {
 
     try {
       const response = await signInWithEmailAndPassword(auth, email, password);
-      navigation.navigate("Home");
+
+      // Fetch user data from the database
+      const userRef = ref(db, `users/${response.user.uid}`);
+      const userSnapshot = await get(userRef);
+
+      if (userSnapshot.exists()) {
+        const userData = userSnapshot.val();
+        console.log('User Data:', userData);
+
+        // Now you can use userData in your application
+      } else {
+        console.log('User data not found in the database.');
+      }
+
+      navigation.navigate("HomeScreen");
     } catch (error) {
       console.log(error);
       alert('Sign-in failed: ' + error.message);
     } finally {
       setLoading(false);
     }
-  }
+  };
 
   const onForgotPasswordPressed = () => {
     // Implement the forgot password logic or navigate to the appropriate screen
     // For example:
     // navigation.navigate("ForgotPassword");
     alert('Forgot password feature coming soon!');
-  }
+  };
 
   const onSignUp = () => {
     // Navigate to the sign-up screen
     navigation.navigate("SignUp");
-  }
+  };
 
   return (
     <View style={styles.container}>

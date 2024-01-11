@@ -1,41 +1,56 @@
+
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Dimensions, Image, TouchableOpacity } from 'react-native';
 import { getAuth, onAuthStateChanged, signOut } from 'firebase/auth';
+import { ref, get } from 'firebase/database';
 import Icon from 'react-native-vector-icons/FontAwesome';
+import { db } from '../backend/FirebaseConfig'; // Import the Firebase database instance
+
 const Profile = ({ navigation }) => {
-  const [userData, setUserData] = useState(null); // State to hold user data
-  const [loading, setLoading] = useState(true); // Loading state
+  const [userData, setUserData] = useState(null);
+  const [userClubs, setUserClubs] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const auth = getAuth();
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
         try {
-          // Fetch user data from Firebase Auth
           const { displayName, email } = user;
-
-          // Set user data to state
           setUserData({ username: displayName, email });
+          await fetchUserClubs(user.uid);
           setLoading(false);
         } catch (error) {
           console.error('Error fetching user data:', error);
           setLoading(false);
         }
       } else {
-        // User is signed out
         setLoading(false);
       }
     });
 
-    return () => unsubscribe(); // Detach the listener when unmounting
+    return () => unsubscribe();
   }, []);
+
+  const fetchUserClubs = async (userId) => {
+    try {
+      const userRef = ref(db, `users/${userId}`);
+      const userSnapshot = await get(userRef);
+
+      if (userSnapshot.exists()) {
+        const userData = userSnapshot.val();
+        setUserClubs(userData.clubs || []);
+      }
+    } catch (error) {
+      console.error('Error fetching user clubs:', error);
+    }
+  };
 
   const handleLogout = async () => {
     const auth = getAuth();
     try {
       await signOut(auth);
-      // Navigate to the login screen or any other desired screen after logout
-      navigation.navigate('SignIn'); // Replace 'Login' with your login screen name
+      navigation.navigate('SignIn');
     } catch (error) {
       console.error('Error signing out:', error);
     }
@@ -45,7 +60,6 @@ const Profile = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      
       <View style={[styles.orangeSection, { height: screenHeight * 0.25 }]} />
       <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
         <Icon name="arrow-left" size={20} color="black" />
@@ -56,7 +70,7 @@ const Profile = ({ navigation }) => {
       <View style={styles.profileContainer}>
         <View style={styles.profileImageContainer}>
           <Image
-            source={require('../assets/images/Heart.png')} // Replace with the actual path to your profile image
+            source={require('../assets/images/Heart.png')}
             style={styles.profileImage}
           />
         </View>
@@ -69,24 +83,24 @@ const Profile = ({ navigation }) => {
           <Text style={styles.text}>Username: {userData?.username}</Text>
           <Text style={styles.text}>Email: {userData?.email}</Text>
           <Text style={styles.text}>Clubs Part Of:</Text>
-            
+          {userClubs.map((club, index) => (
+            <Text key={index}>{club}</Text>
+          ))}
         </View>
       )}
       <View style={styles.buttonContainer}>
-        
-      <TouchableOpacity style={styles.button}>
-        <Icon name="cog" size={20} color="black" style={styles.icon} />
-        <Text style={styles.buttonText}>Settings</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity style={styles.button}>
-        <Icon name="pencil" size={20} color="black" style={styles.icon} />
-        <Text style={styles.buttonText}>Edit Profile</Text>
-      </TouchableOpacity>
-      <TouchableOpacity style={styles.button}>
-    <Icon name="users" size={20} color="black" style={styles.icon} />
-    <Text style={styles.buttonText}>Friends</Text>
-  </TouchableOpacity>
+        <TouchableOpacity style={styles.button}>
+          <Icon name="cog" size={20} color="black" style={styles.icon} />
+          <Text style={styles.buttonText}>Settings</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.button}>
+          <Icon name="pencil" size={20} color="black" style={styles.icon} />
+          <Text style={styles.buttonText}>Edit Profile</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.button}>
+          <Icon name="users" size={20} color="black" style={styles.icon} />
+          <Text style={styles.buttonText}>Friends</Text>
+        </TouchableOpacity>
       </View>
     </View>
   );
@@ -180,7 +194,15 @@ const styles = StyleSheet.create({
     top: 50,
     left: 20,
   },
+  text: {
+    fontSize: 18,
+    marginBottom: 10,
+    marginTop: 10, // Adjust the margin to separate it from the email
+  },
 });
 
 export default Profile;
+
+
+/* */
 
