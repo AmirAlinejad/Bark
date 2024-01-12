@@ -4,11 +4,12 @@ import { View, Text, StyleSheet, Dimensions, Image, TouchableOpacity } from 'rea
 import { getAuth, onAuthStateChanged, signOut } from 'firebase/auth';
 import { ref, get } from 'firebase/database';
 import Icon from 'react-native-vector-icons/FontAwesome';
-import { db } from '../backend/FirebaseConfig'; // Import the Firebase database instance
+import { db } from '../backend/FirebaseConfig'; 
 
 const Profile = ({ navigation }) => {
   const [userData, setUserData] = useState(null);
   const [userClubs, setUserClubs] = useState([]);
+  const [userClubsJoined, setUserClubsJoined] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -19,6 +20,7 @@ const Profile = ({ navigation }) => {
           const { displayName, email } = user;
           setUserData({ username: displayName, email });
           await fetchUserClubs(user.uid);
+          await fetchUserClubsJoined(user.uid);
           setLoading(false);
         } catch (error) {
           console.error('Error fetching user data:', error);
@@ -40,6 +42,19 @@ const Profile = ({ navigation }) => {
       if (userSnapshot.exists()) {
         const userData = userSnapshot.val();
         setUserClubs(userData.clubs || []);
+      }
+    } catch (error) {
+      console.error('Error fetching user clubs:', error);
+    }
+  };
+  const fetchUserClubsJoined = async (userId) => {
+    try {
+      const userRef = ref(db, `users/${userId}`);
+      const userSnapshot = await get(userRef);
+
+      if (userSnapshot.exists()) {
+        const userData = userSnapshot.val();
+        setUserClubsJoined(userData.clubsJoined || []);
       }
     } catch (error) {
       console.error('Error fetching user clubs:', error);
@@ -82,8 +97,12 @@ const Profile = ({ navigation }) => {
           <Text style={styles.title}>Profile</Text>
           <Text style={styles.text}>Username: {userData?.username}</Text>
           <Text style={styles.text}>Email: {userData?.email}</Text>
-          <Text style={styles.text}>Clubs Part Of:</Text>
+          <Text style={styles.text}>Clubs Owned:</Text>
           {userClubs.map((club, index) => (
+            <Text key={index}>{club}</Text>
+          ))}
+          <Text style={styles.text}>Clubs Part Of:</Text>
+          {userClubsJoined.map((club, index) => (
             <Text key={index}>{club}</Text>
           ))}
         </View>
@@ -197,7 +216,7 @@ const styles = StyleSheet.create({
   text: {
     fontSize: 18,
     marginBottom: 10,
-    marginTop: 10, // Adjust the margin to separate it from the email
+    marginTop: 10, // Change the margin to separate it from the email
   },
 });
 

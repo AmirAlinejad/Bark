@@ -60,7 +60,8 @@ const SignUp = ({ onAdd, navigation }) => {
       await set(userRef, {
         userName: userName,
         email: email,
-        clubs: [], // Initialize with an empty array, you can update this with the user's clubs later
+        clubs: [], 
+        clubsJoined: [],
       });
 
       navigation.navigate("HomeScreen");
