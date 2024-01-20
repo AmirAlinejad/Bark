@@ -3,27 +3,24 @@ import { View, Text } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import Profile from './Profile';
-import ClubList from './ClubList';
-
-
+import ClubList from './club/ClubList';
+import CalendarScreen from './calendar/CalendarScreen';
+import MyClubs from './club/MyClubs';
 
 const Tab = createBottomTabNavigator();
 function HomeScreen({navigation}) { 
   function Search() {
     return (
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-        <Text>Search</Text>
-        {/* Add tab-specific content here */}
+        {<ClubList navigation={navigation} />}
       </View>
     );
   }
 
-
-
   function Calendar() {
     return (
       <View style={{ flex: 1, justifyContent: 'center' }}>
-        
+        <CalendarScreen navigation={navigation} />
         {}
       </View>
     );
@@ -40,8 +37,7 @@ function HomeScreen({navigation}) {
   function HomeScreen() {
     return (
       <View style={{ flex: 1,  justifyContent: 'center' }}>
-        
-        {<ClubList navigation={navigation} />}
+        {<MyClubs navigation={navigation} />}
       </View>
     );
 
@@ -74,8 +70,8 @@ function HomeScreen({navigation}) {
             },
           })}
         >
-          <Tab.Screen name="Search" component={Search} options={{ headerShown: false }} />
           <Tab.Screen name="Home" component={HomeScreen} options={{ headerShown: false }} />
+          <Tab.Screen name="Search" component={Search} options={{ headerShown: false }} />
           <Tab.Screen name="Calendar" component={Calendar} options={{ headerShown: false }} />
           <Tab.Screen name="Profile" component={ProfileTab} options={{ headerShown: false }} />
         </Tab.Navigator>

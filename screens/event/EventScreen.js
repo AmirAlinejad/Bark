@@ -1,6 +1,5 @@
 import React from 'react';
 // react native components
-import { View, StyleSheet } from 'react-native';
 import { View, StyleSheet, ScrollView } from 'react-native';
 import { Text, IconButton} from 'react-native-paper';
 // my components
@@ -9,7 +8,7 @@ import Header from '../../components/Header';
 import MapView from 'react-native-maps';
 import { Marker } from 'react-native-maps';
 // fonts
-import { textNormal, title} from '../../styles/fontstyles';
+import { textNormal, title} from '../../styles/FontStyles';
 
 const EventScreen = ({ route, navigation }) => {
 
@@ -35,26 +34,26 @@ const EventScreen = ({ route, navigation }) => {
       <Header text={name} back navigation={navigation}></Header>
 
       <View style={styles.eventContent}>
-            <Text style={[styles.title, {textAlign: 'center'}]}>{name}</Text>
-            <ScrollView style={styles.eventContent}>
-                <View style={{alignItems: 'center'}}>
-                    <Text style={[styles.title, {textAlign: 'center'}]}>{dateStr}, {timeStr}</Text>
+        <Text style={[styles.title, {textAlign: 'center'}]}>{name}</Text>
+        <ScrollView contentContainerStyle={styles.eventContent}>
+            <View style={{alignItems: 'center'}}>
+              <Text style={[styles.title, {textAlign: 'center'}]}>{dateStr}, {timeStr}</Text>
 
-                    <Text style={[styles.textNormal, {textAlign: 'center', marginBottom: 20}]}>{description}</Text>
-                    <View style={styles.biggerMapView}>
-                        <MapView
-                        style={styles.biggerMapStyle}
-                        region={location}
-                        >
-                        <Marker
-                            coordinate={location}
-                            title={name ? name : undefined} // doesn't pass if eventName is empty
-                        />
-                        </MapView>
-                    </View>
-                </View>
-            </ScrollView>
-        </View>
+              <Text style={[styles.textNormal, {textAlign: 'center', marginBottom: 20}]}>{description}</Text>
+              <View style={styles.biggerMapView}>
+                <MapView
+                style={styles.biggerMapStyle}
+                region={location}
+                >
+                <Marker
+                  coordinate={location}
+                  title={name ? name : undefined} // doesn't pass if eventName is empty
+                />
+                </MapView>
+              </View>
+            </View>
+        </ScrollView>
+      </View>
     </View>   
   );
 }

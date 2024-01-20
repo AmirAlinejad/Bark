@@ -12,7 +12,7 @@ import { textNormal, title} from '../../styles/FontStyles';
 
 const UpcomingEvents = ({ filter, navigation }) => {
 
-  // state for club data
+  // state for event data
   const [eventData, setEventData] = useState([]);
 
   // get data from firebase

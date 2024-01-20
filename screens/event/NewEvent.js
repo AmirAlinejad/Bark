@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 import React, { useState } from 'react';
 // react native components
 import { View, StyleSheet, TouchableOpacity, Button, ScrollView } from 'react-native';
@@ -185,5 +184,4 @@ const styles = StyleSheet.create({
   },
 });
 
->>>>>>> 4b42115a44a9eeaee19bf9a811f2f4eda2c538f6
 export default NewEvent;

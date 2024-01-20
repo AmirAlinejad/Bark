@@ -1,47 +1,70 @@
 import React from 'react';
-// react native components
-import { View, StyleSheet, ScrollView } from 'react-native';
+import { View, StyleSheet, ScrollView, TouchableOpacity} from 'react-native';
 import { Text, Avatar, IconButton, Chip } from 'react-native-paper';
-// my components
-import EventCard from '../../components/events/EventCard';
+import { getAuth } from 'firebase/auth';
+import { ref, get, set } from 'firebase/database';
 import Header from '../../components/Header';
 import UpcomingEvents from '../../components/events/UpcomingEvents';
-// fonts
-import { textNormal, title} from '../../styles/FontStyles';
+import { db } from '../../backend/FirebaseConfig';
 
 const ClubScreen = ({ route, navigation }) => {
-
   const { name, description, categories, img, events } = route.params;
 
-  // go to add event screen for this club
+  const filterByThisClub = (event) => {
+    return event.clubName === name;
+  }
+
   const onAddEventPress = () => {
     navigation.navigate("NewEvent", {
       clubName: name,
     });
   }
 
-  // create events array and populate it with the events
-  eventsArray = [];
-  if (events !== undefined) {
-   eventsArray = Object.values(events);
-  }
+  const onButtonPress = () => {
+    navigation.navigate('Chat');
+  };
 
-  // filter function for upcoming events
-  const filterByThisClub = (event) => {
-    return event.clubName === name;
-  }
+  const onButtonPressRequest = async () => {
+    try {
+      const auth = getAuth();
+      const user = auth.currentUser;
+  
+      if (user) {
+        const userId = user.uid;
+        const userRef = ref(db, `users/${userId}`);
+        const userSnapshot = await get(userRef);
+  
+        if (userSnapshot.exists()) {
+          const userData = userSnapshot.val();
+          const updatedClubsJoined = [...(userData.clubsJoined || []), name];
+  
+          // Update the user's information in the database
+          await set(userRef, {
+            ...userData,
+            clubsJoined: updatedClubsJoined,
+          });
+  
+          alert(`Request sent to join ${name}`);
+        } else {
+          console.error('User data not found.');
+        }
+      } else {
+        console.error('User not authenticated.');
+      }
+    } catch (error) {
+      console.error('Error processing request:', error);
+    }
+  };
+  
 
   return ( 
     <View style={styles.container}>
       <Header text={name} back navigation={navigation}></Header>
       <ScrollView>
-        {/* Club content */}
         <View style={styles.clubContent}>
-          {/* Avatar */}
           <View style={styles.avatarContainer}> 
             <Avatar.Image source={{uri: img}} size={150}></Avatar.Image>
           </View>
-          {/* Basic info */}
           <View style={styles.basicInfo}> 
             <View style={styles.categoriesContent}>
             {
@@ -54,18 +77,29 @@ const ClubScreen = ({ route, navigation }) => {
             </View>
             <Text style={[styles.textNormal, {textAlign: 'center'}]}>{description}</Text>
           </View>
-          {/* Events */}
           <UpcomingEvents filter={filterByThisClub} navigation={navigation}/>
         </View>
       </ScrollView>
-      {/* Add event button */}
       <View style={styles.addEventButton}>
         <IconButton
           onPress={onAddEventPress}
           icon="plus-circle"
           size={30}
         />
-        </View>
+      </View>
+      <TouchableOpacity
+        style={styles.rightButton}
+        onPress={onButtonPress}
+      >
+        <Text style={styles.buttonText}>Chat</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={styles.leftButton}
+        onPress={onButtonPressRequest}
+      >
+        <Text style={styles.buttonText}>Request</Text>
+      </TouchableOpacity>
     </View>
   );
 }
@@ -103,8 +137,33 @@ const styles = StyleSheet.create({
     padding: 20,
     position: 'absolute',
   },
-  title: title,
-  textNoraml: textNormal,
+  leftButton: {
+    position: 'absolute',
+    bottom: 20,
+    left: 20,
+    backgroundColor: '#F5F5DC',
+    borderRadius: 30,
+    width: 60,
+    height: 60,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  rightButton: {
+    position: 'absolute',
+    bottom: 0,
+    left: '50%',
+    bottom: 20,
+    backgroundColor: '#F5F5DC',
+    borderRadius: 30,
+    width: 60,
+    height: 60,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  buttonText: {
+    color: 'black',
+    fontWeight: 'bold',
+  },
 });
 
 export default ClubScreen;

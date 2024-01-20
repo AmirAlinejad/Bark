@@ -3,9 +3,18 @@ import React from 'react';
 import { View, StyleSheet, Button } from 'react-native';
 import { Text} from 'react-native-paper';
 // fonts
-import { textNormal, title, back} from '../styles/FontStyles';
+import { textNormal, title} from '../styles/FontStyles';
+import { useFonts, Nunito_900Black } from '@expo-google-fonts/nunito';
 
 const Header = ({ navigation, text, back }) => {
+  // load fonts
+  let [fontsLoaded, fontError] = useFonts({
+    Nunito_900Black,
+  });
+
+  if (!fontsLoaded && !fontError) {
+    return null;
+  }
 
   // go back to the previous screen
   const onBackPress = () => {
@@ -26,7 +35,7 @@ const Header = ({ navigation, text, back }) => {
         )}
         </View>
         <View style={styles.middleBox}>
-            <Text style={[styles.title, {textAlign: 'center'}]}>{text}</Text>
+            <Text style={[styles.title, {textAlign: 'center', fontFamily: 'Nunito_900Black'}]}>{text}</Text>
         </View>
         <View style={styles.rightBox} />
     </View>
