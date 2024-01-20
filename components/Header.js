@@ -3,8 +3,7 @@ import React from 'react';
 import { View, StyleSheet, Button } from 'react-native';
 import { Text} from 'react-native-paper';
 // fonts
-import { textNormal, title} from '../styles/FontStyles';
-import { useFonts, Nunito_900Black } from '@expo-google-fonts/nunito';
+import { textNormal, title, back} from '../styles/FontStyles';
 
 const Header = ({ navigation, text, back }) => {
   // load fonts

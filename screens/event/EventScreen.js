@@ -1,5 +1,6 @@
 import React from 'react';
 // react native components
+import { View, StyleSheet } from 'react-native';
 import { View, StyleSheet, ScrollView } from 'react-native';
 import { Text, IconButton} from 'react-native-paper';
 // my components

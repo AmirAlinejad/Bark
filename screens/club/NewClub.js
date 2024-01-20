@@ -9,7 +9,8 @@ import Header from '../../components/Header';
 import { MultipleSelectList } from 'react-native-dropdown-select-list';
 import { db } from '../../backend/FirebaseConfig';
 import { clubCategories } from '../../macros/macros';
-import { textNormal, title } from '../../styles/FontStyles';
+// fonts
+import { textNormal, title} from '../../styles/FontStyles';
 
 const NewClub = ({ navigation }) => {
   const [clubName, setName] = useState('');

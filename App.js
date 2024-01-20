@@ -1,8 +1,8 @@
 import { StyleSheet, Text, View, TouchableOpacity} from 'react-native';
 import SignUp from "./screens/SignUp";
 import SignIn from "./screens/SignIn";
-import CalendarScreen from './screens/calendar/CalendarScreen';
-import NewClub from './screens/club/NewClub';
+import CalendarScreen from './screens/Calendar/CalendarScreen';
+import NewClub from './screens/NewClub';
 import EventScreen from './screens/event/EventScreen';
 import NewEvent from './screens/event/NewEvent';
 import Chat from './screens/Chat';

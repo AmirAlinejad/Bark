@@ -5,7 +5,7 @@ import { Text} from 'react-native-paper';
 // my components
 import ClubCard from './ClubCard';
 // fonts
-import { title } from '../../styles/FontStyles';
+import { title } from '../../styles/fontstyles';
 
 const ClubCategory = ({name, data, navigation}) => {
     return (

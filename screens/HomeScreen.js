@@ -3,16 +3,17 @@ import { View, Text } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import Profile from './Profile';
-import ClubList from './club/ClubList';
-import CalendarScreen from './calendar/CalendarScreen';
-import MyClubs from './club/MyClubs';
+import ClubList from './ClubList';
+
+
 
 const Tab = createBottomTabNavigator();
 function HomeScreen({navigation}) { 
   function Search() {
     return (
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-        {<ClubList navigation={navigation} />}
+        <Text>Search</Text>
+        {/* Add tab-specific content here */}
       </View>
     );
   }
@@ -20,7 +21,7 @@ function HomeScreen({navigation}) {
   function Calendar() {
     return (
       <View style={{ flex: 1, justifyContent: 'center' }}>
-        <CalendarScreen navigation={navigation} />
+        
         {}
       </View>
     );
@@ -30,14 +31,15 @@ function HomeScreen({navigation}) {
     return (
       <View style={{ flex: 1, justifyContent: 'center' }}>
         <Profile navigation={navigation} />
-        {}
+        
       </View>
     );
   }
   function HomeScreen() {
     return (
       <View style={{ flex: 1,  justifyContent: 'center' }}>
-        {<MyClubs navigation={navigation} />}
+        
+        {<ClubList navigation={navigation} />}
       </View>
     );
 

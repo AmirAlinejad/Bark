@@ -11,10 +11,10 @@ import {
   onSnapshot
 } from 'firebase/firestore';
 import { signOut } from 'firebase/auth';
-import { auth, firestore, db } from '../backend/FirebaseConfig';
+import { auth,firestore, db } from './backend/FirebaseConfig';
 import { useNavigation } from '@react-navigation/native';
 import { AntDesign } from '@expo/vector-icons';
-import { colors } from '../styles/Colors';
+import colors from '../colors';
 import { View } from 'react-native';
 import { IconButton } from 'react-native-paper';
 

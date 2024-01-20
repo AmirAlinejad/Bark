@@ -6,22 +6,13 @@ import { ref, onValue } from "firebase/database";
 import ClubCategory from '../../components/clubs/ClubCategory';
 import Header from '../../components/Header';
 import { clubCategories } from '../../macros/macros';
+// fonts
 import { title } from '../../styles/FontStyles';
-import { Button, Overlay } from 'react-native-elements';
-import MultiSelect from 'react-native-multiple-select';
 
 const ClubList = ({ navigation }) => {
   const [clubData, setClubData] = useState([]);
-  // for overlay
-  const [visible, setVisible] = useState(false);
-  const [categoriesSelected, setSelectedCategories] = useState([]);
 
-  // toggle overlay
-  const toggleOverlay = () => {
-    setVisible(!visible);
-  };
-
-  // add club button
+  // go to add club screen
   const onAddClubPress = () => {
     navigation.navigate("NewClub");
   }
@@ -39,36 +30,12 @@ const ClubList = ({ navigation }) => {
     })
   }, []);
 
-  // filter for events
-  const filterFunct = (club) => {
-  
-    // filter by category
-    if (categoriesSelected.length > 0) {
-      // convert categoriesSelected to array of strings
-      console.log(categoriesSelected);
-      filteredCategories = [];
-      categoriesSelected.forEach((categoryNum) => {
-        filteredCategories.push(clubCategories[categoryNum - 1].value);
-      });
-      
-      console.log("filtered categories " + filteredCategories);
-
-      console.log("club categories " + club.clubCategories);
-      
-      if (!filteredCategories.some(item => club.clubCategories.includes(item))) { // make sure clubCategories is right
-        return false;
-      }
-    }
-
-    return true;
-  }
-
-  // filter clubs and sort clubs by category
-  const sortedClubs = clubCategories.map((category) => {
-    return {
+  // sort the clubs by category
+  sortedClubs = clubCategories.map((category) => {
+    return ({
       categoryName: category.value,
-      data: clubData.filter(filterFunct).filter((club) => club.clubCategories && club.clubCategories.includes(category.value))
-    };
+      data: clubData.filter((club) => club.clubCategories.includes(category.value))
+    });
   });
 
   return (
@@ -101,14 +68,13 @@ const ClubList = ({ navigation }) => {
         </View>
       </Overlay>
       <ScrollView style={styles.clubCategories}>
-      {
+      { 
+        // create a club category component for each category
         sortedClubs.map((category) => {
-          if (category.data && category.data.length !== 0) {
+          if (category.data.length != 0) {
             return (
-              <ClubCategory key={category.categoryName} name={category.categoryName} data={category.data} navigation={navigation} />
+              <ClubCategory name={category.categoryName} data={category.data} navigation={navigation} />
             )
-          } else {
-            return null; // or handle empty category case if needed
           }
         })
       }

@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Text, Card } from 'react-native-paper';
-import { textNormal, title} from '../../styles/FontStyles';
+import { textNormal, title} from '../../styles/fontstyles';
 
 // club card displayed on the club list screen
 const EventCard = ({ onPress, name, description, date, time}) => { // description and time are not used yet
