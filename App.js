@@ -1,8 +1,9 @@
-import { StyleSheet, Text, View, TouchableOpacity} from 'react-native';
+import React from "react";
+// screens
 import SignUp from "./screens/SignUp";
 import SignIn from "./screens/SignIn";
-import CalendarScreen from './screens/Calendar/CalendarScreen';
-import NewClub from './screens/NewClub';
+import CalendarScreen from './screens/calendar/CalendarScreen';
+import NewClub from './screens/club/NewClub';
 import EventScreen from './screens/event/EventScreen';
 import NewEvent from './screens/event/NewEvent';
 import Chat from './screens/Chat';
@@ -11,10 +12,10 @@ import ClubScreen from './screens/club/ClubScreen';
 import HomeScreen from './screens/HomeScreen';
 import Profile from './screens/Profile';
 import SignupPages from './screens/SignupPages';
+import MyClubs from './screens/club/MyClubs';
+// stack navigator
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { NavigationContainer } from '@react-navigation/native';
-import React, { useEffect, useMemo, useRef, useState } from "react";
-import MyClubs from './screens/club/MyClubs';
 
 const Stack = createNativeStackNavigator();
 
@@ -37,17 +38,7 @@ export default class App extends React.Component {
             <Stack.Screen name="Profile" component={Profile} options={{ headerShown: false }}/>
             <Stack.Screen name="SignupPages" component={SignupPages} options={{ headerShown: false }}/>
           </Stack.Navigator>
-          
         </NavigationContainer>
       );
   }
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});

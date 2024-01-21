@@ -1,29 +1,38 @@
 import React from 'react';
+// react-native components
 import { View, StyleSheet, ScrollView, TouchableOpacity} from 'react-native';
-import { Text, Avatar, IconButton, Chip } from 'react-native-paper';
+import { Avatar, IconButton, Chip } from 'react-native-paper';
+// backend
 import { getAuth } from 'firebase/auth';
 import { ref, get, set } from 'firebase/database';
-import Header from '../../components/Header';
-import UpcomingEvents from '../../components/events/UpcomingEvents';
 import { db } from '../../backend/FirebaseConfig';
+// my components
+import Header from '../../components/Header';
+import UpcomingEvents from '../../components/event/UpcomingEvents';
+import CustomText from '../../components/CustomText';
 
 const ClubScreen = ({ route, navigation }) => {
-  const { name, description, categories, img, events } = route.params;
+  // get data from club list/my clubs
+  const { name, description, categories, img } = route.params;
 
+  // filter for events
   const filterByThisClub = (event) => {
     return event.clubName === name;
   }
 
+  // go to add event screen
   const onAddEventPress = () => {
     navigation.navigate("NewEvent", {
       clubName: name,
     });
   }
 
-  const onButtonPress = () => {
+  // go to chat screen
+  const onChatButtonPress = () => {
     navigation.navigate('Chat');
   };
 
+  // request to join club
   const onButtonPressRequest = async () => {
     try {
       const auth = getAuth();
@@ -56,7 +65,6 @@ const ClubScreen = ({ route, navigation }) => {
     }
   };
   
-
   return ( 
     <View style={styles.container}>
       <Header text={name} back navigation={navigation}></Header>
@@ -68,6 +76,7 @@ const ClubScreen = ({ route, navigation }) => {
           <View style={styles.basicInfo}> 
             <View style={styles.categoriesContent}>
             {
+              // display categories
               categories.length !== 0 && categories.map((item) => {
                 return (
                   <Chip style={{margin: 5}}>{item}</Chip>
@@ -75,11 +84,12 @@ const ClubScreen = ({ route, navigation }) => {
               })
             }
             </View>
-            <Text style={[styles.textNormal, {textAlign: 'center'}]}>{description}</Text>
+            <CustomText style={[styles.textNormal, {textAlign: 'center'}]} name={description}/>
           </View>
           <UpcomingEvents filter={filterByThisClub} navigation={navigation}/>
         </View>
       </ScrollView>
+
       <View style={styles.addEventButton}>
         <IconButton
           onPress={onAddEventPress}
@@ -87,18 +97,19 @@ const ClubScreen = ({ route, navigation }) => {
           size={30}
         />
       </View>
+
       <TouchableOpacity
         style={styles.rightButton}
-        onPress={onButtonPress}
+        onPress={onChatButtonPress}
       >
-        <Text style={styles.buttonText}>Chat</Text>
+        <CustomText style={styles.buttonText} text='Chat' />
       </TouchableOpacity>
 
       <TouchableOpacity
         style={styles.leftButton}
         onPress={onButtonPressRequest}
       >
-        <Text style={styles.buttonText}>Request</Text>
+        <CustomText style={styles.buttonText} text='Request' />
       </TouchableOpacity>
     </View>
   );

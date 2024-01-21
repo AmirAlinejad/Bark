@@ -1,19 +1,12 @@
 import React from 'react';
 // react native components
 import { View, StyleSheet, Button } from 'react-native';
-import { Text} from 'react-native-paper';
+// my components
+import CustomText from './CustomText';
 // fonts
-import { textNormal, title, back} from '../styles/FontStyles';
+import { textNormal, title} from '../styles/FontStyles';
 
-const Header = ({ navigation, text, back }) => {
-  // load fonts
-  let [fontsLoaded, fontError] = useFonts({
-    Nunito_900Black,
-  });
-
-  if (!fontsLoaded && !fontError) {
-    return null;
-  }
+const Header = ({ navigation, text, back, numberOfLines }) => {
 
   // go back to the previous screen
   const onBackPress = () => {
@@ -34,7 +27,7 @@ const Header = ({ navigation, text, back }) => {
         )}
         </View>
         <View style={styles.middleBox}>
-            <Text style={[styles.title, {textAlign: 'center', fontFamily: 'Nunito_900Black'}]}>{text}</Text>
+          <CustomText style={styles.title} font='black' numberOfLines={numberOfLines} text={text} />
         </View>
         <View style={styles.rightBox} />
     </View>
@@ -48,7 +41,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     backgroundColor: '#FAFAFA',
   },
-  title: title,
+  title: {
+    ...title,
+    textAlign: 'center',
+  },
   textNormal: {
     ...textNormal,
     marginTop: 20,

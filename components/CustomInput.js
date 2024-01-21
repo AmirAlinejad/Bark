@@ -1,4 +1,5 @@
 import React from "react";
+// react native components
 import { View, TextInput, StyleSheet, TouchableOpacity } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 
@@ -47,6 +48,3 @@ const styles = StyleSheet.create({
 });
 
 export default CustomInput;
-
-
-

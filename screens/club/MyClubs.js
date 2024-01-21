@@ -1,13 +1,17 @@
 import React, { useState, useEffect } from 'react';
+// react native components
 import { View, StyleSheet, ScrollView } from 'react-native';
+// backend
 import { db } from '../../backend/FirebaseConfig';
 import { getAuth, onAuthStateChanged, signOut } from 'firebase/auth';
 import { ref, onValue } from "firebase/database";
-import ClubCategory from '../../components/clubs/ClubCategory';
+// my components
+import ClubCategory from '../../components/club/ClubCategory';
 import Header from '../../components/Header';
+// macros
 import { clubCategories } from '../../macros/macros';
+// fonts
 import { title } from '../../styles/FontStyles';
-import { useFonts, Inter_900Black } from '@expo-google-fonts/inter';
 
 const MyClubs = ({ navigation }) => {
   // user data from auth
@@ -53,6 +57,7 @@ const MyClubs = ({ navigation }) => {
       setAllUsersData(newUsers);
     })
 
+    // get club data
     const starCountRef2 = ref(db, 'clubs/');
     onValue(starCountRef2, (snapshot) => {
       const data2 = snapshot.val();
@@ -92,7 +97,7 @@ const MyClubs = ({ navigation }) => {
                 <ClubCategory key={category.categoryName} name={category.categoryName} data={category.data} navigation={navigation} />
               )
             } else {
-              return null; // or handle empty category case if needed
+              return null; // handle empty category case if needed
             }
           })
         }

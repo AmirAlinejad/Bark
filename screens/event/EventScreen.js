@@ -1,10 +1,10 @@
 import React from 'react';
 // react native components
-import { View, StyleSheet } from 'react-native';
 import { View, StyleSheet, ScrollView } from 'react-native';
-import { Text, IconButton} from 'react-native-paper';
+import { IconButton} from 'react-native-paper';
 // my components
 import Header from '../../components/Header';
+import CustomText from '../../components/CustomText';
 // maps
 import MapView from 'react-native-maps';
 import { Marker } from 'react-native-maps';
@@ -12,7 +12,7 @@ import { Marker } from 'react-native-maps';
 import { textNormal, title} from '../../styles/FontStyles';
 
 const EventScreen = ({ route, navigation }) => {
-
+  // get event info from the previous screen
   const { name, description, datetime, location } = route.params;
   // go back to the previous screen
   const onBackPress = () => {
@@ -35,12 +35,12 @@ const EventScreen = ({ route, navigation }) => {
       <Header text={name} back navigation={navigation}></Header>
 
       <View style={styles.eventContent}>
-        <Text style={[styles.title, {textAlign: 'center'}]}>{name}</Text>
+        <CustomText style={[styles.title, {textAlign: 'center'}]} text={name} />
         <ScrollView contentContainerStyle={styles.eventContent}>
             <View style={{alignItems: 'center'}}>
-              <Text style={[styles.title, {textAlign: 'center'}]}>{dateStr}, {timeStr}</Text>
+              <CustomText style={[styles.title, {textAlign: 'center'}]} text={dateStr + ', ' + timeStr} />
 
-              <Text style={[styles.textNormal, {textAlign: 'center', marginBottom: 20}]}>{description}</Text>
+              <CustomText style={[styles.textNormal, {textAlign: 'center', marginBottom: 20}]} text={description} />
               <View style={styles.biggerMapView}>
                 <MapView
                 style={styles.biggerMapStyle}

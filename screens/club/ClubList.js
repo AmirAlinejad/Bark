@@ -1,23 +1,39 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView } from 'react-native';
-import { Text, IconButton } from 'react-native-paper';
+// react native components
+import { View, StyleSheet, ScrollView, Button } from 'react-native';
+import { IconButton } from 'react-native-paper';
+import { Overlay } from 'react-native-elements';
+// backend
 import { db } from '../../backend/FirebaseConfig';
 import { ref, onValue } from "firebase/database";
-import ClubCategory from '../../components/clubs/ClubCategory';
+// my components
+import ClubCategory from '../../components/club/ClubCategory';
 import Header from '../../components/Header';
+import FilterList from '../../components/FilterList';
+// macros
 import { clubCategories } from '../../macros/macros';
 // fonts
 import { title } from '../../styles/FontStyles';
 
 const ClubList = ({ navigation }) => {
   const [clubData, setClubData] = useState([]);
+  // for overlay
+  const [visible, setVisible] = useState(false);
+  const [categoriesSelected, setSelectedCategories] = useState([]);
+
+  // toggle overlay
+  const toggleOverlay = () => {
+    setVisible(!visible);
+  };
 
   // go to add club screen
   const onAddClubPress = () => {
     navigation.navigate("NewClub");
   }
 
+  // get data from firebase
   useEffect(() => {
+    // get club data
     const starCountRef = ref(db, 'clubs/');
     onValue(starCountRef, (snapshot) => {
       const data = snapshot.val();
@@ -30,12 +46,32 @@ const ClubList = ({ navigation }) => {
     })
   }, []);
 
-  // sort the clubs by category
-  sortedClubs = clubCategories.map((category) => {
-    return ({
+  // filter for events
+  const filterFunct = (club) => {
+  
+    // filter by category
+    if (categoriesSelected.length > 0) {
+      // convert categoriesSelected to array of strings
+      console.log(categoriesSelected);
+      filteredCategories = [];
+      categoriesSelected.forEach((categoryNum) => {
+        filteredCategories.push(clubCategories[categoryNum - 1].value);
+      });
+      
+      if (!filteredCategories.some(item => club.clubCategories.includes(item))) { // make sure clubCategories is right
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  // filter clubs and sort clubs by category
+  const sortedClubs = clubCategories.map((category) => {
+    return {
       categoryName: category.value,
-      data: clubData.filter((club) => club.clubCategories.includes(category.value))
-    });
+      data: clubData.filter(filterFunct).filter((club) => club.clubCategories && club.clubCategories.includes(category.value))
+    };
   });
 
   return (
@@ -44,27 +80,8 @@ const ClubList = ({ navigation }) => {
       <Button title="Filter" onPress={toggleOverlay} />
       <Overlay isVisible={visible} onBackdropPress={toggleOverlay}>
         <View style={styles.filterPopUp}>
-          <MultiSelect
-            hideTags
-            items={clubCategories}
-            uniqueKey="key"
-            ref={(component) => { this.multiSelect = component }}
-            onSelectedItemsChange={setSelectedCategories}
-            selectedItems={categoriesSelected}
-            selectText="Pick Items"
-            searchInputPlaceholderText="Search Items..."
-            onChangeInput={ (text)=> console.log(text)}
-            tagRemoveIconColor="#CCC"
-            tagBorderColor="#CCC"
-            tagTextColor="#CCC"
-            selectedItemTextColor="#CCC"
-            selectedItemIconColor="#CCC"
-            itemTextColor="#000"
-            displayKey="value"
-            searchInputStyle={{ color: '#CCC' }}
-            submitButtonColor="#CCC"
-            submitButtonText="Submit"
-          />
+          <FilterList items={clubCategories} selected={categoriesSelected} setter={setSelectedCategories} text="Categories" />
+          
         </View>
       </Overlay>
       <ScrollView style={styles.clubCategories}>

@@ -1,5 +1,8 @@
 import React from 'react';
-import { Text, StyleSheet, Pressable } from 'react-native';
+// react native components
+import { StyleSheet, Pressable } from 'react-native';
+// my components
+import CustomText from './CustomText';
 
 const CustomButton = ({ onPress, text, type, bgColor, fgColor }) => {
   const containerStyle = [
@@ -16,7 +19,7 @@ const CustomButton = ({ onPress, text, type, bgColor, fgColor }) => {
 
   return (
     <Pressable onPress={onPress} style={containerStyle}>
-      <Text style={textStyle}>{text}</Text>
+      <CustomText style={textStyle} text={text} />
     </Pressable>
   );
 };

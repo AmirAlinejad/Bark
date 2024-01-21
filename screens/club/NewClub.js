@@ -1,18 +1,24 @@
 import React, { useState, useEffect } from 'react';
+// react native components
 import { View, StyleSheet, ScrollView, Text } from 'react-native';
+// backend
 import { set, ref, get } from "firebase/database";
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
+import { db } from '../../backend/FirebaseConfig';
+// my components
 import CustomInput from '../../components/CustomInput';
 import CustomButton from '../../components/CustomButton';
 import UploadImage from '../../components/UploadImage';
 import Header from '../../components/Header';
+// multi-select list
 import { MultipleSelectList } from 'react-native-dropdown-select-list';
-import { db } from '../../backend/FirebaseConfig';
+// macros
 import { clubCategories } from '../../macros/macros';
 // fonts
 import { textNormal, title} from '../../styles/FontStyles';
 
 const NewClub = ({ navigation }) => {
+  // set state for all club vars
   const [clubName, setName] = useState('');
   const [clubDescription, setDescription] = useState('');
   const [categoriesSelected, setSelected] = useState([]);
@@ -20,8 +26,8 @@ const NewClub = ({ navigation }) => {
   const [loading, setLoading] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
 
+  // get user data from auth
   const auth = getAuth();
-
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
@@ -32,23 +38,28 @@ const NewClub = ({ navigation }) => {
     return () => unsubscribe();
   }, [auth]);
 
+  // callback function for image upload
   const handleCallback = (childData) => {
     setClubImg(childData);
   };
 
+  // go back
   const onBackPress = () => {
     navigation.goBack();
   }
 
+  // submit club
   const onSubmitPressed = async () => {
     setLoading(true);
 
+    // make sure data is valid
     if (!clubName || !clubDescription) {
       alert("Please enter both name and description.");
       setLoading(false);
       return;
     }
 
+    // add data to clubs
     try {
       const clubRef = ref(db, 'clubs/' + clubName);
       set(clubRef, {
@@ -58,6 +69,7 @@ const NewClub = ({ navigation }) => {
         clubImg: clubImg,
       });
 
+      // add club to user's clubs
       const userId = currentUser?.uid;
       if (userId) {
         const userRef = ref(db, `users/${userId}`);
@@ -101,10 +113,10 @@ const NewClub = ({ navigation }) => {
             setValue={setDescription}
           />
 
-          <Text style={styles.textNormal}>Upload a club image</Text>
+          <CustomText style={styles.textNormal} text='Upload a club image' />
           <UploadImage parentCallback={handleCallback} />
 
-          <Text style={styles.textNormal}>Select categories for your club</Text>
+          <CustomText style={styles.textNormal} text='Select categories for your club' />
           <MultipleSelectList
             setSelected={(val) => setSelected(val)}
             data={clubCategories}
