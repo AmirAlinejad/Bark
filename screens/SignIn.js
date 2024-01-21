@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Image, Text, StyleSheet } from 'react-native';
-import Logo from '../assets/images/Heart.png';
+import Logo from '../assets/logo.png';
 import CustomInput from '../components/CustomInput';
 import CustomButton from '../components/CustomButton';
 import { signInWithEmailAndPassword, getAuth } from 'firebase/auth';
@@ -54,8 +54,7 @@ const SignIn = ({ navigation }) => {
   };
 
   const onForgotPasswordPressed = () => {
-    // Implement the forgot password logic or navigate to the appropriate screen
-    // For example:
+    
     // navigation.navigate("ForgotPassword");
     alert('Forgot password feature coming soon!');
   };
@@ -86,16 +85,17 @@ const SignIn = ({ navigation }) => {
         placeholder="Password"
         value={password}
         setValue={setPassword}
-        secureTextEntry={!passwordVisible}
+        secureTextEntry={passwordVisible}
         onEyeIconPress={togglePasswordVisibility}
       />
 
-      <CustomButton text="Sign In" onPress={onSignInPressed} type="primary" />
+      <CustomButton text="Sign In" onPress={onSignInPressed} type="primary" bgColor={'#FF5349'} />
 
       <CustomButton
         text="Forgot Password?"
         onPress={onForgotPasswordPressed}
         type="secondary"
+        bgColor={'white'}
       />
 
       <Text style={styles.signupText}>Don't have an account? <Text style={styles.signupLink} onPress={onSignUp}>Sign Up</Text></Text>
@@ -108,7 +108,8 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#2C3E50',
+    backgroundColor: 'white',
+    marginTop: '-30%',
   },
   logo: {
     width: 120,
@@ -116,15 +117,16 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   title: {
+    marginTop: 10,
     fontSize: 28,
-    color: '#ECF0F1',
+    color: '#361E25',
     fontWeight: 'bold',
-    marginBottom: 20,
+    marginBottom: 10,
   },
   signupText: {
     marginTop: 20,
     fontSize: 16,
-    color: '#ECF0F1',
+    color: 'black',
   },
   signupLink: {
     color: '#3498db',

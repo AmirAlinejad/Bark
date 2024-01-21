@@ -8,7 +8,7 @@ import {
   useWindowDimensions,
   ActivityIndicator
 } from 'react-native';
-import Logo from '../assets/images/Heart.png'
+import Logo from '../assets/logo.png'
 import CustomInput from '../components/CustomInput';
 import CustomButton from '../components/CustomButton';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
@@ -96,13 +96,13 @@ const SignUp = ({ onAdd, navigation }) => {
         placeholder="Password"
         value={password}
         setValue={setPassword}
-        secureTextEntry={!passwordVisible}
+        secureTextEntry={passwordVisible}
         onEyeIconPress={togglePasswordVisibility}
       />
       <CustomInput placeholder="Confirm Password"
         value={confirmPassword}
         setValue={setConfirmPassword}
-        secureTextEntry={!passwordVisible}
+        secureTextEntry={passwordVisible}
         onEyeIconPress={togglePasswordVisibility}
       />
       <CustomInput placeholder="Username"
@@ -112,7 +112,7 @@ const SignUp = ({ onAdd, navigation }) => {
 
       {loading ? (<ActivityIndicator size="large" />
       ) : (
-        <CustomButton text="Sign Up" onPress={onSignUpPressed} />
+        <CustomButton text="Sign Up" onPress={onSignUpPressed} bgColor={'#FF5349'}/>
       )}
 
       <Text style={styles.signupText}>Have an account already?  <Text style={styles.signupLink} onPress={onLoginIn}>Login In</Text></Text>
@@ -127,7 +127,8 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#2C3E50',
+    backgroundColor: 'white',
+    marginTop: '-35%',
   },
   logo: {
     width: 120,
@@ -135,15 +136,16 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   title: {
+    marginTop: 10,
     fontSize: 28,
-    color: '#ECF0F1',
+    color: '#361E25',
     fontWeight: 'bold',
-    marginBottom: 20,
+    marginBottom: 10,
   },
   signupText: {
     marginTop: 20,
     fontSize: 16,
-    color: '#ECF0F1',
+    color: 'black',
   },
   signupLink: {
     color: '#3498db',
