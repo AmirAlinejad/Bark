@@ -29,7 +29,9 @@ const ClubScreen = ({ route, navigation }) => {
 
   // go to chat screen
   const onChatButtonPress = () => {
-    navigation.navigate('Chat');
+    navigation.navigate('Chat', {
+      clubName: name,
+    });
   };
 
   // request to join club
