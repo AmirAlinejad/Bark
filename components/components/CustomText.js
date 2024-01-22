@@ -2,9 +2,10 @@ import React from 'react';
 // react native components
 import { Text } from 'react-native';
 // fonts
+import { textNormal, title} from '../styles/FontStyles';
 import { useFonts, Nunito_300Light, Nunito_400Regular, Nunito_800ExtraBold, Nunito_900Black } from '@expo-google-fonts/nunito';
 
-const CustomText = ({ text, style, font, onPress }) => {
+const CustomText = ({ text, style, font }) => {
   // load fonts
   let [fontsLoaded, fontError] = useFonts({
     Nunito_300Light,
@@ -32,7 +33,7 @@ const CustomText = ({ text, style, font, onPress }) => {
   }
 
   return (
-    <Text style={[style, {fontFamily: fontType()}]} onPress={onPress}>{text}</Text>
+    <Text style={[style, {fontFamily: fontType()}]}>{text}</Text>
   );
 }
 

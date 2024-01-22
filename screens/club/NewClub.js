@@ -8,6 +8,7 @@ import { db } from '../../backend/FirebaseConfig';
 // my components
 import CustomInput from '../../components/CustomInput';
 import CustomButton from '../../components/CustomButton';
+import CustomText from '../../components/CustomText';
 import UploadImage from '../../components/UploadImage';
 import Header from '../../components/Header';
 // multi-select list

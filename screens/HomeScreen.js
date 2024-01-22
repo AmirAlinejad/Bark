@@ -6,7 +6,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 // icons
 import Ionicons from 'react-native-vector-icons/Ionicons';
 // my components
-import Profile from './Profile';
+import Profile from './profile/Profile';
 import ClubList from './club/ClubList';
 import CalendarScreen from './calendar/CalendarScreen';
 import MyClubs from './club/MyClubs';

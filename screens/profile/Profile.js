@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
+// react native components
 import { View, Text, StyleSheet, Dimensions, Image, TouchableOpacity } from 'react-native';
-import { getAuth, onAuthStateChanged, signOut } from 'firebase/auth';
-import { ref, get } from 'firebase/database';
+// icons
 import Icon from 'react-native-vector-icons/FontAwesome';
-import { MaterialIcons } from '@expo/vector-icons';
+// my components
 import CircleButton from '../../components/CircleButton';
+import CustomText from '../../components/CustomText';
 
 const Profile = ({ navigation }) => {
   const screenHeight = Dimensions.get('window').height;
@@ -16,7 +17,7 @@ const Profile = ({ navigation }) => {
         <Icon name="arrow-left" size={20} color="black" />
       </TouchableOpacity>
       <TouchableOpacity style={styles.logoutButton}>
-        <Text style={styles.logoutText}>Logout</Text>
+        <CustomText style={styles.logoutText} text="Log Out" />
       </TouchableOpacity>
       <View style={styles.profileContainer}>
         <View style={styles.profileImageContainer}>
@@ -25,7 +26,7 @@ const Profile = ({ navigation }) => {
             style={styles.profileImage}
           />
         </View>
-        <Text style={styles.usernameText}>Username </Text>
+        <CustomText style={styles.usernameText} text="Username" />
         <TouchableOpacity style={styles.requestButton}>
           <Text style={styles.requestButtonText}>Join</Text>
         </TouchableOpacity>
@@ -33,19 +34,19 @@ const Profile = ({ navigation }) => {
       <View style={styles.buttonContainer}>
         <TouchableOpacity style={styles.button}>
           <Icon name="cog" size={20} color="black" style={styles.icon} />
-          <Text style={styles.buttonText}>Settings</Text>
+          <CustomText style={styles.buttonText} text="Settings" />
         </TouchableOpacity>
         <TouchableOpacity style={styles.button}>
           <Icon name="pencil" size={20} color="black" style={styles.icon} />
-          <Text style={styles.buttonText}>Edit Profile</Text>
+          <CustomText style={styles.buttonText} text="Edit Profile" />
         </TouchableOpacity>
         <TouchableOpacity style={styles.button}>
           <Icon name="users" size={20} color="black" style={styles.icon} />
-          <Text style={styles.buttonText}>Friends</Text>
+          <CustomText style={styles.buttonText} text="Friends" />
         </TouchableOpacity>
         <TouchableOpacity style={styles.button}>
           <Icon name="address-book" size={20} color="black" style={styles.icon} />
-          <Text style={styles.buttonText}>Manage Clubs</Text>
+          <CustomText style={styles.buttonText} text="Manage Clubs" />
         </TouchableOpacity>
       </View>
       <CircleButton

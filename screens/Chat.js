@@ -13,7 +13,7 @@ import { signOut } from 'firebase/auth';
 import { auth, firestore, db } from './../backend/FirebaseConfig';
 import { useNavigation } from '@react-navigation/native';
 import { AntDesign } from '@expo/vector-icons';
-import colors from '../styles/colors';
+import colors from '../styles/Colors';
 import { IconButton } from 'react-native-paper';
 
 export default function Chat({ route }) {
