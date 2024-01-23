@@ -1,7 +1,7 @@
 import React from "react";
 // screens
-import SignUp from "./screens/SignUp";
-import SignIn from "./screens/SignIn";
+import SignUp from "./screens/auth/SignUp";
+import SignIn from "./screens/auth/SignIn";
 import CalendarScreen from './screens/calendar/CalendarScreen';
 import NewClub from './screens/club/NewClub';
 import EventScreen from './screens/event/EventScreen';
@@ -10,8 +10,8 @@ import Chat from './screens/Chat';
 import ClubList from './screens/club/ClubList';
 import ClubScreen from './screens/club/ClubScreen';
 import HomeScreen from './screens/HomeScreen';
-import Profile from './screens/Profile';
-import SignupPages from './screens/SignupPages';
+import Profile from './screens/profile/Profile';
+
 import MyClubs from './screens/club/MyClubs';
 // stack navigator
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -36,7 +36,6 @@ export default class App extends React.Component {
             <Stack.Screen name="HomeScreen" component={HomeScreen} options={{ headerShown: false }}/>
             <Stack.Screen name="NewClub" component={NewClub} options={{ headerShown: false }}/>
             <Stack.Screen name="Profile" component={Profile} options={{ headerShown: false }}/>
-            <Stack.Screen name="SignupPages" component={SignupPages} options={{ headerShown: false }}/>
           </Stack.Navigator>
         </NavigationContainer>
       );
