@@ -6,12 +6,14 @@ import { getDatabase } from 'firebase/database';
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
-   apiKey: "AIzaSyAN-dmcCRHJhMmPH9yhvEHDivQ7DnAY2LM",
-  authDomain: "kaddie-app-6803e.firebaseapp.com",
-  projectId: "kaddie-app-6803e",
-  storageBucket: "kaddie-app-6803e.appspot.com",
-  messagingSenderId: "121699617458",
-  appId: "1:121699617458:web:e75ba4a2512033439ed7ab"
+   apiKey: "AIzaSyBOmcypoNUUBQvcUkZXY1iApyFt-g5SShQ",
+   authDomain: "bark-50973.firebaseapp.com",
+   databaseURL: "https://bark-50973-default-rtdb.firebaseio.com",
+   projectId: "bark-50973",
+   storageBucket: "bark-50973.appspot.com",
+   messagingSenderId: "1042000694921",
+   appId: "1:1042000694921:web:a9ed4e0a94aff6a8cc8058",
+   measurementId: "G-TCL1F4R21B"
 };
 
 
