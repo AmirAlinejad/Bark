@@ -10,7 +10,7 @@ import {
   where
 } from 'firebase/firestore';
 import { signOut } from 'firebase/auth';
-import { auth, firestore, db } from './../backend/FirebaseConfig';
+import { auth, firestore, db } from '../backend/FirebaseConfig';
 import { useNavigation } from '@react-navigation/native';
 import { AntDesign } from '@expo/vector-icons';
 import colors from '../styles/Colors';
