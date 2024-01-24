@@ -1,6 +1,6 @@
 import React from 'react';
 // react-native components
-import { View, StyleSheet, ScrollView, TouchableOpacity} from 'react-native';
+import { View, StyleSheet, ScrollView, TouchableOpacity,Text} from 'react-native';
 import { Avatar, IconButton, Chip } from 'react-native-paper';
 // backend
 import { getAuth } from 'firebase/auth';
@@ -10,6 +10,7 @@ import { db } from '../../backend/FirebaseConfig';
 import Header from '../../components/Header';
 import UpcomingEvents from '../../components/event/UpcomingEvents';
 import CustomText from '../../components/CustomText';
+import CircleButton from '../../components/CircleButton';
 
 const ClubScreen = ({ route, navigation }) => {
   // get data from club list/my clubs
@@ -85,7 +86,11 @@ const ClubScreen = ({ route, navigation }) => {
                 )
               })
             }
+            
             </View>
+            <TouchableOpacity style={styles.requestButton}>
+              <Text style={styles.requestButtonText}onPress={onButtonPressRequest}>Join</Text>
+            </TouchableOpacity>
             <CustomText style={[styles.textNormal, {textAlign: 'center'}]} name={description}/>
           </View>
           <UpcomingEvents filter={filterByThisClub} navigation={navigation}/>
@@ -99,20 +104,12 @@ const ClubScreen = ({ route, navigation }) => {
           size={30}
         />
       </View>
-
-      <TouchableOpacity
-        style={styles.rightButton}
+      <CircleButton
+        icon="comments"
         onPress={onChatButtonPress}
-      >
-        <CustomText style={styles.buttonText} text='Chat' />
-      </TouchableOpacity>
-
-      <TouchableOpacity
-        style={styles.leftButton}
-        onPress={onButtonPressRequest}
-      >
-        <CustomText style={styles.buttonText} text='Request' />
-      </TouchableOpacity>
+        position={{ position: 'absolute', bottom: 25, left: 40 }}
+      />
+      
     </View>
   );
 }
@@ -150,17 +147,6 @@ const styles = StyleSheet.create({
     padding: 20,
     position: 'absolute',
   },
-  leftButton: {
-    position: 'absolute',
-    bottom: 20,
-    left: 20,
-    backgroundColor: '#F5F5DC',
-    borderRadius: 30,
-    width: 60,
-    height: 60,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   rightButton: {
     position: 'absolute',
     bottom: 0,
@@ -176,6 +162,22 @@ const styles = StyleSheet.create({
   buttonText: {
     color: 'black',
     fontWeight: 'bold',
+  },
+  requestButton: {
+    backgroundColor: '#FF5028',
+    padding: 15,
+    borderRadius: 25,
+    marginTop: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.8,
+    shadowRadius: 2,
+    elevation: 4,
+  },
+  requestButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
+    fontSize: 18,
   },
 });
 

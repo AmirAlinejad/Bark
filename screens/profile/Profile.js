@@ -27,9 +27,7 @@ const Profile = ({ navigation }) => {
           />
         </View>
         <CustomText style={styles.usernameText} text="Username" />
-        <TouchableOpacity style={styles.requestButton}>
-          <Text style={styles.requestButtonText}>Join</Text>
-        </TouchableOpacity>
+        
       </View>
       <View style={styles.buttonContainer}>
         <TouchableOpacity style={styles.button}>
@@ -49,11 +47,7 @@ const Profile = ({ navigation }) => {
           <CustomText style={styles.buttonText} text="Manage Clubs" />
         </TouchableOpacity>
       </View>
-      <CircleButton
-        icon="comments"
-        //onPress={handleButtonPress}
-        position={{ position: 'absolute', bottom: -275, left: 40 }}
-      />
+      
     </View>
   );
 };
@@ -156,22 +150,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 10,
   },
-  requestButton: {
-    backgroundColor: '#FF5028',
-    padding: 15,
-    borderRadius: 25,
-    marginTop: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.8,
-    shadowRadius: 2,
-    elevation: 4,
-  },
-  requestButtonText: {
-    color: 'white',
-    fontWeight: 'bold',
-    fontSize: 18,
-  },
+  
 });
 
 export default Profile;
