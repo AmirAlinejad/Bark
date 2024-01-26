@@ -55,6 +55,27 @@ const ClubScreen = ({ route, navigation }) => {
             ...userData,
             clubsJoined: updatedClubsJoined,
           });
+
+          // add user to club's members
+          const clubRef = ref(db, 'clubs/' + name);
+          const clubSnapshot = await get(clubRef);
+
+          if (clubSnapshot.exists()) {
+            const clubData = clubSnapshot.val();
+            console.log(clubData);
+            console.log(clubData.clubMembers)
+            const updatedClubMembers = {...clubData.clubMembers, [userData.userName]: {
+              userName: userData.userName,
+              privelege: 'member',
+            }};
+
+            await set(clubRef, {
+              ...clubData,
+              clubMembers: updatedClubMembers,
+            });
+          } else {
+            console.error('Club data not found.');
+          }
   
           alert(`Request sent to join ${name}`);
         } else {

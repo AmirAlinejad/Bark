@@ -70,25 +70,52 @@ const NewClub = ({ navigation }) => {
         clubImg: clubImg,
       });
 
-      // add club to user's clubs
-      const userId = currentUser?.uid;
-      if (userId) {
+      const auth = getAuth();
+      const user = auth.currentUser;
+  
+      if (user) {
+        const userId = user.uid;
         const userRef = ref(db, `users/${userId}`);
         const userSnapshot = await get(userRef);
-
+  
         if (userSnapshot.exists()) {
           const userData = userSnapshot.val();
-
-          // Check if userData.clubs is an array
-          const updatedClubs = Array.isArray(userData?.clubs) ? [...userData.clubs, clubName] : [clubName];
-
+          const updatedClubsJoined = [...(userData.clubsJoined || []), clubName];
+  
+          // Update the user's information in the database
           await set(userRef, {
             ...userData,
-            clubs: updatedClubs,
+            clubsJoined: updatedClubsJoined,
           });
-        }
-      }
 
+          // add user to club's members
+          const clubRef = ref(db, 'clubs/' + clubName);
+          const clubSnapshot = await get(clubRef);
+
+          // if club exists
+          if (clubSnapshot.exists()) {
+            const clubData = clubSnapshot.val();
+
+            const updatedClubMembers = {...clubData.clubMembers, [userData.userName]: {
+              userName: userData.userName,
+              privelege: 'owner',
+            }};
+
+            await set(clubRef, {
+              ...clubData,
+              clubMembers: updatedClubMembers,
+            });
+          } else {
+            console.error('Club data not found.');
+          }
+  
+          alert(`Created new club ${clubName}`);
+        } else {
+          console.error('User data not found.');
+        }
+      } else {
+        console.error('User not authenticated.');
+      }
       navigation.goBack();
     } catch (error) {
       console.log(error);
