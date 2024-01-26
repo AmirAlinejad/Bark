@@ -41,53 +41,63 @@ const ClubScreen = ({ route, navigation }) => {
       const auth = getAuth();
       const user = auth.currentUser;
   
-      if (user) {
-        const userId = user.uid;
-        const userRef = ref(db, `users/${userId}`);
-        const userSnapshot = await get(userRef);
-  
-        if (userSnapshot.exists()) {
-          const userData = userSnapshot.val();
-          const updatedClubsJoined = [...(userData.clubsJoined || []), name];
-  
-          // Update the user's information in the database
-          await set(userRef, {
-            ...userData,
-            clubsJoined: updatedClubsJoined,
-          });
-
-          // add user to club's members
-          const clubRef = ref(db, 'clubs/' + name);
-          const clubSnapshot = await get(clubRef);
-
-          if (clubSnapshot.exists()) {
-            const clubData = clubSnapshot.val();
-            console.log(clubData);
-            console.log(clubData.clubMembers)
-            const updatedClubMembers = {...clubData.clubMembers, [userData.userName]: {
-              userName: userData.userName,
-              privelege: 'member',
-            }};
-
-            await set(clubRef, {
-              ...clubData,
-              clubMembers: updatedClubMembers,
-            });
-          } else {
-            console.error('Club data not found.');
-          }
-  
-          alert(`Request sent to join ${name}`);
-        } else {
-          console.error('User data not found.');
-        }
-      } else {
+      // Check if the user is authenticated
+      if (!user) {
         console.error('User not authenticated.');
+        return; // Exit if the user is not authenticated
       }
+  
+      const userId = user.uid;
+      const userRef = ref(db, `users/${userId}`);
+      const userSnapshot = await get(userRef);
+  
+      // Check if user data exists in the database
+      if (!userSnapshot.exists()) {
+        console.error('User data not found.');
+        return; // Exit if user data is not found
+      }
+  
+      const userData = userSnapshot.val();
+      const updatedClubsJoined = [...(userData.clubsJoined || []), name];
+  
+      // Update the user's information in the database
+      await set(userRef, {
+        ...userData,
+        clubsJoined: updatedClubsJoined,
+      });
+  
+      // Add user to club's members
+      const clubRef = ref(db, 'clubs/' + name);
+      const clubSnapshot = await get(clubRef);
+  
+      // Check if club data exists
+      if (!clubSnapshot.exists()) {
+        console.error('Club data not found.');
+        return; // Exit if club data is not found
+      }
+  
+      const clubData = clubSnapshot.val();
+      console.log(clubData);
+      console.log(clubData.clubMembers)
+      const updatedClubMembers = {
+        ...clubData.clubMembers, 
+        [userId]: { // Changed key to userId for uniqueness
+          userName: userData.userName,
+          privilege: 'member', // Corrected spelling of 'privilege'
+        }
+      };
+  
+      await set(clubRef, {
+        ...clubData,
+        clubMembers: updatedClubMembers,
+      });
+  
+      alert(`Request sent to join ${name}`);
     } catch (error) {
       console.error('Error processing request:', error);
     }
   };
+  
   
   return ( 
     <View style={styles.container}>

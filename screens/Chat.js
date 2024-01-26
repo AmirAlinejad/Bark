@@ -63,20 +63,22 @@ export default function Chat({ route }) {
     setMessages(previousMessages =>
       GiftedChat.append(previousMessages, messages)
     );
-
+  
     const { _id, createdAt, text, user, image } = messages[0];
     if (clubName) {
-      addDoc(collection(firestore, 'chats'), {
+      const messageData = {
         _id,
         createdAt,
         text,
         user,
-        image, // Include image in Firestore document
-        clubName
-      });
+        clubName,
+        image: image || null, // Set to null if image is undefined
+      };
+  
+      addDoc(collection(firestore, 'chats'), messageData);
     }
   }, [clubName]);
-
+  
   const handleImageUploadAndSend = () => {
     uploadImage((imageUri) => {
         const message = {
