@@ -98,7 +98,7 @@ const NewClub = ({ navigation }) => {
 
             const updatedClubMembers = {...clubData.clubMembers, [userData.userName]: {
               userName: userData.userName,
-              privelege: 'owner',
+              privilege: 'Owner',
             }};
 
             await set(clubRef, {

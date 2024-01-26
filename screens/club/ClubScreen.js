@@ -35,13 +35,11 @@ const ClubScreen = ({ route, navigation }) => {
     });
   };
 
-  // request to join club
   const onButtonPressRequest = async () => {
     try {
       const auth = getAuth();
       const user = auth.currentUser;
   
-      // Check if the user is authenticated
       if (!user) {
         console.error('User not authenticated.');
         return; // Exit if the user is not authenticated
@@ -51,7 +49,6 @@ const ClubScreen = ({ route, navigation }) => {
       const userRef = ref(db, `users/${userId}`);
       const userSnapshot = await get(userRef);
   
-      // Check if user data exists in the database
       if (!userSnapshot.exists()) {
         console.error('User data not found.');
         return; // Exit if user data is not found
@@ -60,30 +57,39 @@ const ClubScreen = ({ route, navigation }) => {
       const userData = userSnapshot.val();
       const updatedClubsJoined = [...(userData.clubsJoined || []), name];
   
+      // Check if user is already a member of the club
+      if (userData.clubsJoined && userData.clubsJoined.includes(name)) {
+        alert(`You are already a member of ${name}`);
+        return; // Exit if already a member
+      }
+  
       // Update the user's information in the database
       await set(userRef, {
         ...userData,
         clubsJoined: updatedClubsJoined,
       });
   
-      // Add user to club's members
       const clubRef = ref(db, 'clubs/' + name);
       const clubSnapshot = await get(clubRef);
   
-      // Check if club data exists
       if (!clubSnapshot.exists()) {
         console.error('Club data not found.');
         return; // Exit if club data is not found
       }
   
       const clubData = clubSnapshot.val();
-      console.log(clubData);
-      console.log(clubData.clubMembers)
+  
+      // Check if user is already in the club's member list
+      if (clubData.clubMembers && clubData.clubMembers[userId]) {
+        alert(`You are already a member of ${name}`);
+        return; // Exit if already a member
+      }
+  
       const updatedClubMembers = {
-        ...clubData.clubMembers, 
-        [userId]: { // Changed key to userId for uniqueness
+        ...clubData.clubMembers,
+        [userId]: {
           userName: userData.userName,
-          privilege: 'member', // Corrected spelling of 'privilege'
+          privilege: 'member',
         }
       };
   
@@ -97,6 +103,8 @@ const ClubScreen = ({ route, navigation }) => {
       console.error('Error processing request:', error);
     }
   };
+  
+  
   
   
   return ( 

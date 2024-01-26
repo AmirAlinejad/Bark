@@ -9,17 +9,20 @@ const UserList = ({ route }) => {
   useEffect(() => {
     const fetchClubMembers = async () => {
       if (!clubName) return;
-
+  
       try {
         const clubRef = ref(db, `clubs/${clubName}/clubMembers`);
         const snapshot = await get(clubRef);
-
+  
         if (snapshot.exists()) {
           const membersData = snapshot.val();
+  
           const membersArray = Object.entries(membersData).map(([key, value]) => ({
             id: key,
-            ...value,
+            userName: value.userName,
+            privilege: value.privilege,
           }));
+  
           setClubMembers(membersArray);
         } else {
           console.log(`No members found for club ${clubName}`);
@@ -28,9 +31,11 @@ const UserList = ({ route }) => {
         console.error('Error fetching club members:', error);
       }
     };
-
+  
     fetchClubMembers();
   }, [clubName]);
+  
+  
 
   const renderMember = ({ item }) => (
     <View style={styles.memberContainer}>
