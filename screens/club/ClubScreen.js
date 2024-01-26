@@ -60,7 +60,7 @@ const ClubScreen = ({ route, navigation }) => {
       // Check if user is already a member of the club
       if (userData.clubsJoined && userData.clubsJoined.includes(name)) {
         alert(`You are already a member of ${name}`);
-        return; // Exit if already a member
+        return; 
       }
   
       // Update the user's information in the database
@@ -74,7 +74,7 @@ const ClubScreen = ({ route, navigation }) => {
   
       if (!clubSnapshot.exists()) {
         console.error('Club data not found.');
-        return; // Exit if club data is not found
+        return; 
       }
   
       const clubData = clubSnapshot.val();
@@ -82,7 +82,7 @@ const ClubScreen = ({ route, navigation }) => {
       // Check if user is already in the club's member list
       if (clubData.clubMembers && clubData.clubMembers[userId]) {
         alert(`You are already a member of ${name}`);
-        return; // Exit if already a member
+        return; 
       }
   
       const updatedClubMembers = {
