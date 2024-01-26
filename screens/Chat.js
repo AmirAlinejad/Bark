@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useLayoutEffect, useCallback } from 'react';
-import { TouchableOpacity, View, Text } from 'react-native';
-import { GiftedChat,Send } from 'react-native-gifted-chat';
+import { TouchableOpacity, View, Text, Image } from 'react-native';
+import { GiftedChat, Send } from 'react-native-gifted-chat';
 import {
   collection,
   addDoc,
@@ -10,12 +10,12 @@ import {
   where
 } from 'firebase/firestore';
 import { signOut } from 'firebase/auth';
-import { auth, firestore, db } from '../backend/FirebaseConfig';
+import { auth, firestore } from '../backend/FirebaseConfig';
 import { useNavigation } from '@react-navigation/native';
-import { AntDesign } from '@expo/vector-icons';
-import colors from '../styles/Colors';
 import { IconButton } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { uploadImage} from '../components/imageUploadUtils' // Import the utility function
+import colors from '../styles/Colors';
 
 export default function Chat({ route }) {
   const [messages, setMessages] = useState([]);
@@ -31,8 +31,6 @@ export default function Chat({ route }) {
   };
 
   useLayoutEffect(() => {
-    console.log('ClubName in useLayoutEffect:', clubName);
-
     let unsubscribe;
 
     if (clubName) {
@@ -44,46 +42,72 @@ export default function Chat({ route }) {
       );
 
       unsubscribe = onSnapshot(q, querySnapshot => {
-        console.log('querySnapshot in useLayoutEffect:', querySnapshot);
         setMessages(
           querySnapshot.docs.map(doc => ({
             _id: doc.id,
             createdAt: doc.data().createdAt.toDate(),
             text: doc.data().text,
-            user: doc.data().user
+            user: doc.data().user,
+            image: doc.data().image // Ensure you handle the image field in your Firestore documents
           }))
         );
       });
     }
 
     return () => {
-      if (unsubscribe) {
-        console.log('Unsubscribing...');
-        unsubscribe();
-      }
+      if (unsubscribe) unsubscribe();
     };
-  }, [clubName, db]);
+  }, [clubName]);
 
   const onSend = useCallback((messages = []) => {
     setMessages(previousMessages =>
       GiftedChat.append(previousMessages, messages)
     );
 
-    const { _id, createdAt, text, user } = messages[0];
+    const { _id, createdAt, text, user, image } = messages[0];
     if (clubName) {
       addDoc(collection(firestore, 'chats'), {
         _id,
         createdAt,
         text,
         user,
+        image, // Include image in Firestore document
         clubName
       });
     }
   }, [clubName]);
 
+  const handleImageUploadAndSend = () => {
+    uploadImage((imageUri) => {
+        const message = {
+            _id: Date.now().toString(),
+            createdAt: new Date(),
+            user: {
+                _id: auth?.currentUser?.email,
+                avatar: 'https://i.pravatar.cc/300',
+            },
+            image: imageUri,
+            text: '', // Ensure text is always defined
+        };
+
+        onSend([message]);
+    });
+};
+
+  const renderMessageImage = (props) => {
+    if (props.currentMessage.image) {
+      return (
+        <View style={{ padding: 5 }}>
+          <Image source={{ uri: props.currentMessage.image }} style={{ width: 200, height: 200 }} />
+        </View>
+      );
+    }
+    return null;
+  };
+
   return (
     <View style={{ flex: 1 }}>
-      <View style={{flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: 30, paddingHorizontal: 10  }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: 30, paddingHorizontal: 10 }}>
         <IconButton
           onPress={onBackPress}
           icon="arrow-left"
@@ -91,7 +115,6 @@ export default function Chat({ route }) {
         />
         <Text style={{ fontSize: 20, fontWeight: 'bold', marginLeft: 5 }}>{clubName}</Text>
         <View style={{ marginLeft: 'auto', marginRight: 10 }}>
-          {/* Add your search icon here */}
           <IconButton
             icon="magnify"
             size={30}
@@ -109,17 +132,16 @@ export default function Chat({ route }) {
               <TouchableOpacity style={{ marginRight: 10 }} onPress={() => {/* Handle camera button tap */}}>
                 <MaterialCommunityIcons name="camera" size={32} color={colors.lightBlue} />
               </TouchableOpacity>
-              <TouchableOpacity style={{ marginRight: 10 }} onPress={() => {/* Handle plus button tap */}}>
+              <TouchableOpacity style={{ marginRight: 10 }} onPress={handleImageUploadAndSend}>
                 <MaterialCommunityIcons name="plus" size={32} color={colors.lightBlue} />
-              </TouchableOpacity>
-              <TouchableOpacity style={{ marginBottom: 10 }} onPress={() => props.onSend({ text: props.text }, true)}>
+                </TouchableOpacity>
+              <TouchableOpacity style={{ marginBottom: 10 }} onPress={() => props.onSend({ text: props.text }, true)}disabled={!props.text.trim()}>
                 <MaterialCommunityIcons name="send-circle" size={32} color={colors.lightBlue} />
               </TouchableOpacity>
             </View>
           </Send>
         )}
-      
-        
+        renderMessageImage={renderMessageImage}
         showAvatarForEveryMessage={false}
         showUserAvatar={false}
         onSend={messages => onSend(messages)}
@@ -139,3 +161,4 @@ export default function Chat({ route }) {
     </View>
   );
 }
+
