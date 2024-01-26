@@ -119,7 +119,9 @@ export default function Chat({ route }) {
             icon="magnify"
             size={30}
             onPress={() => {
-              // Add your search functionality here
+              navigation.navigate("UserList", {
+                clubName: clubName,
+              });
             }}
           />
         </View>

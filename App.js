@@ -11,7 +11,7 @@ import ClubList from './screens/club/ClubList';
 import ClubScreen from './screens/club/ClubScreen';
 import HomeScreen from './screens/HomeScreen';
 import Profile from './screens/profile/Profile';
-
+import UserList from "./screens/UserList";
 import MyClubs from './screens/club/MyClubs';
 // stack navigator
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -36,6 +36,7 @@ export default class App extends React.Component {
             <Stack.Screen name="HomeScreen" component={HomeScreen} options={{ headerShown: false }}/>
             <Stack.Screen name="NewClub" component={NewClub} options={{ headerShown: false }}/>
             <Stack.Screen name="Profile" component={Profile} options={{ headerShown: false }}/>
+            <Stack.Screen name="UserList" component={UserList} options={{ headerShown: false }}/>
           </Stack.Navigator>
         </NavigationContainer>
       );
