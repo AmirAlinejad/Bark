@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, FlatList, Text, Button } from 'react-native';
+import { View, StyleSheet, FlatList, Text, Button, TouchableOpacity } from 'react-native';
 import Header from '../components/Header';
+import Icon from 'react-native-vector-icons/FontAwesome'; // Assuming you use it for the back button
 import { ref, get, remove } from 'firebase/database';
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import { db } from '../backend/FirebaseConfig';
@@ -14,10 +15,8 @@ const UserList = ({ route, navigation }) => {
     const auth = getAuth();
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
-        // Set the current user's UID
         setCurrentUserId(user.uid);
       } else {
-        // User is not signed in or has been signed out.
         setCurrentUserId(null);
       }
     });
@@ -26,33 +25,42 @@ const UserList = ({ route, navigation }) => {
   }, []);
 
   useEffect(() => {
-    const fetchClubMembers = async () => {
-      if (!clubName) return;
-
-      try {
-        const clubRef = ref(db, `clubs/${clubName}/clubMembers`);
-        const snapshot = await get(clubRef);
-
-        if (snapshot.exists()) {
-          const membersData = snapshot.val();
-
-          const membersArray = Object.entries(membersData).map(([key, value]) => ({
-            id: key, // Assuming this is the UID of each member
-            userName: value.userName,
-            privilege: value.privilege,
-          }));
-
-          setClubMembers(membersArray);
-        } else {
-          console.log(`No members found for club ${clubName}`);
-        }
-      } catch (error) {
-        console.error('Error fetching club members:', error);
-      }
-    };
-
-    fetchClubMembers();
+    if (clubName) {
+      fetchClubMembers();
+    }
   }, [clubName]);
+
+  const fetchClubMembers = async () => {
+    try {
+      const clubRef = ref(db, `clubs/${clubName}/clubMembers`);
+      const snapshot = await get(clubRef);
+
+      if (snapshot.exists()) {
+        const membersData = snapshot.val();
+
+        const membersArray = Object.entries(membersData).map(([key, value]) => ({
+          id: key,
+          userName: value.userName,
+          privilege: value.privilege,
+        }));
+
+        setClubMembers(membersArray);
+      } else {
+        console.log(`No members found for club ${clubName}`);
+      }
+    } catch (error) {
+      console.error('Error fetching club members:', error);
+    }
+  };
+
+  const leaveClub = async () => {
+    try {
+      await remove(ref(db, `clubs/${clubName}/clubMembers/${currentUserId}`));
+      navigation.navigate("HomeScreen"); // Navigate back after leaving the club
+    } catch (error) {
+      console.error('Error leaving club:', error);
+    }
+  };
 
   const removeMember = async (memberId) => {
     try {
@@ -80,7 +88,10 @@ const UserList = ({ route, navigation }) => {
   return (
     <View style={styles.container}>
       <Header navigation={navigation} text="User List" back={true} />
-
+      
+      <TouchableOpacity style={styles.leaveClubButton} onPress={leaveClub}>
+        <Text style={styles.leaveClubButtonText}>Leave Club</Text>
+      </TouchableOpacity>
       <FlatList
         data={clubMembers}
         renderItem={renderMember}
@@ -89,6 +100,7 @@ const UserList = ({ route, navigation }) => {
     </View>
   );
 };
+
 
 const styles = StyleSheet.create({
   container: {
@@ -111,7 +123,25 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: 'grey',
   },
+  backButton: {
+    position: 'absolute',
+    top: 50, // Adjust according to your header's actual layout
+    left: 20,
+    zIndex: 10, // Ensure button is clickable over the header
+  },
+  leaveClubButton: {
+    position: 'absolute',
+    top: 50, // Adjust according to your header's actual layout
+    right: 20,
+    backgroundColor: 'red',
+    padding: 10,
+    borderRadius: 5,
+    zIndex: 10, // Ensure button is clickable over the header
+  },
+  leaveClubButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
+  },
 });
 
 export default UserList;
-

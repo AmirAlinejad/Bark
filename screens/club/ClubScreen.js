@@ -55,10 +55,10 @@ const ClubScreen = ({ route, navigation }) => {
       }
   
       const userData = userSnapshot.val();
-      const updatedClubsJoined = [...(userData.clubsJoined || []), name];
+      //const updatedClubsJoined = [...(userData.clubsJoined || []), name];
   
       // Check if user is already a member of the club
-      if (userData.clubsJoined && userData.clubsJoined.includes(name)) {
+      /*if (userData.clubsJoined && userData.clubsJoined.includes(name)) {
         alert(`You are already a member of ${name}`);
         return; 
       }
@@ -68,7 +68,7 @@ const ClubScreen = ({ route, navigation }) => {
         ...userData,
         clubsJoined: updatedClubsJoined,
       });
-  
+  */
       const clubRef = ref(db, 'clubs/' + name);
       const clubSnapshot = await get(clubRef);
   
@@ -97,7 +97,7 @@ const ClubScreen = ({ route, navigation }) => {
         ...clubData,
         clubMembers: updatedClubMembers,
       });
-  
+      setIsMember(true);
       alert(`Request sent to join ${name}`);
     } catch (error) {
       console.error('Error processing request:', error);
