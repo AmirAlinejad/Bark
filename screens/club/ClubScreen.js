@@ -155,7 +155,7 @@ const ClubScreen = ({ route, navigation }) => {
           <UpcomingEvents filter={filterByThisClub} navigation={navigation}/>
         </View>
       </ScrollView>
-      
+      {isMember && (
       <View style={styles.addEventButton}>
         <IconButton
           onPress={onAddEventPress}
@@ -163,6 +163,7 @@ const ClubScreen = ({ route, navigation }) => {
           size={30}
         />
       </View>
+      )}
 
       {isMember && (
       <CircleButton
