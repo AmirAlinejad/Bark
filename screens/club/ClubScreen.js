@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useState, useEffect} from 'react';
 // react-native components
 import { View, StyleSheet, ScrollView, TouchableOpacity,Text} from 'react-native';
 import { Avatar, IconButton, Chip } from 'react-native-paper';
@@ -15,7 +15,7 @@ import CircleButton from '../../components/CircleButton';
 const ClubScreen = ({ route, navigation }) => {
   // get data from club list/my clubs
   const { name, description, categories, img } = route.params;
-
+  const [isMember, setIsMember] = useState(false);
   // filter for events
   const filterByThisClub = (event) => {
     return event.clubName === name;
@@ -103,7 +103,25 @@ const ClubScreen = ({ route, navigation }) => {
       console.error('Error processing request:', error);
     }
   };
-  
+  useEffect(() => {
+    const checkMembership = async () => {
+      const auth = getAuth();
+      const user = auth.currentUser;
+
+      if (user) {
+        const userId = user.uid;
+        const clubRef = ref(db, `clubs/${name}/clubMembers`);
+
+        const snapshot = await get(clubRef);
+        if (snapshot.exists()) {
+          const clubMembers = snapshot.val();
+          setIsMember(!!clubMembers[userId]);
+        }
+      }
+    };
+
+    checkMembership();
+  }, [name]);
   
   
   
@@ -127,15 +145,17 @@ const ClubScreen = ({ route, navigation }) => {
             }
             
             </View>
+            {!isMember && (
             <TouchableOpacity style={styles.requestButton}>
               <Text style={styles.requestButtonText}onPress={onButtonPressRequest}>Join</Text>
             </TouchableOpacity>
+            )}
             <CustomText style={[styles.textNormal, {textAlign: 'center'}]} name={description}/>
           </View>
           <UpcomingEvents filter={filterByThisClub} navigation={navigation}/>
         </View>
       </ScrollView>
-
+      
       <View style={styles.addEventButton}>
         <IconButton
           onPress={onAddEventPress}
@@ -143,11 +163,14 @@ const ClubScreen = ({ route, navigation }) => {
           size={30}
         />
       </View>
+
+      {isMember && (
       <CircleButton
         icon="comments"
         onPress={onChatButtonPress}
         position={{ position: 'absolute', bottom: 25, left: 40 }}
       />
+      )}
       
     </View>
   );

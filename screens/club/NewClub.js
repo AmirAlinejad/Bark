@@ -96,7 +96,7 @@ const NewClub = ({ navigation }) => {
           if (clubSnapshot.exists()) {
             const clubData = clubSnapshot.val();
 
-            const updatedClubMembers = {...clubData.clubMembers, [userData.userName]: {
+            const updatedClubMembers = {...clubData.clubMembers, [userData.userId]: {
               userName: userData.userName,
               privilege: 'Owner',
             }};
