@@ -165,7 +165,7 @@ const renderMessage = (props) => {
               <TouchableOpacity style={{ marginRight: 10 }} onPress={handleImageUploadAndSend}>
                 <MaterialCommunityIcons name="plus" size={32} color={colors.lightBlue} />
                 </TouchableOpacity>
-              <TouchableOpacity style={{ marginBottom: 10 }} onPress={() => props.onSend({ text: props.text }, true)}disabled={!props.text.trim()}>
+              <TouchableOpacity style={{ marginBottom: 8, marginRight:10 }} onPress={() => props.onSend({ text: props.text }, true)}disabled={!props.text.trim()}>
                 <MaterialCommunityIcons name="send-circle" size={32} color={colors.lightBlue} />
               </TouchableOpacity>
             </View>
