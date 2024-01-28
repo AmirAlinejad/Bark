@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useLayoutEffect, useCallback } from 'react';
-import { TouchableOpacity, View, Text, Image } from 'react-native';
-import { GiftedChat, Send } from 'react-native-gifted-chat';
+import { TouchableOpacity, View, Text, StyleSheet, Image } from 'react-native';
+import { GiftedChat, Send, Message } from 'react-native-gifted-chat';
 import {
   collection,
   addDoc,
@@ -95,7 +95,33 @@ export default function Chat({ route }) {
         onSend([message]);
     });
 };
+const isCurrentUser = (messageUser) => {
+  // Check if the message was sent by the current user
+  return messageUser._id === auth?.currentUser?.email;
+};
 
+const renderMessage = (props) => {
+  const currentUser = isCurrentUser(props.currentMessage.user);
+  return (
+    <View style={{ marginBottom: 5 }}>
+      <Text
+        style={[
+          styles.usernameText,
+          currentUser ? styles.usernameRight : styles.usernameLeft,
+        ]}
+      >
+        {currentUser ? 'You' : props.currentMessage.user.name || props.currentMessage.user._id}
+      </Text>
+      <Message
+        {...props}
+        containerStyle={{
+          left: { backgroundColor: '#f0f0f0' },
+          right: { backgroundColor: '#007bff' }, // Blue bubble for current user
+        }}
+      />
+    </View>
+  );
+};
   const renderMessageImage = (props) => {
     if (props.currentMessage.image) {
       return (
@@ -161,8 +187,26 @@ export default function Chat({ route }) {
           _id: auth?.currentUser?.email,
           avatar: 'https://i.pravatar.cc/300'
         }}
+        renderMessage={renderMessage}
       />
     </View>
   );
 }
 
+const styles = StyleSheet.create({
+  usernameText: {
+    alignSelf: 'flex-start',
+    fontSize: 12,
+    color: '#666',
+    paddingHorizontal: 5,
+    paddingTop: 2,
+    paddingBottom: 2,
+    // Customize these styles to match your app’s design
+  },
+  usernameRight: {
+    alignSelf: 'flex-end',
+  },
+  usernameLeft: {
+    alignSelf: 'flex-start',
+  },
+});
