@@ -1,34 +1,30 @@
-import React, {useState, useEffect} from 'react';
-// react-native components
-import { View, StyleSheet, ScrollView, TouchableOpacity,Text} from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, StyleSheet, ScrollView, TouchableOpacity, Text, Button } from 'react-native';
 import { Avatar, IconButton, Chip } from 'react-native-paper';
-// backend
 import { getAuth } from 'firebase/auth';
 import { ref, get, set } from 'firebase/database';
 import { db } from '../../backend/FirebaseConfig';
-// my components
 import Header from '../../components/Header';
 import UpcomingEvents from '../../components/event/UpcomingEvents';
 import CustomText from '../../components/CustomText';
 import CircleButton from '../../components/CircleButton';
+import Modal from 'react-native-modal';
 
 const ClubScreen = ({ route, navigation }) => {
-  // get data from club list/my clubs
   const { name, description, categories, img } = route.params;
   const [isMember, setIsMember] = useState(false);
-  // filter for events
+  const [isLeaveClubModalVisible, setLeaveClubModalVisible] = useState(false);
+
   const filterByThisClub = (event) => {
     return event.clubName === name;
   }
 
-  // go to add event screen
   const onAddEventPress = () => {
     navigation.navigate("NewEvent", {
       clubName: name,
     });
   }
 
-  // go to chat screen
   const onChatButtonPress = () => {
     navigation.navigate('Chat', {
       clubName: name,
@@ -42,7 +38,7 @@ const ClubScreen = ({ route, navigation }) => {
   
       if (!user) {
         console.error('User not authenticated.');
-        return; // Exit if the user is not authenticated
+        return;
       }
   
       const userId = user.uid;
@@ -51,38 +47,24 @@ const ClubScreen = ({ route, navigation }) => {
   
       if (!userSnapshot.exists()) {
         console.error('User data not found.');
-        return; // Exit if user data is not found
+        return;
       }
   
       const userData = userSnapshot.val();
-      //const updatedClubsJoined = [...(userData.clubsJoined || []), name];
   
-      // Check if user is already a member of the club
-      /*if (userData.clubsJoined && userData.clubsJoined.includes(name)) {
-        alert(`You are already a member of ${name}`);
-        return; 
-      }
-  
-      // Update the user's information in the database
-      await set(userRef, {
-        ...userData,
-        clubsJoined: updatedClubsJoined,
-      });
-  */
       const clubRef = ref(db, 'clubs/' + name);
       const clubSnapshot = await get(clubRef);
   
       if (!clubSnapshot.exists()) {
         console.error('Club data not found.');
-        return; 
+        return;
       }
   
       const clubData = clubSnapshot.val();
   
-      // Check if user is already in the club's member list
       if (clubData.clubMembers && clubData.clubMembers[userId]) {
         alert(`You are already a member of ${name}`);
-        return; 
+        return;
       }
   
       const updatedClubMembers = {
@@ -103,79 +85,124 @@ const ClubScreen = ({ route, navigation }) => {
       console.error('Error processing request:', error);
     }
   };
-  useEffect(() => {
-    const checkMembership = async () => {
-      const auth = getAuth();
-      const user = auth.currentUser;
 
-      if (user) {
-        const userId = user.uid;
-        const clubRef = ref(db, `clubs/${name}/clubMembers`);
+  const checkMembership = async () => {
+    const auth = getAuth();
+    const user = auth.currentUser;
 
-        const snapshot = await get(clubRef);
-        if (snapshot.exists()) {
-          const clubMembers = snapshot.val();
-          setIsMember(!!clubMembers[userId]);
-        }
+    if (user) {
+      const userId = user.uid;
+      const clubRef = ref(db, `clubs/${name}/clubMembers`);
+
+      const snapshot = await get(clubRef);
+      if (snapshot.exists()) {
+        const clubMembers = snapshot.val();
+        setIsMember(!!clubMembers[userId]);
       }
-    };
+    }
+  };
 
+  useEffect(() => {
     checkMembership();
   }, [name]);
-  
-  
-  
-  return ( 
+
+  const leaveClub = () => {
+    setLeaveClubModalVisible(true);
+  };
+
+  const leaveClubConfirmed = async () => {
+    try {
+      const auth = getAuth();
+      const user = auth.currentUser;
+      const userId = user.uid;
+
+      const clubRef = ref(db, `clubs/${name}/clubMembers/${userId}`);
+      await set(clubRef, null);
+
+      setIsMember(false);
+      setLeaveClubModalVisible(false);
+    } catch (error) {
+      console.error('Error leaving club:', error);
+    }
+  };
+
+  const hideLeaveClubModal = () => {
+    setLeaveClubModalVisible(false);
+  };
+
+  return (
     <View style={styles.container}>
       <Header text={name} back navigation={navigation}></Header>
       <ScrollView>
         <View style={styles.clubContent}>
-          <View style={styles.avatarContainer}> 
-            <Avatar.Image source={{uri: img}} size={150}></Avatar.Image>
+          <View style={styles.avatarContainer}>
+            <Avatar.Image source={{ uri: img }} size={150}></Avatar.Image>
           </View>
-          <View style={styles.basicInfo}> 
+          <View style={styles.basicInfo}>
             <View style={styles.categoriesContent}>
-            {
-              // display categories
-              categories.length !== 0 && categories.map((item) => {
-                return (
-                  <Chip style={{margin: 5}}>{item}</Chip>
-                )
-              })
-            }
-            
+              {categories.length !== 0 &&
+                categories.map((item) => {
+                  return <Chip style={{ margin: 5 }}>{item}</Chip>;
+                })}
             </View>
             {!isMember && (
-            <TouchableOpacity style={styles.requestButton}>
-              <Text style={styles.requestButtonText}onPress={onButtonPressRequest}>Join</Text>
-            </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.requestButton}
+                onPress={onButtonPressRequest}
+              >
+                <Text style={styles.requestButtonText}>Join</Text>
+              </TouchableOpacity>
             )}
-            <CustomText style={[styles.textNormal, {textAlign: 'center'}]} name={description}/>
+            <CustomText
+              style={[styles.textNormal, { textAlign: 'center' }]}
+              name={description}
+            />
           </View>
-          <UpcomingEvents filter={filterByThisClub} navigation={navigation}/>
+          <UpcomingEvents filter={filterByThisClub} navigation={navigation} />
         </View>
       </ScrollView>
+
       {isMember && (
-      <View style={styles.addEventButton}>
-        <IconButton
-          onPress={onAddEventPress}
-          icon="plus-circle"
-          size={30}
-        />
-      </View>
+        <View style={styles.addEventButton}>
+          <IconButton
+            onPress={onAddEventPress}
+            icon="plus-circle"
+            size={30}
+          />
+        </View>
       )}
 
       {isMember && (
-      <CircleButton
-        icon="comments"
-        onPress={onChatButtonPress}
-        position={{ position: 'absolute', bottom: 25, left: 40 }}
-      />
+        <CircleButton
+          icon="comments"
+          onPress={onChatButtonPress}
+          position={{ position: 'absolute', bottom: 25, left: 40 }}
+        />
       )}
-      
+
+      {isMember && (
+        <TouchableOpacity
+          style={styles.leaveClubButton}
+          onPress={leaveClub}
+        >
+          <Text style={styles.leaveClubButtonText}>Leave Club</Text>
+        </TouchableOpacity>
+      )}
+
+      <Modal isVisible={isLeaveClubModalVisible}>
+        <View style={styles.modalContainer}>
+          <Text style={styles.modalText}>
+            Are you sure you want to leave this club?
+          </Text>
+          <View style={styles.modalButtons}>
+            <Button title="Yes" onPress={leaveClubConfirmed} />
+            <Button title="No" onPress={hideLeaveClubModal} />
+          </View>
+        </View>
+      </Modal>
     </View>
   );
-}
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -242,6 +269,34 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 18,
   },
+  leaveClubButton: {
+    position: 'absolute',
+    top: 50, // Adjust the top position as needed
+    right: 20,
+    backgroundColor: 'red',
+    padding: 10,
+    borderRadius: 5,
+    zIndex: 10,
+  },
+  leaveClubButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
+  },
+  modalContainer: {
+    backgroundColor: 'white',
+    padding: 20,
+    borderRadius: 10,
+  },
+  modalText: {
+    fontSize: 18,
+    marginBottom: 20,
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+  },
 });
 
 export default ClubScreen;
+
+

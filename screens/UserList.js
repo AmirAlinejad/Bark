@@ -138,10 +138,6 @@ const UserList = ({ route, navigation }) => {
         value={searchQuery}
         onChangeText={setSearchQuery}
       />
-
-      <TouchableOpacity style={styles.leaveClubButton} onPress={leaveClub}>
-        <Text style={styles.leaveClubButtonText}>Leave Club</Text>
-      </TouchableOpacity>
       <FlatList
         data={filteredMembers}
         renderItem={renderMember}
