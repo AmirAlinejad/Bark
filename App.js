@@ -14,6 +14,7 @@ import HomeScreen from './screens/HomeScreen';
 import Profile from './screens/profile/Profile';
 import EditProfile from './screens/profile/EditProfile';
 import MyClubs from './screens/club/MyClubs';
+import UserList from './screens/UserList';
 // stack navigator
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { NavigationContainer } from '@react-navigation/native';
@@ -39,6 +40,7 @@ export default class App extends React.Component {
             <Stack.Screen name="NewClub" component={NewClub} options={{ headerShown: false }}/>
             <Stack.Screen name="Profile" component={Profile} options={{ headerShown: false }}/>
             <Stack.Screen name="EditProfile" component={EditProfile} options={{ headerShown: false }}/>
+            <Stack.Screen name="UserList" component={UserList} options={{ headerShown: false }}/>
           </Stack.Navigator>
         </NavigationContainer>
       );

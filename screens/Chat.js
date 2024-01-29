@@ -15,7 +15,7 @@ import { useNavigation } from '@react-navigation/native';
 import { IconButton } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { uploadImage} from '../components/imageUploadUtils' // Import the utility function
-import colors from '../styles/Colors';
+import {Colors} from '../styles/Colors';
 
 export default function Chat({ route }) {
   const [messages, setMessages] = useState([]);
@@ -160,13 +160,13 @@ const renderMessage = (props) => {
           <Send {...props} alwaysShowSend>
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
               <TouchableOpacity style={{ marginRight: 10 }} onPress={() => {/* Handle camera button tap */}}>
-                <MaterialCommunityIcons name="camera" size={32} color={colors.lightBlue} />
+                <MaterialCommunityIcons name="camera" size={32} color={Colors.lightRed} />
               </TouchableOpacity>
               <TouchableOpacity style={{ marginRight: 10 }} onPress={handleImageUploadAndSend}>
-                <MaterialCommunityIcons name="plus" size={32} color={colors.lightBlue} />
+                <MaterialCommunityIcons name="plus" size={32} color={Colors.lightRed} />
                 </TouchableOpacity>
               <TouchableOpacity style={{ marginBottom: 8, marginRight:10 }} onPress={() => props.onSend({ text: props.text }, true)}disabled={!props.text.trim()}>
-                <MaterialCommunityIcons name="send-circle" size={32} color={colors.lightBlue} />
+                <MaterialCommunityIcons name="send-circle" size={32} color={Colors.lightRed} />
               </TouchableOpacity>
             </View>
           </Send>
