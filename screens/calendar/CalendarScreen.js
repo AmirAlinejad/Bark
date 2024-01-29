@@ -6,13 +6,15 @@ import { Overlay } from 'react-native-elements';
 import Header from '../../components/Header';
 import UpcomingEvents from '../../components/event/UpcomingEvents';
 // calendar
-import { Calendar } from 'react-native-calendars';
+import { LocaleConfig, Calendar } from 'react-native-calendars';
 // backend
 import { db } from '../../backend/FirebaseConfig';
 import { ref, onValue } from "firebase/database";
 // fonts
 import { title } from '../../styles/FontStyles';
 import FilterList from '../../components/FilterList';
+// styles
+import { Colors } from '../../styles/Colors';
 
 // list data for days of the week filter
 const daysOfTheWeek = [{
@@ -31,6 +33,18 @@ const daysOfTheWeek = [{
     key: 7, value: 'Saturday'
   }
 ];
+
+LocaleConfig.locales['eng'] = {
+  monthNames: [
+    'January','February','March','April','May','June','July','August','September','October','November','December'
+  ],
+  monthNamesShort: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
+  dayNames: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
+  dayNamesShort: ['S', 'M', 'T', 'W', 'T', 'F', 'S'],
+  today: "Today",
+};
+
+LocaleConfig.defaultLocale = 'eng';
 
 // club list screen
 const CalendarScreen = ({ navigation }) => {
@@ -87,14 +101,29 @@ const CalendarScreen = ({ navigation }) => {
     setVisible(!visible);
   };
 
+  const formatDate = (dateTime) => {
+    // reformat date to form 'YYYY-MM-DD'
+    const formattedYear = dateTime.substring(dateTime.indexOf(',') - 4, dateTime.indexOf(','));
+    let formattedMonth = dateTime.substring(0, dateTime.indexOf('/'));
+    if (formattedMonth.length == 1) {
+      formattedMonth = '0' + formattedMonth;
+    }
+    let formattedDay = dateTime.substring(dateTime.indexOf('/') + 1, 10).substring(0, dateTime.indexOf('/'));
+    if (formattedDay.length == 1) {
+      formattedDay = '0' + formattedDay;
+    }
+    return formattedYear + '-' + formattedMonth + '-' + formattedDay;
+  }
+
   // filter for events
   const filterFunct = (event) => {
     
     // filter by day of the week
     if (daySelected.length > 0) {
       const filteredDays = daySelected.map((day) => { return day - 1; });
-      // may have to add code back in for filter to work
-      const eventDate = new Date(event.eventDateTime);
+      
+      // reformat date to form 'YYYY-MM-DD'
+      const eventDate = new Date(formatDate(event.eventDateTime));
       if (!filteredDays.includes(eventDate.getUTCDay())) {
         return false;
       }
@@ -105,7 +134,7 @@ const CalendarScreen = ({ navigation }) => {
       const clubNames = [];
       // add clubSelected with matching keys to clubNames
       clubSelected.forEach((clubNum) => { 
-        clubNames.push(clubList[clubList.findIndex((clubObj) => clubObj.key == clubNum)].name);
+        clubNames.push(clubList[clubList.findIndex((clubObj) => clubObj.key == clubNum)].value);
       });
       if (!clubNames.includes(event.clubName)) {
         return false;
@@ -122,23 +151,13 @@ const CalendarScreen = ({ navigation }) => {
   const markedDates = {};
   filteredEvents.forEach((event) => {
     // reformat date to form 'YYYY-MM-DD'
-    const formattedYear = event.eventDateTime.substring(event.eventDateTime.indexOf(',') - 4, event.eventDateTime.indexOf(','));
-    let formattedMonth = event.eventDateTime.substring(0, event.eventDateTime.indexOf('/'));
-    if (formattedMonth.length == 1) {
-      formattedMonth = '0' + formattedMonth;
-    }
-    let formattedDay = event.eventDateTime.substring(event.eventDateTime.indexOf('/') + 1, 10).substring(0, event.eventDateTime.indexOf('/'));
-    if (formattedDay.length == 1) {
-      formattedDay = '0' + formattedDay;
-    }
-    const formattedDate = formattedYear + '-' + formattedMonth + '-' + formattedDay;
-
+    
     // add dates to marked dates
-    if (markedDates[formattedDate] == null) {
-      markedDates[formattedDate] = {
+    if (markedDates[formatDate(event.eventDateTime)] == null) {
+      markedDates[formatDate(event.eventDateTime)] = {
         selected: true, 
         marked: true, 
-        selectedColor: '#319e8e',
+        selectedColor: Colors.red,
       };
     }
   });
@@ -146,29 +165,35 @@ const CalendarScreen = ({ navigation }) => {
   return (
     <View style={styles.container}>
       <Header text='Calendar'></Header>
-      <Button title="Filter" onPress={toggleOverlay} />
-      <Overlay isVisible={visible} onBackdropPress={toggleOverlay}>
-        <View style={styles.filterPopUp}>
-
-          <FilterList items={daysOfTheWeek} setter={setSelectedDay} selected={daySelected} text='Days of the Week' />
-          <FilterList items={clubList} etter={setSelectedClub} selected={clubSelected} text='Clubs'  />
-        </View>
-      </Overlay>
-      <Calendar
+      <View style={styles.filterButtonView}>
+        <Button title="Filter" onPress={toggleOverlay} />
+      </View>
+      <View style={styles.calendarContainer}>
+        <Calendar
           current={selected}
           markingType='multi-dot'
           markedDates={markedDates}
           theme={{
-            textInactiveColor: '#a68a9f',
-            textSectionTitleDisabledColor: 'grey',
-            textSectionTitleColor: '#319e8e',
-            arrowColor: '#319e8e'
+            calendarBackground: Colors.white,
+            textSectionTitleColor: Colors.red,
+            todayTextColor: Colors.red,
+            dayTextColor: Colors.black,
+            textDisabledColor: Colors.gray,
+            arrowColor: Colors.red,
+            fontFamily: 'nunito-regular',
           }}
           onDayPress={(day) => console.warn(`${day.dateString} pressed`)}
         />
+      </View>
       <ScrollView style={styles.clubCategories}>
         <UpcomingEvents filter={filterFunct} navigation={navigation} />
       </ScrollView>
+      <Overlay overlayStyle={styles.filterPopUp} isVisible={visible} onBackdropPress={toggleOverlay}>
+
+          <FilterList items={daysOfTheWeek} setter={setSelectedDay} selected={daySelected} text='Days of the Week' />
+          <FilterList items={clubList} setter={setSelectedClub} selected={clubSelected} text='Clubs'  />
+
+      </Overlay>
     </View>
   );
 }
@@ -176,10 +201,10 @@ const CalendarScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FAFAFA',
+    backgroundColor: Colors.white,
   },
   clubCategories: {
-    marginLeft: 20,
+
   },
   addClubButton: {
     bottom: 0,
@@ -188,9 +213,17 @@ const styles = StyleSheet.create({
     position: 'absolute',
   },
   filterPopUp: {
-    width: 300,
-    height: 400,
-    padding: 20,
+    width: '80%',
+    padding: 30,
+    borderRadius: 20,
+  },
+  filterButtonView: {
+    position: 'absolute',
+    top: 60,
+    right: 30,
+  },
+  calendarContainer: {
+    paddingHorizontal: 0,
   },
   title: title,
 });

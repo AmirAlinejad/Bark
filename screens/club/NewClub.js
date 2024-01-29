@@ -80,12 +80,15 @@ const NewClub = ({ navigation }) => {
   
         if (userSnapshot.exists()) {
           const userData = userSnapshot.val();
-          const updatedClubsJoined = [...(userData.clubsJoined || []), clubName];
+          const updatedClubs = [...(userData.clubs || []), {
+            name: clubName,
+            privelege: 'owner',
+          }];
   
           // Update the user's information in the database
           await set(userRef, {
             ...userData,
-            clubsJoined: updatedClubsJoined,
+            clubs: updatedClubs,
           });
 
           // add user to club's members
@@ -96,9 +99,9 @@ const NewClub = ({ navigation }) => {
           if (clubSnapshot.exists()) {
             const clubData = clubSnapshot.val();
 
-            const updatedClubMembers = {...clubData.clubMembers, [userData.userId]: {
+            const updatedClubMembers = {...clubData.clubMembers, [userData.userName]: {
               userName: userData.userName,
-              privilege: 'Owner',
+              privilege: 'owner',
             }};
 
             await set(clubRef, {

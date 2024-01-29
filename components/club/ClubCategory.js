@@ -18,11 +18,11 @@ const ClubCategory = ({name, data, navigation}) => {
                 const onPress = () => {
                     // Navigate to the sign-up screen
                     navigation.navigate("ClubScreen", {
-                    name: item.clubName,
-                    description: item.clubDescription,
-                    categories: item.clubCategories,
-                    img: item.clubImg,
-                    events: item.events,
+                        name: item.clubName,
+                        description: item.clubDescription,
+                        categories: item.clubCategories,
+                        img: item.clubImg,
+                        events: item.events,
                     });
                 }
 

@@ -2,21 +2,24 @@ import React, { useState, useEffect } from 'react';
 // react native components
 import { View, StyleSheet, ScrollView, Button } from 'react-native';
 import { IconButton } from 'react-native-paper';
-import { Overlay } from 'react-native-elements';
 // backend
 import { db } from '../../backend/FirebaseConfig';
 import { ref, onValue } from "firebase/database";
 // my components
 import ClubCategory from '../../components/club/ClubCategory';
 import Header from '../../components/Header';
-import FilterList from '../../components/FilterList';
+import SearchBar from '../../components/SearchBar';
+import ClubCategoryButton from '../../components/club/ClubCategoryButton';
 // macros
 import { clubCategories } from '../../macros/macros';
 // fonts
 import { title } from '../../styles/FontStyles';
+// styles
+import { Colors } from '../../styles/Colors';
 
 const ClubList = ({ navigation }) => {
   const [clubData, setClubData] = useState([]);
+  const [searchText, setSearchText] = useState('');
   // for overlay
   const [visible, setVisible] = useState(false);
   const [categoriesSelected, setSelectedCategories] = useState([]);
@@ -46,19 +49,19 @@ const ClubList = ({ navigation }) => {
     })
   }, []);
 
-  // filter for events
+  // filter for clubs
   const filterFunct = (club) => {
+
+    // filter by search text
+    if (searchText.length > 0) {
+      if (!club.clubName.toLowerCase().includes(searchText.toLowerCase())) {
+        return false;
+      }
+    }
   
-    // filter by category
-    if (categoriesSelected.length > 0) {
-      // convert categoriesSelected to array of strings
-      console.log(categoriesSelected);
-      filteredCategories = [];
-      categoriesSelected.forEach((categoryNum) => {
-        filteredCategories.push(clubCategories[categoryNum - 1].value);
-      });
-      
-      if (!filteredCategories.some(item => club.clubCategories.includes(item))) { // make sure clubCategories is right
+    // filter by categories selected
+    if (categoriesSelected.length > 0) { 
+      if (!categoriesSelected.some(item => club.clubCategories.includes(item))) { // make sure clubCategories is right
         return false;
       }
     }
@@ -77,14 +80,33 @@ const ClubList = ({ navigation }) => {
   return (
     <View style={styles.container}>
       <Header text='Club List'></Header>
-      <Button title="Filter" onPress={toggleOverlay} />
-      <Overlay isVisible={visible} onBackdropPress={toggleOverlay}>
-        <View style={styles.filterPopUp}>
-          <FilterList items={clubCategories} selected={categoriesSelected} setter={setSelectedCategories} text="Categories" />
-          
-        </View>
-      </Overlay>
-      <ScrollView style={styles.clubCategories}>
+      <View style={{marginLeft: 20, marginBottom: 10}}>
+        <SearchBar placeholder='Search' value={searchText} setValue={setSearchText}/>
+      </View>
+
+      <ScrollView style={styles.categoriesButtonRow} horizontal>
+      { 
+        // create a club category component for each category
+        clubCategories.map((category) => {
+
+          // toggle button to update categories selected
+          const toggleButton = () => {
+            if (categoriesSelected.includes(category.value)) {
+              setSelectedCategories(categoriesSelected.filter((i) => i !== category.value));
+            } else {
+              setSelectedCategories([...categoriesSelected, category.value]);
+            }
+          }
+
+          return (
+            <View style={styles.categoryButtonView} >
+              <ClubCategoryButton text={category.value} onPress={toggleButton} toggled={categoriesSelected.includes(category.value)} />
+            </View>
+          )
+        })
+      }
+      </ScrollView>
+      <ScrollView style={styles.clubCategoriesView}>
       { 
         // create a club category component for each category
         sortedClubs.map((category) => {
@@ -100,7 +122,8 @@ const ClubList = ({ navigation }) => {
         <IconButton
           onPress={onAddClubPress}
           icon="plus-circle"
-          size={30}
+          iconColor={Colors.red}
+          size={70}
         />
       </View>
     </View>
@@ -113,19 +136,21 @@ const styles = StyleSheet.create({
     width: '100%',
     backgroundColor: '#FAFAFA',
   },
-  clubCategories: {
+  clubCategoriesView: {
+    marginLeft: 20,
+    height: '100%',
+  },
+  categoriesButtonRow: {
     marginLeft: 20,
   },
+  categoryButtonView: {
+    height: 100,
+  },  
   addClubButton: {
     bottom: 0,
     right: 0,
     padding: 20,
     position: 'absolute',
-  },
-  filterPopUp: {
-    width: 300,
-    height: 400,
-    padding: 20,
   },
   title: title,
 });

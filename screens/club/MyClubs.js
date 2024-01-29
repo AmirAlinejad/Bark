@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, ScrollView } from 'react-native';
 // backend
 import { db } from '../../backend/FirebaseConfig';
-import { getAuth, onAuthStateChanged, signOut } from 'firebase/auth';
+import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import { ref, onValue } from "firebase/database";
 // my components
 import ClubCategory from '../../components/club/ClubCategory';

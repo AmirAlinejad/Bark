@@ -15,29 +15,25 @@ const Header = ({ navigation, text, back, numberOfLines }) => {
 
   return (
     <View style={styles.container}>
-        <View style={styles.leftBox}>
-        {back && ( // if back is true, show the back button
-          <View style={styles.back}>
-            <Button
-                onPress={onBackPress}
-                title="Back"
-                color='#FF5028'
-            />
-          </View>
-        )}
+      {back && ( // if back is true, show the back button
+        <View style={styles.back}>
+          <Button
+              onPress={onBackPress}
+              title="Back"
+              color='#FF5028'
+          />
         </View>
-        <View style={styles.middleBox}>
-          <CustomText style={styles.title} font='black' numberOfLines={numberOfLines} text={text} />
-        </View>
-        <View style={styles.rightBox} />
+      )}
+      <CustomText style={styles.title} font='black' numberOfLines={numberOfLines} text={text} />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    height: 120,
-    justifyContent: 'center',
+    marginTop: 50,
+    marginLeft: 30,
+    justifyContent: 'left',
     flexDirection: 'row',
     backgroundColor: '#FAFAFA',
   },
@@ -48,21 +44,6 @@ const styles = StyleSheet.create({
   textNormal: {
     ...textNormal,
     marginTop: 20,
-  },
-  leftBox: {
-    flex: 1,
-    marginTop: 60,
-    alignItems: 'flex-start',
-  },
-  back: {
-    marginLeft: 20,
-  },
-  middleBox: {
-    flex: 2,
-    marginTop: 50,
-  },
-  rightBox: {
-    flex: 1,
   },
 });
 

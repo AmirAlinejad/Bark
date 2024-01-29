@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 // react native components
-import { View, StyleSheet, ScrollView } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 // backend
 import { db } from '../../backend/FirebaseConfig';
 import { ref, onValue } from "firebase/database";
@@ -34,34 +34,34 @@ const UpcomingEvents = ({ filter, navigation }) => {
 
   return ( 
     <View style={styles.eventsContent}>
-        <CustomText style={[styles.title, {textAlign: 'center'}]} text='Upcoming Events' />
-        {
-            // map through the club data and display each club
-            filteredEvents.map((item, index) => {
+      <CustomText style={[styles.title, {textAlign: 'center'}]} text='Upcoming Events' font='bold'/>
+      {
+        // map through the club data and display each club
+        filteredEvents.map((item, index) => {
 
-            const onPress = () => {
-            // Navigate to the event screen
-            navigation.navigate("EventScreen", {
-                key: index,
-                name: item.eventName,
-                description: item.eventDescription,
-                datetime: item.eventDateTime,
-                location: item.eventLocation,
-            });
-            }
-
-            return (
-            <View key={index}>
-                <EventCard 
-                onPress={onPress} 
-                name={item.eventName}
-                description={item.eventDescription} 
-                date={item.eventDateTime.substring(0, item.eventDateTime.indexOf(','))} // just gives date
-                />
-            </View>
-            )
-            })
+        const onPress = () => {
+        // Navigate to the event screen
+        navigation.navigate("EventScreen", {
+            key: index,
+            name: item.eventName,
+            description: item.eventDescription,
+            datetime: item.eventDateTime,
+            location: item.eventLocation,
+        });
         }
+
+        return (
+        <View key={index}>
+          <EventCard 
+            onPress={onPress} 
+            name={item.eventName}
+            description={item.eventDescription} 
+            date={item.eventDateTime.substring(0, item.eventDateTime.indexOf(','))} // just gives date
+          />
+        </View>
+        )
+        })
+      }
     </View>
   );
 }

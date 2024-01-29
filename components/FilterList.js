@@ -32,5 +32,4 @@ const FilterList = ({ items, setter, selected, text }) => {
   );
 }
 
-
 export default FilterList;
