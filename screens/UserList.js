@@ -37,14 +37,10 @@ const UserList = ({ route, navigation }) => {
     filterMembers(searchQuery);
   }, [clubMembers, searchQuery]);
   
-  const leaveClub = async () => {
-    try {
-      await remove(ref(db, `clubs/${clubName}/clubMembers/${currentUserId}`));
-      navigation.navigate("HomeScreen"); // Navigate back after leaving the club
-    } catch (error) {
-      console.error('Error leaving club:', error);
-    }
+  const leaveClub = () => {
+    showConfirmation("Are you sure you want to leave the club? You will have to request again to join.", null);
   };
+
   const fetchClubMembers = async () => {
     try {
       const clubRef = ref(db, `clubs/${clubName}/clubMembers`);
@@ -79,14 +75,17 @@ const UserList = ({ route, navigation }) => {
   };
 
   const [isConfirmationVisible, setConfirmationVisible] = useState(false);
+  const [confirmationMessage, setConfirmationMessage] = useState('');
   const [memberToRemove, setMemberToRemove] = useState(null);
 
-  const showConfirmation = (memberId) => {
+  const showConfirmation = (message, memberId) => {
+    setConfirmationMessage(message);
     setMemberToRemove(memberId);
     setConfirmationVisible(true);
   };
 
   const hideConfirmation = () => {
+    setConfirmationMessage('');
     setMemberToRemove(null);
     setConfirmationVisible(false);
   };
@@ -103,6 +102,16 @@ const UserList = ({ route, navigation }) => {
     }
   };
 
+  const leaveClubConfirmed = async () => {
+    try {
+      await remove(ref(db, `clubs/${clubName}/clubMembers/${currentUserId}`));
+      navigation.navigate("HomeScreen"); // Navigate back after leaving the club
+      hideConfirmation();
+    } catch (error) {
+      console.error('Error leaving club:', error);
+    }
+  };
+
   const renderMember = ({ item }) => (
     <TouchableOpacity style={styles.memberContainer}>
       <View style={styles.memberInfo}>
@@ -113,7 +122,7 @@ const UserList = ({ route, navigation }) => {
         <Button
           title="Remove"
           color="red"
-          onPress={() => showConfirmation(item.id)}
+          onPress={() => showConfirmation("Are you sure you want to remove this user from the club?", item.id)}
         />
       )}
     </TouchableOpacity>
@@ -141,9 +150,9 @@ const UserList = ({ route, navigation }) => {
 
       <Modal isVisible={isConfirmationVisible}>
         <View style={styles.modalContainer}>
-          <Text style={styles.modalText}>Are you sure you want to remove this user from the club?</Text>
+          <Text style={styles.modalText}>{confirmationMessage}</Text>
           <View style={styles.modalButtons}>
-            <Button title="Yes" onPress={removeMemberConfirmed} />
+            <Button title="Yes" onPress={confirmationMessage.includes("remove") ? removeMemberConfirmed : leaveClubConfirmed} />
             <Button title="No" onPress={hideConfirmation} />
           </View>
         </View>
