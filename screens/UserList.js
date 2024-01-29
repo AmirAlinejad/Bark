@@ -5,6 +5,7 @@ import Icon from 'react-native-vector-icons/FontAwesome'; // Assuming you use it
 import { ref, get, remove } from 'firebase/database';
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import { db } from '../backend/FirebaseConfig';
+import Modal from 'react-native-modal'; // Import the Modal component
 
 const UserList = ({ route, navigation }) => {
   const [clubMembers, setClubMembers] = useState([]);
@@ -35,7 +36,15 @@ const UserList = ({ route, navigation }) => {
   useEffect(() => {
     filterMembers(searchQuery);
   }, [clubMembers, searchQuery]);
-
+  
+  const leaveClub = async () => {
+    try {
+      await remove(ref(db, `clubs/${clubName}/clubMembers/${currentUserId}`));
+      navigation.navigate("HomeScreen"); // Navigate back after leaving the club
+    } catch (error) {
+      console.error('Error leaving club:', error);
+    }
+  };
   const fetchClubMembers = async () => {
     try {
       const clubRef = ref(db, `clubs/${clubName}/clubMembers`);
@@ -69,12 +78,28 @@ const UserList = ({ route, navigation }) => {
     setFilteredMembers(filtered);
   };
 
-  const leaveClub = async () => {
-    try {
-      await remove(ref(db, `clubs/${clubName}/clubMembers/${currentUserId}`));
-      navigation.navigate("HomeScreen"); // Navigate back after leaving the club
-    } catch (error) {
-      console.error('Error leaving club:', error);
+  const [isConfirmationVisible, setConfirmationVisible] = useState(false);
+  const [memberToRemove, setMemberToRemove] = useState(null);
+
+  const showConfirmation = (memberId) => {
+    setMemberToRemove(memberId);
+    setConfirmationVisible(true);
+  };
+
+  const hideConfirmation = () => {
+    setMemberToRemove(null);
+    setConfirmationVisible(false);
+  };
+
+  const removeMemberConfirmed = async () => {
+    if (memberToRemove) {
+      try {
+        await remove(ref(db, `clubs/${clubName}/clubMembers/${memberToRemove}`));
+        setClubMembers(clubMembers.filter(member => member.id !== memberToRemove));
+        hideConfirmation();
+      } catch (error) {
+        console.error('Error removing club member:', error);
+      }
     }
   };
 
@@ -88,7 +113,7 @@ const UserList = ({ route, navigation }) => {
         <Button
           title="Remove"
           color="red"
-          onPress={() => removeMember(item.id)}
+          onPress={() => showConfirmation(item.id)}
         />
       )}
     </TouchableOpacity>
@@ -113,6 +138,16 @@ const UserList = ({ route, navigation }) => {
         renderItem={renderMember}
         keyExtractor={(item) => item.id}
       />
+
+      <Modal isVisible={isConfirmationVisible}>
+        <View style={styles.modalContainer}>
+          <Text style={styles.modalText}>Are you sure you want to remove this user from the club?</Text>
+          <View style={styles.modalButtons}>
+            <Button title="Yes" onPress={removeMemberConfirmed} />
+            <Button title="No" onPress={hideConfirmation} />
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -164,6 +199,19 @@ const styles = StyleSheet.create({
     borderColor: '#ddd',
     borderWidth: 1,
     borderRadius: 5,
+  },
+  modalContainer: {
+    backgroundColor: 'white',
+    padding: 20,
+    borderRadius: 10,
+  },
+  modalText: {
+    fontSize: 18,
+    marginBottom: 20,
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
   },
 });
 
