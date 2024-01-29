@@ -181,12 +181,13 @@ const ClubScreen = ({ route, navigation }) => {
       )}
 
       {isMember && (
-        <TouchableOpacity
-          style={styles.leaveClubButton}
-          onPress={leaveClub}
-        >
-          <Text style={styles.leaveClubButtonText}>Leave Club</Text>
-        </TouchableOpacity>
+        <IconButton
+        icon="exit-to-app"
+        color="white"
+        size={24}
+        style={styles.leaveClubButton}
+        onPress={leaveClub}
+      />
       )}
 
       <Modal isVisible={isLeaveClubModalVisible}>
@@ -273,13 +274,13 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 50, // Adjust the top position as needed
     right: 20,
-    backgroundColor: 'red',
+    backgroundColor: '#FAFAFA',
     padding: 10,
     borderRadius: 5,
     zIndex: 10,
   },
   leaveClubButtonText: {
-    color: 'white',
+    color: '#FF5028',
     fontWeight: 'bold',
   },
   modalContainer: {
