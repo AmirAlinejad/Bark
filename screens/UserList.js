@@ -78,19 +78,12 @@ const UserList = ({ route, navigation }) => {
     }
   };
 
-  const removeMember = async (memberId) => {
-    try {
-      await remove(ref(db, `clubs/${clubName}/clubMembers/${memberId}`));
-      setClubMembers(clubMembers.filter(member => member.id !== memberId));
-    } catch (error) {
-      console.error('Error removing club member:', error);
-    }
-  };
-
   const renderMember = ({ item }) => (
-    <View style={styles.memberContainer}>
-      <Text style={styles.memberName}>{item.userName}</Text>
-      <Text style={styles.memberPrivilege}>{item.privilege}</Text>
+    <TouchableOpacity style={styles.memberContainer}>
+      <View style={styles.memberInfo}>
+        <Text style={styles.memberName}>{item.userName}</Text>
+        <Text style={styles.memberPrivilege}>{item.privilege}</Text>
+      </View>
       {item.privilege === 'member' && item.id !== currentUserId && (
         <Button
           title="Remove"
@@ -98,7 +91,7 @@ const UserList = ({ route, navigation }) => {
           onPress={() => removeMember(item.id)}
         />
       )}
-    </View>
+    </TouchableOpacity>
   );
 
   return (
@@ -137,28 +130,27 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#ddd',
   },
+  memberInfo: {
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+  },
   memberName: {
     fontSize: 16,
+    fontWeight: 'bold',
     color: '#333',
   },
   memberPrivilege: {
     fontSize: 14,
     color: 'grey',
   },
-  backButton: {
-    position: 'absolute',
-    top: 50, // Adjust according to your header's actual layout
-    left: 20,
-    zIndex: 10, // Ensure button is clickable over the header
-  },
   leaveClubButton: {
     position: 'absolute',
-    top: 50, // Adjust according to your header's actual layout
+    top: 50,
     right: 20,
     backgroundColor: 'red',
     padding: 10,
     borderRadius: 5,
-    zIndex: 10, // Ensure button is clickable over the header
+    zIndex: 10,
   },
   leaveClubButtonText: {
     color: 'white',
