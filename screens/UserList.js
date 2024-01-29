@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, FlatList, Text, Button, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, FlatList, Text, Button, TouchableOpacity, TextInput } from 'react-native';
 import Header from '../components/Header';
 import Icon from 'react-native-vector-icons/FontAwesome'; // Assuming you use it for the back button
 import { ref, get, remove } from 'firebase/database';
@@ -8,6 +8,8 @@ import { db } from '../backend/FirebaseConfig';
 
 const UserList = ({ route, navigation }) => {
   const [clubMembers, setClubMembers] = useState([]);
+  const [filteredMembers, setFilteredMembers] = useState([]);
+  const [searchQuery, setSearchQuery] = useState('');
   const [currentUserId, setCurrentUserId] = useState(null);
   const clubName = route?.params?.clubName;
 
@@ -30,6 +32,10 @@ const UserList = ({ route, navigation }) => {
     }
   }, [clubName]);
 
+  useEffect(() => {
+    filterMembers(searchQuery);
+  }, [clubMembers, searchQuery]);
+
   const fetchClubMembers = async () => {
     try {
       const clubRef = ref(db, `clubs/${clubName}/clubMembers`);
@@ -37,7 +43,6 @@ const UserList = ({ route, navigation }) => {
 
       if (snapshot.exists()) {
         const membersData = snapshot.val();
-
         const membersArray = Object.entries(membersData).map(([key, value]) => ({
           id: key,
           userName: value.userName,
@@ -51,6 +56,17 @@ const UserList = ({ route, navigation }) => {
     } catch (error) {
       console.error('Error fetching club members:', error);
     }
+  };
+
+  const filterMembers = (query) => {
+    if (!query.trim()) {
+      setFilteredMembers(clubMembers);
+      return;
+    }
+    const filtered = clubMembers.filter(member => 
+      member.userName.toLowerCase().includes(query.toLowerCase())
+    );
+    setFilteredMembers(filtered);
   };
 
   const leaveClub = async () => {
@@ -89,18 +105,24 @@ const UserList = ({ route, navigation }) => {
     <View style={styles.container}>
       <Header navigation={navigation} text="User List" back={true} />
       
+      <TextInput
+        style={styles.searchBar}
+        placeholder="Search for a user..."
+        value={searchQuery}
+        onChangeText={setSearchQuery}
+      />
+
       <TouchableOpacity style={styles.leaveClubButton} onPress={leaveClub}>
         <Text style={styles.leaveClubButtonText}>Leave Club</Text>
       </TouchableOpacity>
       <FlatList
-        data={clubMembers}
+        data={filteredMembers}
         renderItem={renderMember}
         keyExtractor={(item) => item.id}
       />
     </View>
   );
 };
-
 
 const styles = StyleSheet.create({
   container: {
@@ -141,6 +163,15 @@ const styles = StyleSheet.create({
   leaveClubButtonText: {
     color: 'white',
     fontWeight: 'bold',
+  },
+  searchBar: {
+    fontSize: 18,
+    padding: 10,
+    marginVertical: 10,
+    marginHorizontal: 20,
+    borderColor: '#ddd',
+    borderWidth: 1,
+    borderRadius: 5,
   },
 });
 
