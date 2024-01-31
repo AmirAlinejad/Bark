@@ -16,14 +16,18 @@ import { IconButton } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { uploadImage} from '../components/imageUploadUtils' // Import the utility function
 import {Colors} from '../styles/Colors';
+import ImageViewerScreen from './ImageViewerScreen';
 
-export default function Chat({ route }) {
+export default function Chat({ route,navigation }) {
   const [messages, setMessages] = useState([]);
-  const navigation = useNavigation();
+ 
   const clubName = route?.params?.clubName;
 
   const onSignOut = () => {
     signOut(auth).catch(error => console.log('Error logging out: ', error));
+  };
+  const onImagePress = (imageUri) => {
+    navigation.navigate('ImageViewerScreen', { imageUri }); // Navigate to ImageViewerScreen with the imageUri
   };
 
   const onBackPress = () => {
@@ -122,17 +126,16 @@ const renderMessage = (props) => {
     </View>
   );
 };
-  const renderMessageImage = (props) => {
-    if (props.currentMessage.image) {
-      return (
-        <View style={{ padding: 5 }}>
-          <Image source={{ uri: props.currentMessage.image }} style={{ width: 200, height: 200 }} />
-        </View>
-      );
-    }
-    return null;
-  };
-
+const renderMessageImage = (props) => {
+  if (props.currentMessage.image) {
+    return (
+      <TouchableOpacity onPress={() => onImagePress(props.currentMessage.image)}>
+        <Image source={{ uri: props.currentMessage.image }} style={{ width: 200, height: 200 }} />
+      </TouchableOpacity>
+    );
+  }
+  return null;
+};
   return (
     <View style={{ flex: 1 }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: 30, paddingHorizontal: 10 }}>
@@ -188,6 +191,7 @@ const renderMessage = (props) => {
           avatar: 'https://i.pravatar.cc/300'
         }}
         renderMessage={renderMessage}
+
       />
     </View>
   );
