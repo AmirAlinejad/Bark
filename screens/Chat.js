@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useLayoutEffect, useCallback } from 'react';
 import { TouchableOpacity, View, Text, StyleSheet, Image } from 'react-native';
-import { GiftedChat, Send, Message } from 'react-native-gifted-chat';
+import { GiftedChat, Send, Message, Bubble } from 'react-native-gifted-chat';
 import {
   collection,
   addDoc,
@@ -120,12 +120,46 @@ const renderMessage = (props) => {
         {...props}
         containerStyle={{
           left: { backgroundColor: '#f0f0f0' },
-          right: { backgroundColor: '#007bff' }, // Blue bubble for current user
+          right: { backgroundColor: '#f0f0f0' }, 
         }}
       />
     </View>
   );
 };
+const renderBubble = (props) => {
+  return (
+    <Bubble
+      {...props}
+      wrapperStyle={{
+        right: {
+          backgroundColor: '#f0f0f0',
+        },
+        left: {
+          
+        },
+      }}
+      textStyle={{
+        right: {
+          color: 'black', 
+        },
+        left: {
+          
+        },
+      }}
+      timeTextStyle={{
+        right: {
+          color: 'black', 
+        },
+        left: {
+          color: 'black', 
+        },
+      }}
+    />
+  );
+};
+
+
+
 const renderMessageImage = (props) => {
   if (props.currentMessage.image) {
     return (
@@ -163,13 +197,13 @@ const renderMessageImage = (props) => {
           <Send {...props} alwaysShowSend>
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
               <TouchableOpacity style={{ marginRight: 10 }} onPress={() => {/* Handle camera button tap */}}>
-                <MaterialCommunityIcons name="camera" size={32} color={Colors.lightRed} />
+                <MaterialCommunityIcons name="camera" size={32} color={Colors.primary} />
               </TouchableOpacity>
               <TouchableOpacity style={{ marginRight: 10 }} onPress={handleImageUploadAndSend}>
-                <MaterialCommunityIcons name="plus" size={32} color={Colors.lightRed} />
+                <MaterialCommunityIcons name="plus" size={32} color={Colors.primary} />
                 </TouchableOpacity>
               <TouchableOpacity style={{ marginBottom: 8, marginRight:10 }} onPress={() => props.onSend({ text: props.text }, true)}disabled={!props.text.trim()}>
-                <MaterialCommunityIcons name="send-circle" size={32} color={Colors.lightRed} />
+                <MaterialCommunityIcons name="send-circle" size={32} color={Colors.primary} />
               </TouchableOpacity>
             </View>
           </Send>
@@ -191,6 +225,7 @@ const renderMessageImage = (props) => {
           avatar: 'https://i.pravatar.cc/300'
         }}
         renderMessage={renderMessage}
+        renderBubble={renderBubble}
 
       />
     </View>
