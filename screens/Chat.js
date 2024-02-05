@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useLayoutEffect, useCallback } from 'react';
 import { TouchableOpacity, View, Text, StyleSheet, Image } from 'react-native';
-import { GiftedChat, Send, Message, Bubble } from 'react-native-gifted-chat';
+import { GiftedChat, Send, Message, Bubble, Day } from 'react-native-gifted-chat';
 import {
   collection,
   addDoc,
@@ -62,7 +62,10 @@ export default function Chat({ route,navigation }) {
       if (unsubscribe) unsubscribe();
     };
   }, [clubName]);
-
+  const formatDate = (date) => {
+    const options = { year: 'numeric', month: 'long', day: 'numeric' };
+    return date.toLocaleDateString(undefined, options);
+  };
   const onSend = useCallback((messages = []) => {
     setMessages(previousMessages =>
       GiftedChat.append(previousMessages, messages)
@@ -105,24 +108,40 @@ const isCurrentUser = (messageUser) => {
 };
 
 const renderMessage = (props) => {
-  const currentUser = isCurrentUser(props.currentMessage.user);
+  const { currentMessage, previousMessage } = props;
+
+  // Determine if it's a new day
+  let isNewDay = false;
+  if (currentMessage && previousMessage) {
+    const currentDate = new Date(currentMessage.createdAt).toDateString();
+    const prevDate = new Date(previousMessage.createdAt).toDateString();
+    isNewDay = currentDate !== prevDate;
+  }
+
+  // Check if the message was sent by the current user
+  const isCurrentUser = currentMessage.user._id === auth?.currentUser?.email;
+  const usernameStyle = isCurrentUser ? styles.usernameRight : styles.usernameLeft;
+
   return (
     <View style={{ marginBottom: 5 }}>
+      {isNewDay && (
+        <Text style={styles.dateText}>
+          {formatDate(new Date(currentMessage.createdAt))}
+        </Text>
+      )}
       <Text
         style={[
           styles.usernameText,
-          currentUser ? styles.usernameRight : styles.usernameLeft,
+          usernameStyle,
         ]}
       >
-        {currentUser ? 'You' : props.currentMessage.user.name || props.currentMessage.user._id}
+        {isCurrentUser ? 'You' : currentMessage.user.name || currentMessage.user._id}
       </Text>
-      <Message
-        {...props}
+      <Message   {...props}
         containerStyle={{
           left: { backgroundColor: '#f0f0f0' },
           right: { backgroundColor: '#f0f0f0' }, 
-        }}
-      />
+        }} />
     </View>
   );
 };
@@ -158,7 +177,9 @@ const renderBubble = (props) => {
   );
 };
 
-
+const renderDay = (props) => {
+  return null; // Suppress the rendering of day markers
+};
 
 const renderMessageImage = (props) => {
   if (props.currentMessage.image) {
@@ -226,7 +247,7 @@ const renderMessageImage = (props) => {
         }}
         renderMessage={renderMessage}
         renderBubble={renderBubble}
-
+        renderDay={renderDay}
       />
     </View>
   );
@@ -247,5 +268,12 @@ const styles = StyleSheet.create({
   },
   usernameLeft: {
     alignSelf: 'flex-start',
+  },
+  dateText: {
+    alignSelf: 'center',
+    fontSize: 14,
+    color: '#666',
+    paddingVertical: 8, // Adjust as needed
+    // Customize these styles to match your app’s design
   },
 });
