@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, FlatList, Text, Button, TouchableOpacity, TextInput } from 'react-native';
 import Header from '../components/Header';
-import Icon from 'react-native-vector-icons/FontAwesome'; // Assuming you use it for the back button
 import { ref, get, remove } from 'firebase/database';
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import { db } from '../backend/FirebaseConfig';
@@ -37,10 +36,6 @@ const UserList = ({ route, navigation }) => {
     filterMembers(searchQuery);
   }, [clubMembers, searchQuery]);
   
-  const leaveClub = () => {
-    showConfirmation("Are you sure you want to leave the club? You will have to request again to join.", null);
-  };
-
   const fetchClubMembers = async () => {
     try {
       const clubRef = ref(db, `clubs/${clubName}/clubMembers`);
@@ -89,7 +84,7 @@ const UserList = ({ route, navigation }) => {
     setMemberToRemove(null);
     setConfirmationVisible(false);
   };
-
+//asks whether the user is sure they want to remove another user from a club.
   const removeMemberConfirmed = async () => {
     if (memberToRemove) {
       try {
@@ -101,7 +96,7 @@ const UserList = ({ route, navigation }) => {
       }
     }
   };
-
+// removes the user from the club if they want to leave. 
   const leaveClubConfirmed = async () => {
     try {
       await remove(ref(db, `clubs/${clubName}/clubMembers/${currentUserId}`));
@@ -111,7 +106,7 @@ const UserList = ({ route, navigation }) => {
       console.error('Error leaving club:', error);
     }
   };
-
+//renders each individual member to the list
   const renderMember = ({ item }) => (
     <TouchableOpacity style={styles.memberContainer}>
       <View style={styles.memberInfo}>

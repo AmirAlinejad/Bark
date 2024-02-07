@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useLayoutEffect, useCallback } from 'react';
 import { TouchableOpacity, View, Text, StyleSheet, Image } from 'react-native';
-import { GiftedChat, Send, Message, Bubble, Day } from 'react-native-gifted-chat';
+import { GiftedChat, Send, Message, Bubble } from 'react-native-gifted-chat';
 import {
   collection,
   addDoc,
@@ -9,31 +9,27 @@ import {
   onSnapshot,
   where
 } from 'firebase/firestore';
-import { signOut } from 'firebase/auth';
 import { auth, firestore } from '../backend/FirebaseConfig';
-import { useNavigation } from '@react-navigation/native';
 import { IconButton } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { uploadImage} from '../components/imageUploadUtils' // Import the utility function
 import {Colors} from '../styles/Colors';
-import ImageViewerScreen from './ImageViewerScreen';
+
 
 export default function Chat({ route,navigation }) {
   const [messages, setMessages] = useState([]);
  
   const clubName = route?.params?.clubName;
 
-  const onSignOut = () => {
-    signOut(auth).catch(error => console.log('Error logging out: ', error));
-  };
+  //goes to screen that allows to click on an image and see it up close and have the option to save it.
   const onImagePress = (imageUri) => {
     navigation.navigate('ImageViewerScreen', { imageUri }); // Navigate to ImageViewerScreen with the imageUri
   };
-
+//goes back to Home Screen
   const onBackPress = () => {
     navigation.goBack();
   };
-
+//handles loading chat
   useLayoutEffect(() => {
     let unsubscribe;
 
@@ -62,10 +58,14 @@ export default function Chat({ route,navigation }) {
       if (unsubscribe) unsubscribe();
     };
   }, [clubName]);
+
+  //displays the date above the message
   const formatDate = (date) => {
     const options = { year: 'numeric', month: 'long', day: 'numeric' };
     return date.toLocaleDateString(undefined, options);
   };
+
+  //adds new message sent to collection of messages.
   const onSend = useCallback((messages = []) => {
     setMessages(previousMessages =>
       GiftedChat.append(previousMessages, messages)
@@ -85,7 +85,7 @@ export default function Chat({ route,navigation }) {
       addDoc(collection(firestore, 'chats'), messageData);
     }
   }, [clubName]);
-  
+  //uploads the image that is uploaded in imageviewscreen into the chat collection
   const handleImageUploadAndSend = () => {
     uploadImage((imageUri) => {
         const message = {
@@ -102,11 +102,8 @@ export default function Chat({ route,navigation }) {
         onSend([message]);
     });
 };
-const isCurrentUser = (messageUser) => {
-  // Check if the message was sent by the current user
-  return messageUser._id === auth?.currentUser?.email;
-};
 
+//renders the messages that are from the collection into a formatted chat
 const renderMessage = (props) => {
   const { currentMessage, previousMessage } = props;
 
@@ -139,12 +136,13 @@ const renderMessage = (props) => {
       </Text>
       <Message   {...props}
         containerStyle={{
-          left: { backgroundColor: '#f0f0f0' },
+          left: { backgroundColor: 'white' },
           right: { backgroundColor: '#f0f0f0' }, 
         }} />
     </View>
   );
 };
+//renders how the message bubbles will appear.
 const renderBubble = (props) => {
   return (
     <Bubble
@@ -154,7 +152,7 @@ const renderBubble = (props) => {
           backgroundColor: '#f0f0f0',
         },
         left: {
-          
+          backgroundColor: "white",
         },
       }}
       textStyle={{
@@ -176,20 +174,20 @@ const renderBubble = (props) => {
     />
   );
 };
-
+//just a message to nullifiy the gifted chat way of displaying the date.
 const renderDay = (props) => {
   return null; // Suppress the rendering of day markers
 };
-
+//displays the image in the chat in a nice manner.
 const renderMessageImage = (props) => {
-  if (props.currentMessage.image) {
-    return (
-      <TouchableOpacity onPress={() => onImagePress(props.currentMessage.image)}>
-        <Image source={{ uri: props.currentMessage.image }} style={{ width: 200, height: 200 }} />
-      </TouchableOpacity>
-    );
-  }
-  return null;
+    if (props.currentMessage.image) {
+      return (
+        <TouchableOpacity onPress={() => onImagePress(props.currentMessage.image)}>
+          <Image source={{ uri: props.currentMessage.image }} style={{ width: 200, height: 200 }} />
+        </TouchableOpacity>
+      );
+    }
+    return null;
 };
   return (
     <View style={{ flex: 1 }}>
@@ -238,8 +236,13 @@ const renderMessageImage = (props) => {
           width: '100%',
         }}
         textInputStyle={{
-          backgroundColor: '#fff',
-          borderRadius: 20,
+          backgroundColor: '#f2f2f2',
+          borderRadius: 25,
+          borderWidth: 1,
+          borderColor: '#ccc',
+          color: '#333',
+          padding: 10,
+          fontSize: 16,
         }}
         user={{
           _id: auth?.currentUser?.email,
