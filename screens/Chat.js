@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useLayoutEffect, useCallback } from 'react';
-import { TouchableOpacity, View, Text, StyleSheet, Image } from 'react-native';
+import { TouchableOpacity, View, Text, StyleSheet, Image, TextInput } from 'react-native';
 import { GiftedChat, Send, Message, Bubble } from 'react-native-gifted-chat';
 import {
   collection,
@@ -14,7 +14,7 @@ import { IconButton } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { uploadImage} from '../components/imageUploadUtils' // Import the utility function
 import {Colors} from '../styles/Colors';
-
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function Chat({ route,navigation }) {
   const [messages, setMessages] = useState([]);
@@ -58,7 +58,43 @@ export default function Chat({ route,navigation }) {
       if (unsubscribe) unsubscribe();
     };
   }, [clubName]);
-
+  function CustomInputToolbar({ onSend, handleImageUploadAndSend }) {
+    const [messageText, setMessageText] = useState('');
+  
+    const sendTextMessage = () => {
+      if (messageText.trim()) {
+        const message = {
+          _id: Date.now().toString(),
+          createdAt: new Date(),
+          text: messageText,
+          user: {
+            _id: auth?.currentUser?.email,
+            avatar: 'https://i.pravatar.cc/300',
+          },
+        };
+        onSend([message]);
+        setMessageText('');
+      }
+    };
+  
+    return (
+      <View style={styles.customToolbar}>
+        <TouchableOpacity onPress={handleImageUploadAndSend} style={styles.toolbarButton}>
+          <MaterialCommunityIcons name="camera" size={24} color={Colors.primary} />
+        </TouchableOpacity>
+        <TextInput
+          style={styles.input}
+          value={messageText}
+          onChangeText={setMessageText}
+          placeholder="Type a message..."
+          multiline
+        />
+        <TouchableOpacity onPress={sendTextMessage} style={styles.toolbarButton}>
+          <MaterialCommunityIcons name="send-circle" size={24} color={Colors.primary} />
+        </TouchableOpacity>
+      </View>
+    );
+  }
   //displays the date above the message
   const formatDate = (date) => {
     const options = { year: 'numeric', month: 'long', day: 'numeric' };
@@ -251,12 +287,25 @@ const renderMessageImage = (props) => {
         renderMessage={renderMessage}
         renderBubble={renderBubble}
         renderDay={renderDay}
+        renderInputToolbar={(props) => (
+          <CustomInputToolbar
+            onSend={props.onSend}
+            handleImageUploadAndSend={handleImageUploadAndSend}
+          />
+        )}
       />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  container: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 20, // Adjust this value to ensure it's not too low
+  },
+  
   usernameText: {
     alignSelf: 'flex-start',
     fontSize: 12,
@@ -278,5 +327,33 @@ const styles = StyleSheet.create({
     color: '#666',
     paddingVertical: 8, // Adjust as needed
     // Customize these styles to match your app’s design
+  },
+  
+    customToolbar: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingVertical: 15,
+      paddingHorizontal: 10,
+      backgroundColor: '#fff',
+      borderTopWidth: 1,
+      borderColor: '#ccc',
+      marginTop: -30, // Increase this value as needed
+    },
+    // Your other styles
+  input: {
+    flex: 1,
+    minHeight: 40, // Minimum height for the input
+    maxHeight: 100, // Maximum height if you want it to be expandable
+    borderWidth: 1,
+    borderColor: '#ccc', // Subtle border color
+    borderRadius: 20, // Rounded corners
+    paddingHorizontal: 10, // Padding inside the input box
+    marginHorizontal: 5, // Space between the input box and the buttons
+    backgroundColor: '#f2f2f2', // Light background color for the input
+  },
+  toolbarButton: {
+    padding: 5, // Padding around the buttons for easier tapping
+    marginLeft: 4,
+    marginRight: 4,
   },
 });
