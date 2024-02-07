@@ -268,7 +268,7 @@ const renderMessageImage = (props) => {
         showUserAvatar={false}
         onSend={messages => onSend(messages)}
         messagesContainerStyle={{
-          backgroundColor: '#fff',
+          backgroundColor: 'white',
           width: '100%',
           paddingBottom: 35, // moves message container up or down.
         }}
@@ -343,7 +343,7 @@ const styles = StyleSheet.create({
     // Your other styles
   input: {
     flex: 1,
-    minHeight: 40, // Minimum height for the input
+    minHeight: 30, // Minimum height for the input
     maxHeight: 100, // Maximum height if you want it to be expandable
     borderWidth: 1,
     borderColor: '#ccc', // Subtle border color
