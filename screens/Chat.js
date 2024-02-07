@@ -14,7 +14,7 @@ import { IconButton } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { uploadImage} from '../components/imageUploadUtils' // Import the utility function
 import {Colors} from '../styles/Colors';
-import { SafeAreaView } from 'react-native-safe-area-context';
+
 
 export default function Chat({ route,navigation }) {
   const [messages, setMessages] = useState([]);
@@ -80,7 +80,7 @@ export default function Chat({ route,navigation }) {
     return (
       <View style={styles.customToolbar}>
         <TouchableOpacity onPress={handleImageUploadAndSend} style={styles.toolbarButton}>
-          <MaterialCommunityIcons name="camera" size={24} color={Colors.primary} />
+          <MaterialCommunityIcons name="plus" size={24} color={Colors.primary} />
         </TouchableOpacity>
         <TextInput
           style={styles.input}
@@ -270,6 +270,7 @@ const renderMessageImage = (props) => {
         messagesContainerStyle={{
           backgroundColor: '#fff',
           width: '100%',
+          paddingBottom: 35, // moves message container up or down.
         }}
         textInputStyle={{
           backgroundColor: '#f2f2f2',
@@ -303,7 +304,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 0,
     right: 0,
-    bottom: 20, // Adjust this value to ensure it's not too low
+    bottom: 20, 
   },
   
   usernameText: {
@@ -326,7 +327,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666',
     paddingVertical: 8, // Adjust as needed
-    // Customize these styles to match your app’s design
+    
   },
   
     customToolbar: {
@@ -337,7 +338,7 @@ const styles = StyleSheet.create({
       backgroundColor: '#fff',
       borderTopWidth: 1,
       borderColor: '#ccc',
-      marginTop: -30, // Increase this value as needed
+      marginTop: -25, // add buffer between bottom of screen and tool bar
     },
     // Your other styles
   input: {
