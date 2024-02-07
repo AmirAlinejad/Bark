@@ -264,8 +264,8 @@ const renderMessageImage = (props) => {
           </Send>
         )}
         renderMessageImage={renderMessageImage}
-        showAvatarForEveryMessage={false}
-        showUserAvatar={false}
+        showAvatarForEveryMessage={true}
+        showUserAvatar={true}
         onSend={messages => onSend(messages)}
         messagesContainerStyle={{
           backgroundColor: 'white',
