@@ -26,7 +26,7 @@ export default class App extends React.Component {
   render() {
       return (
         <NavigationContainer >
-          <Stack.Navigator initialRouteName='Chat'>
+          <Stack.Navigator initialRouteName='SignIn'>
             <Stack.Screen name="InitialPage" component={InitialPage} options={{ headerShown: false }} />
             <Stack.Screen name="SignIn" component={SignIn} options={{ headerShown: false }} />
             <Stack.Screen name="SignUp" component={SignUp} options={{ headerShown: false }} />
