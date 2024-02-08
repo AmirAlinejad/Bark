@@ -82,7 +82,7 @@ const NewClub = ({ navigation }) => {
           const userData = userSnapshot.val();
           const updatedClubs = [...(userData.clubs || []), {
             name: clubName,
-            privelege: 'owner',
+            privilege: 'owner',
           }];
   
           // Update the user's information in the database
