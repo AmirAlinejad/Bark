@@ -14,7 +14,7 @@ import { IconButton } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { uploadImage} from '../components/imageUploadUtils' // Import the utility function
 import {Colors} from '../styles/Colors';
-
+import Ionicons from 'react-native-vector-icons/Ionicons';
 
 export default function Chat({ route,navigation }) {
   const [messages, setMessages] = useState([]);
@@ -80,7 +80,7 @@ export default function Chat({ route,navigation }) {
     return (
       <View style={styles.customToolbar}>
         <TouchableOpacity onPress={handleImageUploadAndSend} style={styles.toolbarButton}>
-          <MaterialCommunityIcons name="plus" size={24} color={Colors.primary} />
+          <Ionicons name="add-circle" size={24} color={Colors.primary} />
         </TouchableOpacity>
         <TextInput
           style={styles.input}
@@ -90,7 +90,7 @@ export default function Chat({ route,navigation }) {
           multiline
         />
         <TouchableOpacity onPress={sendTextMessage} style={styles.toolbarButton}>
-          <MaterialCommunityIcons name="send-circle" size={24} color={Colors.primary} />
+          <Ionicons name="send" size={24} color={Colors.primary} /> 
         </TouchableOpacity>
       </View>
     );
