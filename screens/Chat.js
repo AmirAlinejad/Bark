@@ -7,60 +7,113 @@ import {
   orderBy,
   query,
   onSnapshot,
-  where
+  where,
+  setDoc,
+  getDoc,
+  updateDoc,
+  deleteDoc,
+  doc,
 } from 'firebase/firestore';
 import { auth, firestore } from '../backend/FirebaseConfig';
 import { IconButton } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { uploadImage} from '../components/imageUploadUtils' // Import the utility function
-import {Colors} from '../styles/Colors';
+import { uploadImage } from '../components/imageUploadUtils'; // Import the utility function
+import { Colors } from '../styles/Colors';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
-export default function Chat({ route,navigation }) {
+export default function Chat({ route, navigation }) {
   const [messages, setMessages] = useState([]);
- 
+  const [likedMessages, setLikedMessages] = useState({});
+
   const clubName = route?.params?.clubName;
 
-  //goes to screen that allows to click on an image and see it up close and have the option to save it.
+// Function to toggle like status of a message
+const toggleLike = async (messageId) => {
+  const newLikedMessages = { ...likedMessages };
+  const messageRef = doc(firestore, 'likedMessages', messageId);
+  const likedMessage = await getDoc(messageRef);
+
+  if (likedMessage.exists()) {
+    delete newLikedMessages[messageId];
+    await deleteDoc(messageRef);
+    await updateMessageLikeCount(messageId, -1); // Decrement like count
+  } else {
+    newLikedMessages[messageId] = true;
+    await setDoc(messageRef, { messageId });
+    await updateMessageLikeCount(messageId, 1); // Increment like count
+  }
+  setLikedMessages(newLikedMessages);
+};
+
+// Function to update the like count of a message
+const updateMessageLikeCount = async (messageId, increment) => {
+  const messageRef = doc(firestore, 'chats', messageId);
+  const messageSnapshot = await getDoc(messageRef);
+
+  if (messageSnapshot.exists()) {
+    const currentLikeCount = messageSnapshot.data().likeCount || 0;
+    await updateDoc(messageRef, { likeCount: currentLikeCount + increment });
+  }
+};
+
+
+  // Goes to screen that allows clicking on an image to view it up close
   const onImagePress = (imageUri) => {
-    navigation.navigate('ImageViewerScreen', { imageUri }); // Navigate to ImageViewerScreen with the imageUri
+    navigation.navigate('ImageViewerScreen', { imageUri });
   };
-//goes back to Home Screen
+
+  // Goes back to Home Screen
   const onBackPress = () => {
     navigation.goBack();
   };
-//handles loading chat
+
+  useEffect(() => {
+    const unsubscribeLikedMessages = onSnapshot(collection(firestore, 'likedMessages'), (querySnapshot) => {
+      const likedMessagesData = {};
+      querySnapshot.forEach((doc) => {
+        likedMessagesData[doc.id] = doc.data();
+      });
+      setLikedMessages(likedMessagesData);
+    });
+  
+    return () => unsubscribeLikedMessages();
+  }, []);
+
+  // Handles loading chat messages
   useLayoutEffect(() => {
-    let unsubscribe;
+    let unsubscribeChatMessages;
 
     if (clubName) {
-      const collectionRef = collection(firestore, 'chats');
+      const chatMessagesRef = collection(firestore, 'chats');
       const q = query(
-        collectionRef,
+        chatMessagesRef,
         where('clubName', '==', clubName),
         orderBy('createdAt', 'desc')
       );
 
-      unsubscribe = onSnapshot(q, querySnapshot => {
+      unsubscribeChatMessages = onSnapshot(q, (querySnapshot) => {
         setMessages(
-          querySnapshot.docs.map(doc => ({
+          querySnapshot.docs.map((doc) => ({
             _id: doc.id,
             createdAt: doc.data().createdAt.toDate(),
             text: doc.data().text,
             user: doc.data().user,
-            image: doc.data().image // Ensure you handle the image field in your Firestore documents
+            image: doc.data().image,
+            likeCount: doc.data().likeCount || 0,
           }))
         );
       });
     }
 
     return () => {
-      if (unsubscribe) unsubscribe();
+      if (unsubscribeChatMessages) unsubscribeChatMessages();
     };
   }, [clubName]);
+
+  // Renders the custom input toolbar for sending messages
   function CustomInputToolbar({ onSend, handleImageUploadAndSend }) {
     const [messageText, setMessageText] = useState('');
-  
+
     const sendTextMessage = () => {
       if (messageText.trim()) {
         const message = {
@@ -76,7 +129,7 @@ export default function Chat({ route,navigation }) {
         setMessageText('');
       }
     };
-  
+
     return (
       <View style={styles.customToolbar}>
         <TouchableOpacity onPress={handleImageUploadAndSend} style={styles.toolbarButton}>
@@ -90,133 +143,101 @@ export default function Chat({ route,navigation }) {
           multiline
         />
         <TouchableOpacity onPress={sendTextMessage} style={styles.toolbarButton}>
-          <Ionicons name="send" size={24} color={Colors.primary} /> 
+          <Ionicons name="send" size={24} color={Colors.primary} />
         </TouchableOpacity>
       </View>
     );
   }
-  //displays the date above the message
+
+  // Formats the date for message display
   const formatDate = (date) => {
     const options = { year: 'numeric', month: 'long', day: 'numeric' };
     return date.toLocaleDateString(undefined, options);
   };
 
-  //adds new message sent to collection of messages.
-  const onSend = useCallback((messages = []) => {
-    setMessages(previousMessages =>
-      GiftedChat.append(previousMessages, messages)
-    );
-  
-    const { _id, createdAt, text, user, image } = messages[0];
-    if (clubName) {
-      const messageData = {
-        _id,
-        createdAt,
-        text,
-        user,
-        clubName,
-        image: image || null, // Set to null if image is undefined
-      };
-  
-      addDoc(collection(firestore, 'chats'), messageData);
+  // Renders each chat message
+  const renderMessage = (props) => {
+    const { currentMessage, previousMessage } = props;
+
+    let isNewDay = false;
+    if (currentMessage && previousMessage) {
+      const currentDate = new Date(currentMessage.createdAt).toDateString();
+      const prevDate = new Date(previousMessage.createdAt).toDateString();
+      isNewDay = currentDate !== prevDate;
     }
-  }, [clubName]);
-  //uploads the image that is uploaded in imageviewscreen into the chat collection
-  const handleImageUploadAndSend = () => {
-    uploadImage((imageUri) => {
-        const message = {
-            _id: Date.now().toString(),
-            createdAt: new Date(),
-            user: {
-                _id: auth?.currentUser?.email,
-                avatar: 'https://i.pravatar.cc/300',
-            },
-            image: imageUri,
-            text: '', // Ensure text is always defined
-        };
 
-        onSend([message]);
-    });
-};
+    const isCurrentUser = currentMessage.user._id === auth?.currentUser?.email;
+    const usernameStyle = isCurrentUser ? styles.usernameRight : styles.usernameLeft;
 
-//renders the messages that are from the collection into a formatted chat
-const renderMessage = (props) => {
-  const { currentMessage, previousMessage } = props;
+    return (
+      <View style={{ marginBottom: 5 }}>
+        {isNewDay && (
+          <Text style={styles.dateText}>
+            {formatDate(new Date(currentMessage.createdAt))}
+          </Text>
+        )}
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <Text style={[styles.usernameText, usernameStyle]}>
+            {isCurrentUser ? 'You' : currentMessage.user.name || currentMessage.user._id}
+          </Text>
+          <TouchableOpacity onPress={() => toggleLike(currentMessage._id)} style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <MaterialCommunityIcons
+              name={likedMessages[currentMessage._id] ? 'heart' : 'heart-outline'}
+              size={24}
+              color={likedMessages[currentMessage._id] ? 'red' : 'grey'}
+            />
+            <Text style={{ marginLeft: 5 }}>{currentMessage.likeCount}</Text>
+          </TouchableOpacity>
+        </View>
+        <Message {...props}
+          containerStyle={{
+            left: { backgroundColor: 'white' },
+            right: { backgroundColor: '#f0f0f0' },
+          }} />
+      </View>
+    );
+  };
 
-  // Determine if it's a new day
-  let isNewDay = false;
-  if (currentMessage && previousMessage) {
-    const currentDate = new Date(currentMessage.createdAt).toDateString();
-    const prevDate = new Date(previousMessage.createdAt).toDateString();
-    isNewDay = currentDate !== prevDate;
-  }
+  // Renders the chat message bubbles
+  const renderBubble = (props) => {
+    return (
+      <Bubble
+        {...props}
+        wrapperStyle={{
+          right: {
+            backgroundColor: '#f0f0f0',
+          },
+          left: {
+            backgroundColor: "white",
+          },
+        }}
+        textStyle={{
+          right: {
+            color: 'black',
+          },
+          left: {
+          },
+        }}
+        timeTextStyle={{
+          right: {
+            color: 'black',
+          },
+          left: {
+            color: 'black',
+          },
+        }}
+      />
+    );
+  };
 
-  // Check if the message was sent by the current user
-  const isCurrentUser = currentMessage.user._id === auth?.currentUser?.email;
-  const usernameStyle = isCurrentUser ? styles.usernameRight : styles.usernameLeft;
+  // Suppresses the rendering of day markers
+  const renderDay = (props) => {
+    return null;
+  };
 
-  return (
-    <View style={{ marginBottom: 5 }}>
-      {isNewDay && (
-        <Text style={styles.dateText}>
-          {formatDate(new Date(currentMessage.createdAt))}
-        </Text>
-      )}
-      <Text
-        style={[
-          styles.usernameText,
-          usernameStyle,
-        ]}
-      >
-        {isCurrentUser ? 'You' : currentMessage.user.name || currentMessage.user._id}
-      </Text>
-      <Message   {...props}
-        containerStyle={{
-          left: { backgroundColor: 'white' },
-          right: { backgroundColor: '#f0f0f0' }, 
-        }} />
-    </View>
-  );
-};
-//renders how the message bubbles will appear.
-const renderBubble = (props) => {
-  return (
-    <Bubble
-      {...props}
-      wrapperStyle={{
-        right: {
-          backgroundColor: '#f0f0f0',
-        },
-        left: {
-          backgroundColor: "white",
-        },
-      }}
-      textStyle={{
-        right: {
-          color: 'black', 
-        },
-        left: {
-          
-        },
-      }}
-      timeTextStyle={{
-        right: {
-          color: 'black', 
-        },
-        left: {
-          color: 'black', 
-        },
-      }}
-    />
-  );
-};
-//just a message to nullifiy the gifted chat way of displaying the date.
-const renderDay = (props) => {
-  return null; // Suppress the rendering of day markers
-};
-//displays the image in the chat in a nice manner.
-const renderMessageImage = (props) => {
-    if (props.currentMessage.image) {
+  // Renders images in the chat
+  const renderMessageImage = (props) => {
+    if    (props.currentMessage.image) {
       return (
         <TouchableOpacity onPress={() => onImagePress(props.currentMessage.image)}>
           <Image source={{ uri: props.currentMessage.image }} style={{ width: 200, height: 200 }} />
@@ -224,7 +245,50 @@ const renderMessageImage = (props) => {
       );
     }
     return null;
-};
+  };
+
+  // Sends text messages
+  const onSend = useCallback((messages = []) => {
+    setMessages((previousMessages) =>
+      GiftedChat.append(previousMessages, messages)
+    );
+
+    messages.forEach((message) => {
+      const { _id, createdAt, text, user, image } = message;
+      if (clubName) {
+        const messageData = {
+          _id,
+          createdAt,
+          text,
+          user,
+          clubName,
+          image: image || null,
+          likeCount: 0,
+        };
+
+        addDoc(collection(firestore, 'chats'), messageData);
+      }
+    });
+  }, [clubName]);
+
+  // Handles uploading images and sending them in messages
+  const handleImageUploadAndSend = () => {
+    uploadImage((imageUri) => {
+      const message = {
+        _id: Date.now().toString(),
+        createdAt: new Date(),
+        user: {
+          _id: auth?.currentUser?.email,
+          avatar: 'https://i.pravatar.cc/300',
+        },
+        image: imageUri,
+        text: '', // Ensure text is always defined
+      };
+
+      onSend([message]);
+    });
+  };
+
   return (
     <View style={{ flex: 1 }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: 30, paddingHorizontal: 10 }}>
@@ -256,7 +320,7 @@ const renderMessageImage = (props) => {
               </TouchableOpacity>
               <TouchableOpacity style={{ marginRight: 10 }} onPress={handleImageUploadAndSend}>
                 <MaterialCommunityIcons name="plus" size={32} color={Colors.primary} />
-                </TouchableOpacity>
+              </TouchableOpacity>
               <TouchableOpacity style={{ marginBottom: 8, marginRight:10 }} onPress={() => props.onSend({ text: props.text }, true)}disabled={!props.text.trim()}>
                 <MaterialCommunityIcons name="send-circle" size={32} color={Colors.primary} />
               </TouchableOpacity>
@@ -264,13 +328,13 @@ const renderMessageImage = (props) => {
           </Send>
         )}
         renderMessageImage={renderMessageImage}
-        showAvatarForEveryMessage={true}
+        showAvatarForEveryMessage={false}
         showUserAvatar={true}
         onSend={messages => onSend(messages)}
         messagesContainerStyle={{
           backgroundColor: 'white',
           width: '100%',
-          paddingBottom: 35, // moves message container up or down.
+          paddingBottom: 35,
         }}
         textInputStyle={{
           backgroundColor: '#f2f2f2',
@@ -304,9 +368,9 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 0,
     right: 0,
-    bottom: 20, 
+    bottom: 20,
   },
-  
+
   usernameText: {
     alignSelf: 'flex-start',
     fontSize: 12,
@@ -314,7 +378,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 5,
     paddingTop: 2,
     paddingBottom: 2,
-    // Customize these styles to match your app’s design
   },
   usernameRight: {
     alignSelf: 'flex-end',
@@ -326,35 +389,34 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     fontSize: 14,
     color: '#666',
-    paddingVertical: 8, // Adjust as needed
-    
+    paddingVertical: 8,
   },
-  
-    customToolbar: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      paddingVertical: 15,
-      paddingHorizontal: 10,
-      backgroundColor: '#fff',
-      borderTopWidth: 1,
-      borderColor: '#ccc',
-      marginTop: -25, // add buffer between bottom of screen and tool bar
-    },
-    // Your other styles
+
+  customToolbar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 15,
+    paddingHorizontal: 10,
+    backgroundColor: '#fff',
+    borderTopWidth: 1,
+    borderColor: '#ccc',
+    marginTop: -25,
+  },
   input: {
     flex: 1,
-    minHeight: 30, // Minimum height for the input
-    maxHeight: 100, // Maximum height if you want it to be expandable
+    minHeight: 30,
+    maxHeight: 100,
     borderWidth: 1,
-    borderColor: '#ccc', // Subtle border color
-    borderRadius: 20, // Rounded corners
-    paddingHorizontal: 10, // Padding inside the input box
-    marginHorizontal: 5, // Space between the input box and the buttons
-    backgroundColor: '#f2f2f2', // Light background color for the input
+    borderColor: '#ccc',
+    borderRadius: 20,
+    paddingHorizontal: 10,
+    marginHorizontal:  5,
+    backgroundColor: '#f2f2f2',
   },
   toolbarButton: {
-    padding: 5, // Padding around the buttons for easier tapping
+    padding: 5,
     marginLeft: 4,
     marginRight: 4,
   },
 });
+
