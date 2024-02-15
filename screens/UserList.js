@@ -4,12 +4,13 @@ import Header from '../components/Header';
 import { ref, get, remove } from 'firebase/database';
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import { db } from '../backend/FirebaseConfig';
-import Modal from 'react-native-modal'; // Import the Modal component
+import Modal from 'react-native-modal';
 
 const UserList = ({ route, navigation }) => {
   const [clubMembers, setClubMembers] = useState([]);
   const [filteredMembers, setFilteredMembers] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedPrivilege, setSelectedPrivilege] = useState('all');
   const [currentUserId, setCurrentUserId] = useState(null);
   const clubName = route?.params?.clubName;
 
@@ -34,8 +35,8 @@ const UserList = ({ route, navigation }) => {
 
   useEffect(() => {
     filterMembers(searchQuery);
-  }, [clubMembers, searchQuery]);
-  
+  }, [clubMembers, searchQuery, selectedPrivilege]);
+
   const fetchClubMembers = async () => {
     try {
       const clubRef = ref(db, `clubs/${clubName}/clubMembers`);
@@ -59,13 +60,18 @@ const UserList = ({ route, navigation }) => {
   };
 
   const filterMembers = (query) => {
-    if (!query.trim()) {
-      setFilteredMembers(clubMembers);
-      return;
+    let filtered = clubMembers;
+
+    if (query.trim()) {
+      filtered = filtered.filter(member =>
+        member.userName.toLowerCase().includes(query.toLowerCase())
+      );
     }
-    const filtered = clubMembers.filter(member => 
-      member.userName.toLowerCase().includes(query.toLowerCase())
-    );
+
+    if (selectedPrivilege !== 'all') {
+      filtered = filtered.filter(member => member.privilege === selectedPrivilege);
+    }
+
     setFilteredMembers(filtered);
   };
 
@@ -84,7 +90,7 @@ const UserList = ({ route, navigation }) => {
     setMemberToRemove(null);
     setConfirmationVisible(false);
   };
-//asks whether the user is sure they want to remove another user from a club.
+
   const removeMemberConfirmed = async () => {
     if (memberToRemove) {
       try {
@@ -96,17 +102,17 @@ const UserList = ({ route, navigation }) => {
       }
     }
   };
-// removes the user from the club if they want to leave. 
+
   const leaveClubConfirmed = async () => {
     try {
       await remove(ref(db, `clubs/${clubName}/clubMembers/${currentUserId}`));
-      navigation.navigate("HomeScreen"); // Navigate back after leaving the club
+      navigation.navigate("HomeScreen");
       hideConfirmation();
     } catch (error) {
       console.error('Error leaving club:', error);
     }
   };
-//renders each individual member to the list
+
   const renderMember = ({ item }) => (
     <TouchableOpacity style={styles.memberContainer}>
       <View style={styles.memberInfo}>
@@ -126,13 +132,30 @@ const UserList = ({ route, navigation }) => {
   return (
     <View style={styles.container}>
       <Header navigation={navigation} text="User List" back={true} />
-      
+
       <TextInput
         style={styles.searchBar}
         placeholder="Search for a user..."
         value={searchQuery}
         onChangeText={setSearchQuery}
       />
+
+      <View style={styles.filterContainer}>
+        <TouchableOpacity onPress={() => setSelectedPrivilege('all')} style={styles.filterButton}>
+          <Text style={styles.filterText}>All</Text>
+          </TouchableOpacity>
+        <TouchableOpacity onPress={() => setSelectedPrivilege('member')} style={styles.filterButton}>
+          <Text style={styles.filterText}>Members</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => setSelectedPrivilege('admin')} style={styles.filterButton}>
+          <Text style={styles.filterText}>Admin</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => setSelectedPrivilege('owner')} style={styles.filterButton}>
+          <Text style={styles.filterText}>Owner</Text>
+        </TouchableOpacity>
+        
+      </View>
+
       <FlatList
         data={filteredMembers}
         renderItem={renderMember}
@@ -178,19 +201,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: 'grey',
   },
-  leaveClubButton: {
-    position: 'absolute',
-    top: 50,
-    right: 20,
-    backgroundColor: 'red',
-    padding: 10,
-    borderRadius: 5,
-    zIndex: 10,
-  },
-  leaveClubButtonText: {
-    color: 'white',
-    fontWeight: 'bold',
-  },
   searchBar: {
     fontSize: 18,
     padding: 10,
@@ -199,6 +209,22 @@ const styles = StyleSheet.create({
     borderColor: '#ddd',
     borderWidth: 1,
     borderRadius: 5,
+  },
+  filterContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    paddingVertical: 10,
+  },
+  filterButton: {
+    marginHorizontal: 10,
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    borderWidth: 1,
+    borderRadius: 5,
+    borderColor: '#ddd',
+  },
+  filterText: {
+    fontSize: 16,
   },
   modalContainer: {
     backgroundColor: 'white',
@@ -216,3 +242,5 @@ const styles = StyleSheet.create({
 });
 
 export default UserList;
+
+
