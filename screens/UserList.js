@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, FlatList, Text, Button, TouchableOpacity, TextInput } from 'react-native';
+import { View, StyleSheet, FlatList, Text, Button, TouchableOpacity, TextInput, Alert } from 'react-native';
 import Header from '../components/Header';
-import { ref, get, remove } from 'firebase/database';
+import { ref, get, remove, update } from 'firebase/database';
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import { db } from '../backend/FirebaseConfig';
 import Modal from 'react-native-modal';
@@ -12,19 +12,24 @@ const UserList = ({ route, navigation }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedPrivilege, setSelectedPrivilege] = useState('all');
   const [currentUserId, setCurrentUserId] = useState(null);
+  const [currentUserPrivilege, setCurrentUserPrivilege] = useState('');
+  const [isConfirmationVisible, setConfirmationVisible] = useState(false);
+  const [confirmationMessage, setConfirmationMessage] = useState('');
+  const [memberToRemove, setMemberToRemove] = useState(null);
+  const [promotionAction, setPromotionAction] = useState(false);
   const clubName = route?.params?.clubName;
 
   useEffect(() => {
     const auth = getAuth();
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    onAuthStateChanged(auth, (user) => {
       if (user) {
         setCurrentUserId(user.uid);
+        fetchCurrentUserPrivilege(user.uid);
       } else {
         setCurrentUserId(null);
+        setCurrentUserPrivilege('');
       }
     });
-
-    return () => unsubscribe();
   }, []);
 
   useEffect(() => {
@@ -51,124 +56,115 @@ const UserList = ({ route, navigation }) => {
         }));
 
         setClubMembers(membersArray);
+        filterMembers(searchQuery); // Ensure filtering happens after fetching
       } else {
-        console.log(`No members found for club ${clubName}`);
+        Alert.alert("No members found for club", clubName);
       }
     } catch (error) {
-      console.error('Error fetching club members:', error);
+      Alert.alert("Error fetching club members", error.message);
+    }
+  };
+
+  const fetchCurrentUserPrivilege = async (userId) => {
+    const userRef = ref(db, `clubs/${clubName}/clubMembers/${userId}`);
+    const snapshot = await get(userRef);
+    if (snapshot.exists()) {
+      setCurrentUserPrivilege(snapshot.val().privilege);
     }
   };
 
   const filterMembers = (query) => {
-    let filtered = clubMembers;
-
-    if (query.trim()) {
-      filtered = filtered.filter(member =>
-        member.userName.toLowerCase().includes(query.toLowerCase())
-      );
-    }
-
-    if (selectedPrivilege !== 'all') {
-      filtered = filtered.filter(member => member.privilege === selectedPrivilege);
-    }
-
+    const filtered = clubMembers.filter(member =>
+      member.userName.toLowerCase().includes(query.toLowerCase()) &&
+      (selectedPrivilege === 'all' || member.privilege === selectedPrivilege)
+    );
     setFilteredMembers(filtered);
   };
 
-  const [isConfirmationVisible, setConfirmationVisible] = useState(false);
-  const [confirmationMessage, setConfirmationMessage] = useState('');
-  const [memberToRemove, setMemberToRemove] = useState(null);
-
-  const showConfirmation = (message, memberId) => {
+  const showConfirmation = (message, memberId, isPromotion = false) => {
     setConfirmationMessage(message);
     setMemberToRemove(memberId);
+    setPromotionAction(isPromotion);
     setConfirmationVisible(true);
   };
 
   const hideConfirmation = () => {
     setConfirmationMessage('');
     setMemberToRemove(null);
+    setPromotionAction(false);
     setConfirmationVisible(false);
   };
 
+  const promoteMember = async (memberId, memberPrivilege) => {
+    let newPrivilege = memberPrivilege === 'member' ? 'admin' : 'owner';
+    if (currentUserPrivilege === 'owner' && memberPrivilege === 'admin') {
+      // If the current user is an owner and the member is an admin, promote the member to owner
+      await update(ref(db, `clubs/${clubName}/clubMembers/${memberId}`), { privilege: 'owner' });
+      // And demote the current owner to admin
+      await update(ref(db, `clubs/${clubName}/clubMembers/${currentUserId}`), { privilege: 'admin' });
+      setCurrentUserPrivilege('admin'); // Update the state to reflect the new privilege
+    } else {
+      await update(ref(db, `clubs/${clubName}/clubMembers/${memberId}`), { privilege: newPrivilege });
+    }
+
+    fetchClubMembers(); // Refresh the list to show updated privileges
+    Alert.alert("Promotion Success", `Member has been promoted to ${newPrivilege}.`);
+  };
+
   const removeMemberConfirmed = async () => {
-    if (memberToRemove) {
-      try {
-        await remove(ref(db, `clubs/${clubName}/clubMembers/${memberToRemove}`));
-        setClubMembers(clubMembers.filter(member => member.id !== memberToRemove));
-        hideConfirmation();
-      } catch (error) {
-        console.error('Error removing club member:', error);
-      }
-    }
+    await remove(ref(db, `clubs/${clubName}/clubMembers/${memberToRemove}`));
+    fetchClubMembers(); // Refresh the list to remove the member
+    Alert.alert("Removal Success", "Member has been successfully removed from the club.");
   };
 
-  const leaveClubConfirmed = async () => {
-    try {
-      await remove(ref(db, `clubs/${clubName}/clubMembers/${currentUserId}`));
-      navigation.navigate("HomeScreen");
-      hideConfirmation();
-    } catch (error) {
-      console.error('Error leaving club:', error);
-    }
-  };
+  const renderMember = ({ item }) => {
+    const canPromote = item.id !== currentUserId && (currentUserPrivilege === 'owner' || (currentUserPrivilege === 'admin' && item.privilege === 'member'));
+    const canRemove = item.id !== currentUserId && (currentUserPrivilege === 'owner' || (currentUserPrivilege === 'admin' && item.privilege === 'member'));
 
-  const renderMember = ({ item }) => (
-    <TouchableOpacity style={styles.memberContainer}>
-      <View style={styles.memberInfo}>
-        <Text style={styles.memberName}>{item.userName}</Text>
-        <Text style={styles.memberPrivilege}>{item.privilege}</Text>
+    return (
+      <View style={styles.memberContainer}>
+        <View style={styles.memberInfo}>
+          <Text style={styles.memberName}>{item.userName}</Text>
+          <Text style={styles.memberPrivilege}>{item.privilege}</Text>
+        </View>
+        <View style={styles.actionButtons}>
+          {canPromote && (
+            <Button title="Promote" onPress={() => showConfirmation(`Are you sure you want to promote ${item.userName}?`, item.id, true)} />
+          )}
+          {canRemove && (
+            <Button title="Remove" color="red" onPress={() => showConfirmation(`Are you sure you want to remove ${item.userName}?`, item.id)} />
+          )}
+        </View>
       </View>
-      {item.privilege === 'member' && item.id !== currentUserId && (
-        <Button
-          title="Remove"
-          color="red"
-          onPress={() => showConfirmation("Are you sure you want to remove this user from the club?", item.id)}
-        />
-      )}
-    </TouchableOpacity>
-  );
+    );
+  };
 
   return (
     <View style={styles.container}>
       <Header navigation={navigation} text="User List" back={true} />
-
       <TextInput
         style={styles.searchBar}
         placeholder="Search for a user..."
         value={searchQuery}
         onChangeText={setSearchQuery}
       />
-
       <View style={styles.filterContainer}>
-        <TouchableOpacity onPress={() => setSelectedPrivilege('all')} style={styles.filterButton}>
-          <Text style={styles.filterText}>All</Text>
+        {['all', 'member', 'admin', 'owner'].map((privilege) => (
+          <TouchableOpacity key={privilege} onPress={() => setSelectedPrivilege(privilege)} style={styles.filterButton}>
+            <Text style={styles.filterText}>{privilege.charAt(0).toUpperCase() + privilege.slice(1)}</Text>
           </TouchableOpacity>
-        <TouchableOpacity onPress={() => setSelectedPrivilege('member')} style={styles.filterButton}>
-          <Text style={styles.filterText}>Members</Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => setSelectedPrivilege('admin')} style={styles.filterButton}>
-          <Text style={styles.filterText}>Admin</Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => setSelectedPrivilege('owner')} style={styles.filterButton}>
-          <Text style={styles.filterText}>Owner</Text>
-        </TouchableOpacity>
-        
+        ))}
       </View>
-
       <FlatList
         data={filteredMembers}
         renderItem={renderMember}
         keyExtractor={(item) => item.id}
       />
-
       <Modal isVisible={isConfirmationVisible}>
         <View style={styles.modalContainer}>
           <Text style={styles.modalText}>{confirmationMessage}</Text>
-          <View style={styles.modalButtons}>
-            <Button title="Yes" onPress={confirmationMessage.includes("remove") ? removeMemberConfirmed : leaveClubConfirmed} />
-            <Button title="No" onPress={hideConfirmation} />
-          </View>
+          <Button title="Yes" onPress={() => promotionAction ? promoteMember(memberToRemove, filteredMembers.find(member => member.id === memberToRemove).privilege) : removeMemberConfirmed()} />
+          <Button title="No" onPress={hideConfirmation} />
         </View>
       </Modal>
     </View>
@@ -226,10 +222,14 @@ const styles = StyleSheet.create({
   filterText: {
     fontSize: 16,
   },
+  actionButtons: {
+    flexDirection: 'row',
+  },
   modalContainer: {
     backgroundColor: 'white',
     padding: 20,
     borderRadius: 10,
+    alignItems: 'center',
   },
   modalText: {
     fontSize: 18,
@@ -238,9 +238,8 @@ const styles = StyleSheet.create({
   modalButtons: {
     flexDirection: 'row',
     justifyContent: 'space-around',
+    width: '100%',
   },
 });
 
 export default UserList;
-
-

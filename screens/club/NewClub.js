@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 // react native components
-import { View, StyleSheet, ScrollView, Text } from 'react-native';
+import { View, StyleSheet, ScrollView, Text,Alert } from 'react-native';
 // backend
 import { set, ref, get } from "firebase/database";
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
@@ -53,80 +53,44 @@ const NewClub = ({ navigation }) => {
   const onSubmitPressed = async () => {
     setLoading(true);
 
-    // make sure data is valid
     if (!clubName || !clubDescription) {
-      alert("Please enter both name and description.");
+      Alert.alert("Error", "Please enter both name and description.");
       setLoading(false);
       return;
     }
 
-    // add data to clubs
     try {
-      const clubRef = ref(db, 'clubs/' + clubName);
-      set(clubRef, {
+      const newClubRef = ref(db, 'clubs/' + clubName);
+      await set(newClubRef, {
         clubName: clubName,
         clubDescription: clubDescription,
         clubCategories: categoriesSelected,
         clubImg: clubImg,
+        clubMembers: {
+          [currentUser.uid]: { // Use the current user's UID
+            userName: currentUser.email, // Or username if available
+            privilege: 'owner',
+          },
+        },
       });
 
-      const auth = getAuth();
-      const user = auth.currentUser;
-  
-      if (user) {
-        const userId = user.uid;
-        const userRef = ref(db, `users/${userId}`);
-        const userSnapshot = await get(userRef);
-  
-        if (userSnapshot.exists()) {
-          const userData = userSnapshot.val();
-          const updatedClubs = [...(userData.clubs || []), {
-            name: clubName,
-            privilege: 'owner',
-          }];
-  
-          // Update the user's information in the database
-          await set(userRef, {
-            ...userData,
-            clubs: updatedClubs,
-          });
+      // Optionally, update the user's profile to include the new club
+      const userClubsRef = ref(db, `users/${currentUser.uid}/clubs`);
+      const userClubsSnapshot = await get(userClubsRef);
+      let clubs = userClubsSnapshot.exists() ? userClubsSnapshot.val() : [];
+      clubs.push({ name: clubName, privilege: 'owner' });
+      await set(userClubsRef, clubs);
 
-          // add user to club's members
-          const clubRef = ref(db, 'clubs/' + clubName);
-          const clubSnapshot = await get(clubRef);
-
-          // if club exists
-          if (clubSnapshot.exists()) {
-            const clubData = clubSnapshot.val();
-
-            const updatedClubMembers = {...clubData.clubMembers, [userData.userId]: {
-              userName: userData.userName,
-              privilege: 'owner',
-            }};
-
-            await set(clubRef, {
-              ...clubData,
-              clubMembers: updatedClubMembers,
-            });
-          } else {
-            console.error('Club data not found.');
-          }
-  
-          alert(`Created new club ${clubName}`);
-        } else {
-          console.error('User data not found.');
-        }
-      } else {
-        console.error('User not authenticated.');
-      }
+      Alert.alert("Success", `Created new club ${clubName}`);
       navigation.goBack();
     } catch (error) {
-      console.log(error);
-      alert('Club creation failed: ' + error.message);
+      console.error(error);
+      Alert.alert("Club creation failed", error.message);
     } finally {
       setLoading(false);
     }
-  }
+};
+
 
   return (
     <View style={styles.container}>
