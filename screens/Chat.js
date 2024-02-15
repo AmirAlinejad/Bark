@@ -297,6 +297,9 @@ const updateMessageLikeCount = async (messageId, increment) => {
           icon="arrow-left"
           size={30}
         />
+        <TouchableOpacity onPress={() => navigation.navigate('MessageSearch', { clubName })}>
+          <Text>Search Messages</Text>
+        </TouchableOpacity>
         <Text style={{ fontSize: 20, fontWeight: 'bold', marginLeft: 5 }}>{clubName}</Text>
         <View style={{ marginLeft: 'auto', marginRight: 10 }}>
           <IconButton
