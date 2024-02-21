@@ -91,27 +91,17 @@ const formatDate = (date) => {
 
 // Renders each chat message
 const renderMessage = (props) => {
-  const { currentMessage, previousMessage } = props;
-
-  let isNewDay = false;
-  if (currentMessage && previousMessage) {
-    const currentDate = new Date(currentMessage.createdAt).toDateString();
-    const prevDate = new Date(previousMessage.createdAt).toDateString();
-    isNewDay = currentDate !== prevDate;
-  }
+  const { currentMessage } = props;
 
   const isCurrentUser = currentMessage.user._id === auth?.currentUser?.email;
-  const usernameStyle = isCurrentUser ? styles.usernameRight : styles.usernameLeft;
+
+  // Adjusted style application to align usernames correctly
+  const usernameAlignmentStyle = isCurrentUser ? styles.usernameRight : styles.usernameLeft;
 
   return (
     <View style={{ marginBottom: 5 }}>
-      {isNewDay && (
-        <Text style={styles.dateText}>
-          {formatDate(new Date(currentMessage.createdAt))}
-        </Text>
-      )}
-      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-        <Text style={[styles.usernameText, usernameStyle]}>
+      <View style={{ flexDirection: 'row', justifyContent: isCurrentUser ? 'flex-end' : 'flex-start' }}>
+        <Text style={[styles.usernameText, usernameAlignmentStyle]}>
           {isCurrentUser ? 'You' : currentMessage.user.name || currentMessage.user._id}
         </Text>
       </View>
@@ -314,7 +304,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 5,
     right: position === 'right' ? 'auto' : -250,
-    left: position === 'right' ? -250 : 'auto',
+    left: position === 'right' ? -300 : 'auto',
     flexDirection: 'row',
     alignItems: 'center',
   }),
@@ -335,18 +325,21 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   usernameText: {
-    alignSelf: 'flex-start',
     fontSize: 12,
-    color: '#666',
     paddingHorizontal: 5,
     paddingTop: 2,
     paddingBottom: 2,
+    // Common style for username text
   },
   usernameRight: {
+    // Specific style for the current user's username
     alignSelf: 'flex-end',
+    color: 'gray', // Example color
   },
   usernameLeft: {
+    // Specific style for other users' usernames
     alignSelf: 'flex-start',
+    color: 'gray', // Example color
   },
   dateText: {
     alignSelf: 'center',
