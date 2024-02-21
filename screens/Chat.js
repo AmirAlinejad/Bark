@@ -88,10 +88,19 @@ const formatDate = (date) => {
   const options = { year: 'numeric', month: 'long', day: 'numeric' };
   return date.toLocaleDateString(undefined, options);
 };
+const renderDay = (props) => {
+  return null;
 
+}
 // Renders each chat message
 const renderMessage = (props) => {
-  const { currentMessage } = props;
+  const { currentMessage,previousMessage } = props;
+  let isNewDay = false;
+    if (currentMessage && previousMessage) {
+      const currentDate = new Date(currentMessage.createdAt).toDateString();
+      const prevDate = new Date(previousMessage.createdAt).toDateString();
+      isNewDay = currentDate !== prevDate;
+    }
 
   const isCurrentUser = currentMessage.user._id === auth?.currentUser?.email;
 
@@ -100,6 +109,13 @@ const renderMessage = (props) => {
 
   return (
     <View style={{ marginBottom: 5 }}>
+
+        {isNewDay && (
+          <Text style={styles.dateText}>
+            {formatDate(new Date(currentMessage.createdAt))}
+          </Text>
+        )}
+
       <View style={{ flexDirection: 'row', justifyContent: isCurrentUser ? 'flex-end' : 'flex-start' }}>
         <Text style={[styles.usernameText, usernameAlignmentStyle]}>
           {isCurrentUser ? 'You' : currentMessage.user.name || currentMessage.user._id}
@@ -113,6 +129,7 @@ const renderMessage = (props) => {
     </View>
   );
 };
+
 const handleImageUploadAndSend = () => {
   uploadImage((imageUri) => {
     const message = {
@@ -174,10 +191,26 @@ const handleImageUploadAndSend = () => {
       addDoc(collection(firestore, 'chats'), { ...message, clubName, likeCount: 0 });
     });
   }, [clubName]);
-
+  const renderMessageImage = (props) => {
+    const { currentMessage } = props;
+    const isLiked = !!likedMessages[currentMessage._id];
+    return (
+      <View style={styles.messageImageContainer}>
+        <TouchableOpacity onPress={() => onImagePress(props.currentMessage.image)}>
+          <Image source={{ uri: props.currentMessage.image }} style={styles.messageImage} />
+        </TouchableOpacity>
+        
+      </View>
+    );
+  };
+  const onImagePress = (imageUri) => {
+    navigation.navigate('ImageViewerScreen', { imageUri });
+  };
   const renderBubble = (props) => {
     const { currentMessage } = props;
     const isLiked = !!likedMessages[currentMessage._id];
+    const isCurrentUser = currentMessage.user._id === auth?.currentUser?.email;
+  
     return (
       <Bubble
         {...props}
@@ -185,17 +218,20 @@ const handleImageUploadAndSend = () => {
         textStyle={styles.bubbleTextStyle}
         timeTextStyle={styles.bubbleTimeTextStyle}
         renderCustomView={() => (
-          <TouchableOpacity
-            onPress={() => toggleLike(currentMessage._id)}
-            style={styles.likeButton(isLiked, props.position)}
-          >
-            <MaterialCommunityIcons name={isLiked ? 'heart' : 'heart-outline'} size={24} color={isLiked ? 'red' : 'grey'} />
-            <Text style={styles.likeCount}>{currentMessage.likeCount || 0}</Text>
-          </TouchableOpacity>
+          <View style={[styles.likeButton, isCurrentUser ? styles.likeButtonCurrentUser : styles.likeButtonOtherUser]}>
+            <TouchableOpacity
+              onPress={() => toggleLike(currentMessage._id)}
+              style={styles.likeButtonInner}
+            >
+              <MaterialCommunityIcons name={isLiked ? 'heart' : 'heart-outline'} size={24} color={isLiked ? 'red' : 'grey'} />
+              <Text style={styles.likeCount}>{currentMessage.likeCount || 0}</Text>
+            </TouchableOpacity>
+          </View>
         )}
       />
     );
   };
+  
 
   return (
     <View style={styles.container}>
@@ -211,15 +247,12 @@ const handleImageUploadAndSend = () => {
         onSend={messages => onSend(messages)}
         user={{ _id: auth?.currentUser?.email, avatar: 'https://i.pravatar.cc/300' }}
         renderBubble={renderBubble}
-        renderMessageImage={props => (
-          <TouchableOpacity onPress={() => onImagePress(props.currentMessage.image)}>
-            <Image source={{ uri: props.currentMessage.image }} style={styles.messageImage} />
-          </TouchableOpacity>
-        )}
+        renderMessageImage={renderMessageImage}
         renderInputToolbar={props => <CustomInputToolbar {...props} onSend={onSend} handleImageUploadAndSend={handleImageUploadAndSend} />}
         messagesContainerStyle={styles.messagesContainer}
         textInputStyle={styles.textInput}
         renderMessage={renderMessage}
+        renderDay={renderDay}
       />
     </View>
   );
@@ -300,16 +333,26 @@ const styles = StyleSheet.create({
     right: { color: 'black' },
     left: { color: 'black' },
   },
-  likeButton: (isLiked, position) => ({
+  likeButtonImage: {
     position: 'absolute',
-    bottom: 5,
-    right: position === 'right' ? 'auto' : -250,
-    left: position === 'right' ? -300 : 'auto',
+    right: 100,
+    bottom: 10,
     flexDirection: 'row',
     alignItems: 'center',
-  }),
+  },
+
+  likeButton: {
+    position: 'absolute',
+    right: 300,
+    bottom: 10,
+  },
+
+  likeButtonInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   likeCount: { marginLeft: 5 },
-  messageImage: { width: 200, height: 200 },
+ 
   messagesContainer: {
     backgroundColor: 'white',
     width: '100%',
@@ -346,5 +389,27 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666',
     paddingVertical: 8,
+  },
+  messageImageContainer: {
+    position: 'relative',
+    padding: 10,
+    flexDirection: 'column',
+    alignItems: 'flex-start', // Align items to the start to keep the image and button aligned
+  },
+ 
+  messageImage: {
+    width: 200,
+    height: 200,
+    borderRadius: 13, // Optional: for styled image edges
+  },
+  likeButtonCurrentUser: {
+    position: 'absolute',
+    right: 325, // Adjust the left position as needed
+    bottom: 10,
+  },
+  likeButtonOtherUser: {
+    position: 'absolute',
+    right: -250, // Adjust the right position as needed
+    bottom: 10,
   },
 });
