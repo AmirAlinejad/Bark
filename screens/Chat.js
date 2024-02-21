@@ -192,7 +192,7 @@ const updateMessageLikeCount = async (messageId, increment) => {
         <Message {...props}
           containerStyle={{
             left: { backgroundColor: 'white' },
-            right: { backgroundColor: '#f0f0f0' },
+            right: { backgroundColor: 'white' },
           }} />
       </View>
     );
@@ -205,7 +205,7 @@ const updateMessageLikeCount = async (messageId, increment) => {
         {...props}
         wrapperStyle={{
           right: {
-            backgroundColor: '#f0f0f0',
+            backgroundColor: 'white',
           },
           left: {
             backgroundColor: "white",
@@ -297,10 +297,10 @@ const updateMessageLikeCount = async (messageId, increment) => {
           icon="arrow-left"
           size={30}
         />
-        <TouchableOpacity onPress={() => navigation.navigate('MessageSearch', { clubName })}>
-          <Text>Search Messages</Text>
+        
+        <TouchableOpacity style={styles.button} onPress={() => navigation.navigate("InClubView", {clubName})}>
+           <Text style={styles.text}>{clubName}</Text>
         </TouchableOpacity>
-        <Text style={{ fontSize: 20, fontWeight: 'bold', marginLeft: 5 }}>{clubName}</Text>
         <View style={{ marginLeft: 'auto', marginRight: 10 }}>
           <IconButton
             icon="magnify"
@@ -317,17 +317,7 @@ const updateMessageLikeCount = async (messageId, increment) => {
         messages={messages}
         renderSend={(props) => (
           <Send {...props} alwaysShowSend>
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-              <TouchableOpacity style={{ marginRight: 10 }} onPress={() => {/* Handle camera button tap */}}>
-                <MaterialCommunityIcons name="camera" size={32} color={Colors.primary} />
-              </TouchableOpacity>
-              <TouchableOpacity style={{ marginRight: 10 }} onPress={handleImageUploadAndSend}>
-                <MaterialCommunityIcons name="plus" size={32} color={Colors.primary} />
-              </TouchableOpacity>
-              <TouchableOpacity style={{ marginBottom: 8, marginRight:10 }} onPress={() => props.onSend({ text: props.text }, true)}disabled={!props.text.trim()}>
-                <MaterialCommunityIcons name="send-circle" size={32} color={Colors.primary} />
-              </TouchableOpacity>
-            </View>
+            
           </Send>
         )}
         renderMessageImage={renderMessageImage}
@@ -420,6 +410,18 @@ const styles = StyleSheet.create({
     padding: 5,
     marginLeft: 4,
     marginRight: 4,
+  },
+  button: {
+    padding: 10,
+    borderRadius: 5,
+    margin: 5,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  text: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: 'black', // Example text color
   },
 });
 

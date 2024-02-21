@@ -17,6 +17,7 @@ import MyClubs from './screens/club/MyClubs';
 import UserList from './screens/UserList';
 import ImageViewerScreen from "./screens/ImageViewerScreen";
 import MessageSearchScreen from './screens/MessageSearchScreen';
+import InClubView from "./screens/InClubView";
 // stack navigator
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { NavigationContainer } from '@react-navigation/native';
@@ -44,7 +45,8 @@ export default class App extends React.Component {
             <Stack.Screen name="EditProfile" component={EditProfile} options={{ headerShown: false }}/>
             <Stack.Screen name="UserList" component={UserList} options={{ headerShown: false }}/>
             <Stack.Screen name="ImageViewerScreen" component={ImageViewerScreen} options={{ headerShown: false }}/>
-            <Stack.Screen name="MessageSearch" component={MessageSearchScreen} options={{ headerShown: false }}/>
+            <Stack.Screen name="MessageSearchScreen" component={MessageSearchScreen} options={{ headerShown: false }}/>
+            <Stack.Screen name="InClubView" component={InClubView} options={{ headerShown: false }}/>
           </Stack.Navigator>
         </NavigationContainer>
       );
