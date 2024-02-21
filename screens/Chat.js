@@ -408,8 +408,8 @@ const styles = StyleSheet.create({
     bottom: 10,
   },
   likeButtonOtherUser: {
-    position: 'absolute',
+    position: 'fixed',
     right: -250, // Adjust the right position as needed
-    bottom: 10,
+    bottom: -20,
   },
 });
