@@ -200,15 +200,39 @@ const updateMessageLikeCount = async (messageId, increment) => {
 
   // Renders the chat message bubbles
   const renderBubble = (props) => {
+    // Destructure necessary props
+    const { currentMessage, likedMessages, toggleLike, currentUserId } = props;
+  
+    // Determine if the message is from the current user
+    const isCurrentUser = currentMessage.user._id === currentUserId;
+  
+    // Function to handle the press event for the like button
+    const onLikePress = () => {
+      if (toggleLike && currentMessage && currentMessage._id) {
+        toggleLike(currentMessage._id);
+      }
+    };
+  
+    // Check if the message is liked to determine the icon and color
+    const isLiked = likedMessages && likedMessages[currentMessage._id];
+    const likeIconName = isLiked ? 'heart' : 'heart-outline';
+    const likeIconColor = isLiked ? 'red' : 'grey';
+  
     return (
       <Bubble
         {...props}
         wrapperStyle={{
           right: {
             backgroundColor: 'white',
+            marginRight: 0,
+            flex: 1,
+            minHeight: 40,
           },
           left: {
             backgroundColor: "white",
+            marginLeft: 0,
+            flex: 1,
+            minHeight: 40,
           },
         }}
         textStyle={{
@@ -216,6 +240,7 @@ const updateMessageLikeCount = async (messageId, increment) => {
             color: 'black',
           },
           left: {
+            color: 'black',
           },
         }}
         timeTextStyle={{
@@ -226,9 +251,30 @@ const updateMessageLikeCount = async (messageId, increment) => {
             color: 'black',
           },
         }}
+        renderCustomView={() => (
+          <View style={{
+            position: 'absolute',
+            // Position the like button based on the user
+            top: 20,
+            [isCurrentUser ? 'left' : 'right']: 250, // Adjust as needed
+            flexDirection: 'row',
+            alignItems: 'center',
+          }}>
+            <TouchableOpacity onPress={onLikePress} style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <MaterialCommunityIcons
+                name={likeIconName}
+                size={24}
+                color={likeIconColor}
+              />
+              <Text style={{ marginLeft: 5 }}>{currentMessage.likeCount || 0}</Text>
+            </TouchableOpacity>
+          </View>
+        )}
       />
     );
   };
+  
+  
 
   // Suppresses the rendering of day markers
   const renderDay = (props) => {
