@@ -75,9 +75,10 @@ function CustomInputToolbar({ onSend, handleImageUploadAndSend }) {
       <TextInput
         style={[styles.input, { maxHeight: 100 }]} // Add maxHeight here
         value={messageText}
+        
         onChangeText={setMessageText}
         placeholder="Type a message..."
-        multiline
+        multiline={true} maxHeight={70}
         returnKeyType="done" // Prevents new lines
       />
       <TouchableOpacity onPress={sendTextMessage} style={styles.toolbarButton}>
@@ -321,7 +322,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderTopWidth: 1,
     borderColor: '#ccc',
-    marginTop: -80,
+    marginTop: -50,
+    
     
   },
   input: {
@@ -385,7 +387,7 @@ const styles = StyleSheet.create({
   messagesContainer: {
     backgroundColor: 'white',
     width: '100%',
-    paddingBottom: 120,
+    paddingBottom: 35,
   },
   textInput: {
     backgroundColor: '#f2f2f2',

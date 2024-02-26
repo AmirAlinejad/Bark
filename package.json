@@ -12,6 +12,7 @@
     "@expo-google-fonts/inter": "^0.2.3",
     "@expo-google-fonts/nunito": "^0.2.3",
     "@expo/webpack-config": "^19.0.0",
+    "@react-native-clipboard/clipboard": "^1.13.2",
     "@react-native-community/datetimepicker": "^7.6.2",
     "@react-navigation/bottom-tabs": "^6.5.11",
     "@react-navigation/native": "^6.1.9",
@@ -23,6 +24,7 @@
     "expo-app-loading": "^2.1.1",
     "expo-font": "~11.4.0",
     "expo-image-picker": "~14.3.2",
+    "expo-media-library": "~15.4.1",
     "expo-splash-screen": "~0.20.5",
     "expo-status-bar": "~1.6.0",
     "firebase": "^10.7.1",
@@ -38,8 +40,7 @@
     "react-native-multiple-select": "^0.5.12",
     "react-native-paper": "^5.12.2",
     "react-native-web": "~0.19.6",
-    "react-player": "^2.13.0",
-    "expo-media-library": "~15.4.1"
+    "react-player": "^2.13.0"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0"
