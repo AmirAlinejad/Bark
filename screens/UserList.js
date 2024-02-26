@@ -174,7 +174,7 @@ const UserList = ({ route, navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: 'white',
+    backgroundColor: '#FAFAFA',
   },
   memberContainer: {
     flexDirection: 'row',
@@ -202,7 +202,7 @@ const styles = StyleSheet.create({
     padding: 10,
     marginVertical: 10,
     marginHorizontal: 20,
-    borderColor: '#ddd',
+    borderColor: 'black',
     borderWidth: 1,
     borderRadius: 5,
   },

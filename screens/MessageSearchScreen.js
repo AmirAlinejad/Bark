@@ -1,36 +1,51 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, TextInput, FlatList, Text, StyleSheet, Image } from 'react-native';
 import { firestore } from '../backend/FirebaseConfig'; // Import your Firebase config
 import { query, collection, where, getDocs } from 'firebase/firestore';
+import Header from '../components/Header';
 
-const MessageSearchScreen = ({ route }) => {
+const MessageSearchScreen = ({ route, navigation }) => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [messages, setMessages] = useState([]);
   const [searchResults, setSearchResults] = useState([]);
   const clubName = route?.params?.clubName; // Assume you pass the clubName as a parameter
 
-  const handleSearch = async () => {
-    const messagesRef = collection(firestore, 'chats');
-    const q = query(messagesRef, where('clubName', '==', clubName), where('text', '>=', searchTerm), where('text', '<=', searchTerm + '\uf8ff'));
+  useEffect(() => {
+    const fetchMessages = async () => {
+      const messagesRef = collection(firestore, 'chats');
+      const q = query(messagesRef, where('clubName', '==', clubName));
 
-    const querySnapshot = await getDocs(q);
-    const results = querySnapshot.docs.map(doc => ({
-      _id: doc.id,
-      text: doc.data().text,
-      createdAt: doc.data().createdAt.toDate(),
-      user: doc.data().user,
-      likeCount: doc.data().likeCount || 0, // Assume you're storing like count in the message document
-    }));
-    setSearchResults(results);
+      const querySnapshot = await getDocs(q);
+      const results = querySnapshot.docs.map(doc => ({
+        _id: doc.id,
+        text: doc.data().text,
+        createdAt: doc.data().createdAt.toDate(),
+        user: doc.data().user,
+        likeCount: doc.data().likeCount || 0, // Assume you're storing like count in the message document
+      }));
+      setMessages(results);
+      setSearchResults(results);
+    };
+
+    fetchMessages();
+  }, [clubName]);
+
+  const handleSearch = (text) => {
+    setSearchTerm(text);
+    const filteredResults = messages.filter(message =>
+      message.text.toLowerCase().includes(text.toLowerCase())
+    );
+    setSearchResults(filteredResults);
   };
 
   return (
     <View style={styles.container}>
+      <Header navigation={navigation} text="Search Messages" back={true} />
       <TextInput
         style={styles.searchInput}
         placeholder="Search messages..."
         value={searchTerm}
-        onChangeText={setSearchTerm}
-        onSubmitEditing={handleSearch} // Trigger search when the user submits the input
+        onChangeText={handleSearch}
       />
       <FlatList
         data={searchResults}
@@ -57,8 +72,8 @@ const MessageSearchScreen = ({ route }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingTop: 50,
     paddingHorizontal: 10,
+    backgroundColor: "#FAFAFA",
   },
   searchInput: {
     height: 40,

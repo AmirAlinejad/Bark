@@ -20,6 +20,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { uploadImage } from '../components/imageUploadUtils'; // Import the utility function
 import { Colors } from '../styles/Colors';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import { KeyboardAvoidingView,ScrollView } from 'react-native';
 
 export default function Chat({ route, navigation }) {
   const [messages, setMessages] = useState([]);
@@ -46,7 +47,7 @@ export default function Chat({ route, navigation }) {
       [messageId]: !likedMessage.exists(),
     }));
   };
-  // CustomInputToolbar component definition
+// CustomInputToolbar component definition
 function CustomInputToolbar({ onSend, handleImageUploadAndSend }) {
   const [messageText, setMessageText] = useState('');
 
@@ -67,27 +68,30 @@ function CustomInputToolbar({ onSend, handleImageUploadAndSend }) {
   }, [messageText, onSend]);
 
   return (
-    <View style={styles.customToolbar}>
+    <KeyboardAvoidingView behavior="padding" style={styles.customToolbar}>
       <TouchableOpacity onPress={handleImageUploadAndSend} style={styles.toolbarButton}>
         <Ionicons name="image-outline" size={24} color={Colors.primary} />
       </TouchableOpacity>
       <TextInput
-        style={styles.input}
+        style={[styles.input, { maxHeight: 100 }]} // Add maxHeight here
         value={messageText}
         onChangeText={setMessageText}
         placeholder="Type a message..."
         multiline
+        returnKeyType="done" // Prevents new lines
       />
       <TouchableOpacity onPress={sendTextMessage} style={styles.toolbarButton}>
         <Ionicons name="send" size={24} color={Colors.primary} />
       </TouchableOpacity>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
+//Displays the date above messages
 const formatDate = (date) => {
   const options = { year: 'numeric', month: 'long', day: 'numeric' };
   return date.toLocaleDateString(undefined, options);
 };
+//Null the automatic day rendering
 const renderDay = (props) => {
   return null;
 
@@ -129,7 +133,7 @@ const renderMessage = (props) => {
     </View>
   );
 };
-
+//uploads images
 const handleImageUploadAndSend = () => {
   uploadImage((imageUri) => {
     const message = {
@@ -146,7 +150,7 @@ const handleImageUploadAndSend = () => {
     onSend([message]);
   });
 };
-
+//updates the like count
   const updateMessageLikeCount = async (messageId, increment) => {
     const messageRef = doc(firestore, 'chats', messageId);
     const messageSnapshot = await getDoc(messageRef);
@@ -206,9 +210,12 @@ const handleImageUploadAndSend = () => {
   const onImagePress = (imageUri) => {
     navigation.navigate('ImageViewerScreen', { imageUri });
   };
+  
   const renderBubble = (props) => {
     const { currentMessage } = props;
     const isLiked = !!likedMessages[currentMessage._id];
+    const isPinned = currentMessage.pinned; // Check if the message is pinned
+  
     const isCurrentUser = currentMessage.user._id === auth?.currentUser?.email;
   
     return (
@@ -226,6 +233,12 @@ const handleImageUploadAndSend = () => {
               <MaterialCommunityIcons name={isLiked ? 'heart' : 'heart-outline'} size={24} color={isLiked ? 'red' : 'grey'} />
               <Text style={styles.likeCount}>{currentMessage.likeCount || 0}</Text>
             </TouchableOpacity>
+            <TouchableOpacity // Pin button
+              onPress={() => togglePin(currentMessage._id)} // Toggle pin function
+              style={[styles.likeButtonInner, { marginLeft: 10}]} // Adjust as needed
+            >
+              <MaterialCommunityIcons name={isPinned ? 'pin' : 'pin-outline'} size={24} color={isPinned ? 'blue' : 'grey'} />
+            </TouchableOpacity>
           </View>
         )}
       />
@@ -233,11 +246,25 @@ const handleImageUploadAndSend = () => {
   };
   
 
+  const togglePin = async (messageId) => {
+    const messageRef = doc(firestore, 'chats', messageId);
+    const messageSnapshot = await getDoc(messageRef);
+    if (messageSnapshot.exists()) {
+      const currentPinStatus = messageSnapshot.data().pinned || false;
+      await updateDoc(messageRef, { pinned: !currentPinStatus }); // Toggle pin status
+    }
+  };
+  
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
         <IconButton onPress={onBackPress} icon="arrow-left" size={30} />
-        <TouchableOpacity style={styles.clubNameButton} onPress={() => navigation.navigate("InClubView", { clubName })}>
+        <TouchableOpacity style={styles.clubNameContainer} onPress={() => navigation.navigate("InClubView", { clubName })}>
+          <View style={styles.imageContainer}>
+            {/* Placeholder image */}
+           
+          </View>
           <Text style={styles.clubNameText}>{clubName}</Text>
         </TouchableOpacity>
         <IconButton icon="magnify" size={30} onPress={() => navigation.navigate("UserList", { clubName })} style={styles.searchButton} />
@@ -261,6 +288,7 @@ const handleImageUploadAndSend = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: "white",
   },
   header: {
     flexDirection: 'row',
@@ -288,23 +316,24 @@ const styles = StyleSheet.create({
   customToolbar: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 15,
+    paddingVertical: 20,
     paddingHorizontal: 10,
     backgroundColor: '#fff',
     borderTopWidth: 1,
     borderColor: '#ccc',
-    marginTop: -25,
+    marginTop: -80,
+    
   },
   input: {
     flex: 1,
     minHeight: 30,
     maxHeight: 100,
     borderWidth: 1,
-    borderColor: '#ccc',
+    borderColor: 'white',
     borderRadius: 20,
     paddingHorizontal: 10,
     marginHorizontal: 5,
-    backgroundColor: '#f2f2f2',
+    backgroundColor: 'white',
   },
   toolbarButton: {
     padding: 5,
@@ -356,7 +385,7 @@ const styles = StyleSheet.create({
   messagesContainer: {
     backgroundColor: 'white',
     width: '100%',
-    paddingBottom: 35,
+    paddingBottom: 120,
   },
   textInput: {
     backgroundColor: '#f2f2f2',
@@ -411,5 +440,19 @@ const styles = StyleSheet.create({
     position: 'fixed',
     right: -250, // Adjust the right position as needed
     bottom: -20,
+  },
+  clubNameContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    marginLeft: 10,
+  },
+  imageContainer: {
+    width: 30,
+    height: 30,
+    borderRadius: 5,
+    overflow: 'hidden',
+    marginRight: 10,
+    backgroundColor: 'lightgray', // Placeholder background color
   },
 });
