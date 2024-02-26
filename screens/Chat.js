@@ -30,9 +30,31 @@ export default function Chat({ route, navigation }) {
     navigation.navigate("ClubScreen");
   }
   const toggleLike = async (messageId) => {
+    // Check if the message is already liked by the current user
+    const isLiked = !!likedMessages[messageId];
+    
+    // Update the local state of likedMessages immediately
+    setLikedMessages((prevLikedMessages) => ({
+      ...prevLikedMessages,
+      [messageId]: !isLiked,
+    }));
+  
+    // Update the like count locally
+    setMessages((prevMessages) =>
+      prevMessages.map((message) =>
+        message._id === messageId
+          ? {
+              ...message,
+              likeCount: isLiked ? message.likeCount - 1 : message.likeCount + 1,
+            }
+          : message
+      )
+    );
+  
+    // Perform the database operation
     const messageRef = doc(firestore, 'messagesLikes', auth.currentUser.uid, 'likes', messageId);
     const likedMessage = await getDoc(messageRef);
-
+  
     if (likedMessage.exists()) {
       await deleteDoc(messageRef);
       updateMessageLikeCount(messageId, -1); // Decrement like count
@@ -40,12 +62,6 @@ export default function Chat({ route, navigation }) {
       await setDoc(messageRef, { liked: true });
       updateMessageLikeCount(messageId, 1); // Increment like count
     }
-
-    // Update likedMessages state to trigger re-render
-    setLikedMessages((prevLikedMessages) => ({
-      ...prevLikedMessages,
-      [messageId]: !likedMessage.exists(),
-    }));
   };
 // CustomInputToolbar component definition
 function CustomInputToolbar({ onSend, handleImageUploadAndSend }) {
@@ -440,7 +456,7 @@ const styles = StyleSheet.create({
   },
   likeButtonOtherUser: {
     position: 'fixed',
-    right: -250, // Adjust the right position as needed
+    right: -275, // Adjust the right position as needed
     bottom: -20,
   },
   clubNameContainer: {
