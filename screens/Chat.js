@@ -9,7 +9,7 @@ import {
   onSnapshot,
   where,
   setDoc,
-  getDoc,
+  getDocs,
   updateDoc,
   deleteDoc,
   doc,
@@ -27,6 +27,7 @@ import { Alert } from 'react-native';
 export default function Chat({ route, navigation }) {
   const [messages, setMessages] = useState([]);
   const [likedMessages, setLikedMessages] = useState({});
+  const [pinnedMessagesCount, setPinnedMessagesCount] = useState(0);
   const clubName = route?.params?.clubName;
   const onBackPress = () => {
     navigation.navigate("ClubScreen");
@@ -105,6 +106,20 @@ function CustomInputToolbar({ onSend, handleImageUploadAndSend }) {
     </KeyboardAvoidingView>
   );
 }
+
+// Function to get the count of pinned messages
+const getPinnedMessagesCount = async () => {
+  const q = query(collection(firestore, 'chats'), where('clubName', '==', clubName), where('pinned', '==', true));
+  const querySnapshot = await getDocs(q);
+  setPinnedMessagesCount(querySnapshot.size); // Update the count of pinned messages
+}
+const navigateToSearchPinnedMessages = () => {
+  navigation.navigate('PinnedMessagesScreen', { clubName });
+}
+useEffect(() => {
+  getPinnedMessagesCount(); // Fetch the count of pinned messages when the component mounts or clubName changes
+}, [clubName]);
+
 //Displays the date above messages
 const formatDate = (date) => {
   const options = { year: 'numeric', month: 'long', day: 'numeric' };
@@ -310,12 +325,16 @@ const handleImageUploadAndSend = () => {
         <TouchableOpacity style={styles.clubNameContainer} onPress={() => navigation.navigate("InClubView", { clubName })}>
           <View style={styles.imageContainer}>
             {/* Placeholder image */}
-           
           </View>
           <Text style={styles.clubNameText}>{clubName}</Text>
         </TouchableOpacity>
+        
         <IconButton icon="magnify" size={30} onPress={() => navigation.navigate("UserList", { clubName })} style={styles.searchButton} />
       </View>
+      <TouchableOpacity style={styles.pinnedMessagesContainer} onPress={navigateToSearchPinnedMessages}>
+          {pinnedMessagesCount > 0 && <View style={styles.blueBar}></View>}
+          <Text style={styles.pinnedMessagesText}>{pinnedMessagesCount} Pinned Messages</Text>
+        </TouchableOpacity>
       <GiftedChat
         messages={messages}
         onSend={messages => onSend(messages)}
@@ -343,6 +362,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginTop: 30,
     paddingHorizontal: 10,
+    
   },
   clubNameButton: {
     padding: 10,
@@ -387,6 +407,19 @@ const styles = StyleSheet.create({
     padding: 5,
     marginLeft: 4,
     marginRight: 4,
+  },
+  pinnedMessagesContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 10, // Add some right margin for spacing
+  },
+ 
+  pinnedMessagesText: {
+    color: 'blue',
+    fontSize: 16,
+    fontWeight: 'bold',
+    textAlign: 'center'
   },
   bubbleWrapperStyle: ({ position }) => ({
     right: position === 'right' ? {
