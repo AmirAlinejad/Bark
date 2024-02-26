@@ -39,6 +39,7 @@
     "react-native-modal": "^13.0.1",
     "react-native-multiple-select": "^0.5.12",
     "react-native-paper": "^5.12.2",
+    "react-native-swipeable": "^0.6.0",
     "react-native-web": "~0.19.6",
     "react-player": "^2.13.0"
   },

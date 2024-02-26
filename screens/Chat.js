@@ -21,6 +21,8 @@ import { uploadImage } from '../components/imageUploadUtils'; // Import the util
 import { Colors } from '../styles/Colors';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { KeyboardAvoidingView,ScrollView } from 'react-native';
+import { Alert } from 'react-native';
+
 
 export default function Chat({ route, navigation }) {
   const [messages, setMessages] = useState([]);
@@ -115,13 +117,13 @@ const renderDay = (props) => {
 }
 // Renders each chat message
 const renderMessage = (props) => {
-  const { currentMessage,previousMessage } = props;
+  const { currentMessage, previousMessage } = props;
   let isNewDay = false;
-    if (currentMessage && previousMessage) {
-      const currentDate = new Date(currentMessage.createdAt).toDateString();
-      const prevDate = new Date(previousMessage.createdAt).toDateString();
-      isNewDay = currentDate !== prevDate;
-    }
+  if (currentMessage && previousMessage) {
+    const currentDate = new Date(currentMessage.createdAt).toDateString();
+    const prevDate = new Date(previousMessage.createdAt).toDateString();
+    isNewDay = currentDate !== prevDate;
+  }
 
   const isCurrentUser = currentMessage.user._id === auth?.currentUser?.email;
 
@@ -129,27 +131,32 @@ const renderMessage = (props) => {
   const usernameAlignmentStyle = isCurrentUser ? styles.usernameRight : styles.usernameLeft;
 
   return (
-    <View style={{ marginBottom: 5 }}>
-
+    <TouchableOpacity
+      onLongPress={() => togglePin(currentMessage._id)} // Add onLongPress handler
+      activeOpacity={0.7} // Add some feedback when pressing
+    >
+      <View style={{ marginBottom: 5 }}>
         {isNewDay && (
           <Text style={styles.dateText}>
             {formatDate(new Date(currentMessage.createdAt))}
           </Text>
         )}
 
-      <View style={{ flexDirection: 'row', justifyContent: isCurrentUser ? 'flex-end' : 'flex-start' }}>
-        <Text style={[styles.usernameText, usernameAlignmentStyle]}>
-          {isCurrentUser ? 'You' : currentMessage.user.name || currentMessage.user._id}
-        </Text>
+        <View style={{ flexDirection: 'row', justifyContent: isCurrentUser ? 'flex-end' : 'flex-start' }}>
+          <Text style={[styles.usernameText, usernameAlignmentStyle]}>
+            {isCurrentUser ? 'You' : currentMessage.user.name || currentMessage.user._id}
+          </Text>
+        </View>
+        <Message {...props}
+          containerStyle={{
+            left: { backgroundColor: 'white' },
+            right: { backgroundColor: 'white' },
+          }} />
       </View>
-      <Message {...props}
-        containerStyle={{
-          left: { backgroundColor: 'white' },
-          right: { backgroundColor: 'white' },
-        }} />
-    </View>
+    </TouchableOpacity>
   );
 };
+
 //uploads images
 const handleImageUploadAndSend = () => {
   uploadImage((imageUri) => {
@@ -241,6 +248,7 @@ const handleImageUploadAndSend = () => {
         wrapperStyle={styles.bubbleWrapperStyle(props)}
         textStyle={styles.bubbleTextStyle}
         timeTextStyle={styles.bubbleTimeTextStyle}
+        onLongPress={() => togglePin(currentMessage._id)} // Add onLongPress handler
         renderCustomView={() => (
           <View style={[styles.likeButton, isCurrentUser ? styles.likeButtonCurrentUser : styles.likeButtonOtherUser]}>
             <TouchableOpacity
@@ -250,17 +258,13 @@ const handleImageUploadAndSend = () => {
               <MaterialCommunityIcons name={isLiked ? 'heart' : 'heart-outline'} size={24} color={isLiked ? 'red' : 'grey'} />
               <Text style={styles.likeCount}>{currentMessage.likeCount || 0}</Text>
             </TouchableOpacity>
-            <TouchableOpacity // Pin button
-              onPress={() => togglePin(currentMessage._id)} // Toggle pin function
-              style={[styles.likeButtonInner, { marginLeft: 10}]} // Adjust as needed
-            >
-              <MaterialCommunityIcons name={isPinned ? 'pin' : 'pin-outline'} size={24} color={isPinned ? 'blue' : 'grey'} />
-            </TouchableOpacity>
+            
           </View>
         )}
       />
     );
   };
+  
   
 
   const togglePin = async (messageId) => {
@@ -268,7 +272,33 @@ const handleImageUploadAndSend = () => {
     const messageSnapshot = await getDoc(messageRef);
     if (messageSnapshot.exists()) {
       const currentPinStatus = messageSnapshot.data().pinned || false;
-      await updateDoc(messageRef, { pinned: !currentPinStatus }); // Toggle pin status
+      const confirmationMessage = currentPinStatus ? 'Unpin this message?' : 'Pin this message?'; // Confirmation message based on current pin status
+  
+      // Show confirmation dialog
+      Alert.alert(
+        'Confirmation',
+        confirmationMessage,
+        [
+          {
+            text: 'Cancel',
+            style: 'cancel',
+          },
+          {
+            text: 'OK',
+            onPress: async () => {
+              // Toggle pin status if user confirms
+              await updateDoc(messageRef, { pinned: !currentPinStatus });
+              // Update the local state to reflect the change
+              setMessages((prevMessages) =>
+                prevMessages.map((message) =>
+                  message._id === messageId ? { ...message, pinned: !currentPinStatus } : message
+                )
+              );
+            },
+          },
+        ],
+        { cancelable: false }
+      );
     }
   };
   
