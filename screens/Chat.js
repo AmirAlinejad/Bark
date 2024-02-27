@@ -289,6 +289,15 @@ const handleImageUploadAndSend = () => {
     );
   };
   
+  const deleteMessage = async (messageId) => {
+    try {
+      // Update the message text to indicate that it was deleted
+      const messageRef = doc(firestore, 'chats', messageId);
+      await updateDoc(messageRef, { text: 'This message was deleted' }); // Use asterisks to denote italics
+    } catch (error) {
+      console.error('Error deleting message:', error);
+    }
+  };
   
 
   const togglePin = async (messageId) => {
@@ -297,6 +306,12 @@ const handleImageUploadAndSend = () => {
     if (messageSnapshot.exists()) {
       const currentPinStatus = messageSnapshot.data().pinned || false;
       const confirmationMessage = currentPinStatus ? 'Unpin this message?' : 'Pin this message?'; // Confirmation message based on current pin status
+  
+      // Check if the message belongs to the current user
+      const isCurrentUser = messageSnapshot.data().user._id === auth.currentUser?.email;
+  
+      // Determine the additional option text based on whether the message belongs to the current user
+      const additionalOptionText = isCurrentUser ? 'Delete this message?' : null;
   
       // Show confirmation dialog
       Alert.alert(
@@ -320,11 +335,20 @@ const handleImageUploadAndSend = () => {
               );
             },
           },
-        ],
+          // Add the additional option if applicable
+          additionalOptionText && {
+            text: additionalOptionText,
+            onPress: () => {
+              // Call the deleteMessage function if the additional option is selected
+              deleteMessage(messageId);
+            },
+          },
+        ].filter(Boolean), // Filter out null options
         { cancelable: false }
       );
     }
   };
+  
   
 
   return (
