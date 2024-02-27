@@ -9,6 +9,7 @@ import {
   onSnapshot,
   where,
   setDoc,
+  getDoc,
   getDocs,
   updateDoc,
   deleteDoc,
@@ -28,6 +29,7 @@ export default function Chat({ route, navigation }) {
   const [messages, setMessages] = useState([]);
   const [likedMessages, setLikedMessages] = useState({});
   const [pinnedMessagesCount, setPinnedMessagesCount] = useState(0);
+  
   const clubName = route?.params?.clubName;
   const onBackPress = () => {
     navigation.navigate("ClubScreen");
@@ -66,6 +68,9 @@ export default function Chat({ route, navigation }) {
       updateMessageLikeCount(messageId, 1); // Increment like count
     }
   };
+
+
+  
 // CustomInputToolbar component definition
 function CustomInputToolbar({ onSend, handleImageUploadAndSend }) {
   const [messageText, setMessageText] = useState('');
@@ -89,7 +94,7 @@ function CustomInputToolbar({ onSend, handleImageUploadAndSend }) {
   return (
     <KeyboardAvoidingView behavior="padding" style={styles.customToolbar}>
       <TouchableOpacity onPress={handleImageUploadAndSend} style={styles.toolbarButton}>
-        <Ionicons name="image-outline" size={24} color={Colors.primary} />
+        <Ionicons name="image-outline" size={24} color={Colors.black} />
       </TouchableOpacity>
       <TextInput
         style={[styles.input, { maxHeight: 100 }]} // Add maxHeight here
@@ -101,7 +106,7 @@ function CustomInputToolbar({ onSend, handleImageUploadAndSend }) {
         returnKeyType="done" // Prevents new lines
       />
       <TouchableOpacity onPress={sendTextMessage} style={styles.toolbarButton}>
-        <Ionicons name="send" size={24} color={Colors.primary} />
+        <Ionicons name="send" size={24} color={Colors.black} />
       </TouchableOpacity>
     </KeyboardAvoidingView>
   );
@@ -117,7 +122,11 @@ const navigateToSearchPinnedMessages = () => {
   navigation.navigate('PinnedMessagesScreen', { clubName });
 }
 useEffect(() => {
-  getPinnedMessagesCount(); // Fetch the count of pinned messages when the component mounts or clubName changes
+  const unsubscribe = onSnapshot(query(collection(firestore, 'chats'), where('clubName', '==', clubName), where('pinned', '==', true)), () => {
+    getPinnedMessagesCount(); // Update the count of pinned messages
+  });
+  
+  return () => unsubscribe();
 }, [clubName]);
 
 //Displays the date above messages
