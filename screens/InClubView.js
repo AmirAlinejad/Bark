@@ -1,10 +1,41 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import Header from '../components/Header';
+import { db } from '../backend/FirebaseConfig'; 
+import { ref, get } from 'firebase/database'; // Import ref and get from Firebase
 
 const InClubView = ({ navigation, route }) => {
-  const clubName = route?.params?.clubName;
+  
+  const [memberCount, setMemberCount] = useState(0);
+  const [clubName, setClubName] = useState('');
+
+  useEffect(() => {
+    if (route?.params?.clubName) {
+      setClubName(route.params.clubName);
+      fetchMemberCount(route.params.clubName);
+    }
+  }, [route]);
+
+  const fetchMemberCount = async (clubName) => {
+    try {
+      const clubMembersRef = ref(db, `clubs/${clubName}/clubMembers`);
+      const snapshot = await get(clubMembersRef);
+      if (snapshot.exists()) {
+        let memberCount = 0;
+        snapshot.forEach(() => {
+          memberCount++;
+        });
+        setMemberCount(memberCount);
+      } else {
+        // Handle case where no members exist
+        setMemberCount(0);
+      }
+    } catch (error) {
+      console.error('Error fetching member count:', error);
+    }
+  };
+  
 
   return (
     <View style={styles.container}>
@@ -16,6 +47,7 @@ const InClubView = ({ navigation, route }) => {
         <View style={styles.imageContainer}>
           <View style={styles.grayImage} />
           <Text style={styles.clubNameText}>{clubName}</Text>
+          <Text style={styles.memberCountText}>{`(${memberCount} members)`}</Text>
         </View>
 
         {/* Navigation buttons */}
@@ -79,6 +111,10 @@ const styles = StyleSheet.create({
     fontSize: 20,
     marginTop: 10,
   },
+  memberCountText: {
+    fontStyle: 'italic',
+    marginTop: 5,
+  },
   buttonsContainer: {
     width: '100%',
     marginBottom: 300,
@@ -114,4 +150,3 @@ const styles = StyleSheet.create({
 });
 
 export default InClubView;
-

@@ -19,7 +19,8 @@ const MessageSearchScreen = ({ route, navigation }) => {
       const results = querySnapshot.docs.map(doc => ({
         _id: doc.id,
         text: doc.data().text,
-        createdAt: doc.data().createdAt.toDate(),
+        createdAt: doc.data().createdAt?.toDate(),
+
         user: doc.data().user,
         likeCount: doc.data().likeCount || 0, // Assume you're storing like count in the message document
       }));
