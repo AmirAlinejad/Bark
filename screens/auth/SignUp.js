@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState,useEffect } from 'react'
 // react native components
 import {
   View,
@@ -14,7 +14,7 @@ import CustomText from '../../components/CustomText';
 import CustomInput from '../../components/CustomInput';
 import CustomButton from '../../components/CustomButton';
 // backend
-import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
+import { createUserWithEmailAndPassword, updateProfile, sendEmailVerification } from 'firebase/auth';
 import { ref, set } from 'firebase/database';
 import { FIREBASE_AUTH, db } from '../../backend/FirebaseConfig';
 
@@ -29,6 +29,7 @@ const SignUp = ({ onAdd, navigation }) => {
   const { height } = useWindowDimensions();
   const auth = FIREBASE_AUTH;
 
+  
   // password visibility
   const togglePasswordVisibility = () => {
     setPasswordVisible(!passwordVisible);
@@ -40,31 +41,30 @@ const SignUp = ({ onAdd, navigation }) => {
   }
 
   // sign up
+  
   const onSignUpPressed = async (e) => {
     setLoading(true);
     e.preventDefault();
-
-    // Validate input
+  
     if (!userName || !email || !password || !confirmPassword) {
       alert("Please fill in all fields");
       setLoading(false);
       return;
     }
-
+  
     if (password !== confirmPassword) {
       alert("Passwords do not match");
       setLoading(false);
       return;
     }
-
-    // try to submit the sign-up request
+  
     try {
       const response = await createUserWithEmailAndPassword(auth, email, password);
-
+      await sendEmailVerification(response.user);
       await updateProfile(response.user, {
         displayName: userName,
       });
-
+  
       const userRef = ref(db, `users/${response.user.uid}`);
       await set(userRef, {
         userName: userName,
@@ -72,20 +72,21 @@ const SignUp = ({ onAdd, navigation }) => {
         clubs: [], 
         clubsJoined: [],
       });
-
-      navigation.navigate("HomeScreen");
+  
+      navigation.navigate("VerifyEmail");
     } catch (error) {
       console.log(error);
       alert('Signup failed: ' + error.message);
     } finally {
       setLoading(false);
+      // Consider if you want to clear these fields here or not based on your UX design
+      setUserName('');
+      setEmail('');
+      setPassword('');
+      setConfirmPassword('');
     }
-
-    setUserName('');
-    setEmail('');
-    setPassword('');
-    setConfirmPassword('');
   };
+  
 
   return (
     <View style={styles.container}>

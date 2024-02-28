@@ -65,8 +65,8 @@ const SignIn = ({ navigation }) => {
 
   // forgot password
   const onForgotPasswordPressed = () => {
-    // navigation.navigate("ForgotPassword");
-    alert('Forgot password feature coming soon!');
+    navigation.navigate("ForgotPassword");
+    
   };
 
   // go to sign up
@@ -106,7 +106,7 @@ const SignIn = ({ navigation }) => {
         text="Forgot Password?"
         onPress={onForgotPasswordPressed}
         type="secondary"
-        bgColor={'white'}
+        bgColor={'orange'}
       />
 
       <CustomText style={styles.signupText} text="Don't have an account?" />

@@ -19,6 +19,8 @@ import ImageViewerScreen from "./screens/ImageViewerScreen";
 import MessageSearchScreen from './screens/MessageSearchScreen';
 import InClubView from "./screens/InClubView";
 import PinnedMessagesScreen from "./screens/PinnedMessagesScreen";
+import ForgotPassword from "./screens/auth/ForgotPassword";
+import VerifyEmail from "./screens/auth/VerifyEmail";
 // stack navigator
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { NavigationContainer } from '@react-navigation/native';
@@ -49,8 +51,8 @@ export default class App extends React.Component {
             <Stack.Screen name="MessageSearchScreen" component={MessageSearchScreen} options={{ headerShown: false }}/>
             <Stack.Screen name="InClubView" component={InClubView} options={{ headerShown: false }}/>
             <Stack.Screen name="PinnedMessagesScreen" component={PinnedMessagesScreen} options={{ headerShown: false }}/>
-
-
+            <Stack.Screen name="ForgotPassword" component={ForgotPassword} options={{ headerShown: false }}/>
+            <Stack.Screen name="VerifyEmail" component={VerifyEmail} options={{ headerShown: false }}/>
 
 
           </Stack.Navigator>
