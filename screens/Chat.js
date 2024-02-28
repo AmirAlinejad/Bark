@@ -29,10 +29,11 @@ export default function Chat({ route, navigation }) {
   const [messages, setMessages] = useState([]);
   const [likedMessages, setLikedMessages] = useState({});
   const [pinnedMessagesCount, setPinnedMessagesCount] = useState(0);
-  
   const clubName = route?.params?.clubName;
+
   const onBackPress = () => {
-    navigation.navigate("ClubScreen");
+    navigation.navigate("HomeScreen");
+    
   }
   const toggleLike = async (messageId) => {
     // Check if the message is already liked by the current user
@@ -291,9 +292,13 @@ const handleImageUploadAndSend = () => {
   
   const deleteMessage = async (messageId) => {
     try {
-      // Update the message text to indicate that it was deleted
-      const messageRef = doc(firestore, 'chats', messageId);
-      await updateDoc(messageRef, { text: 'This message was deleted' }); // Use asterisks to denote italics
+      // Remove the message from the local state
+      setMessages((prevMessages) =>
+        prevMessages.filter((message) => message._id !== messageId)
+      );
+  
+      // Delete the message from Firestore
+      await deleteDoc(doc(firestore, 'chats', messageId));
     } catch (error) {
       console.error('Error deleting message:', error);
     }
@@ -365,9 +370,9 @@ const handleImageUploadAndSend = () => {
         <IconButton icon="magnify" size={30} onPress={() => navigation.navigate("UserList", { clubName })} style={styles.searchButton} />
       </View>
       <TouchableOpacity style={styles.pinnedMessagesContainer} onPress={navigateToSearchPinnedMessages}>
-          {pinnedMessagesCount > 0 && <View style={styles.blueBar}></View>}
-          <Text style={styles.pinnedMessagesText}>{pinnedMessagesCount} Pinned Messages</Text>
-        </TouchableOpacity>
+        {pinnedMessagesCount > 0 && <View style={styles.blueBar}></View>}
+        {pinnedMessagesCount > 0 && <Text style={styles.pinnedMessagesText}>{pinnedMessagesCount} Pinned Messages</Text>}
+      </TouchableOpacity>
       <GiftedChat
         messages={messages}
         onSend={messages => onSend(messages)}
