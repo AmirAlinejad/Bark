@@ -54,12 +54,12 @@ const MessageSearchScreen = ({ route, navigation }) => {
         renderItem={({ item }) => (
           <View style={styles.messageItem}>
             <View style={styles.messageHeader}>
-              {item.user.avatar ? (
+              {item.user && item.user.avatar ? (
                 <Image source={{ uri: item.user.avatar }} style={styles.avatar} />
               ) : (
                 <View style={styles.placeholderAvatar} />
               )}
-              <Text style={styles.username}>{item.user.name || item.user._id}</Text>
+              <Text style={styles.username}>{item.user ? item.user.name || item.user._id : 'Unknown'}</Text>
             </View>
             <Text>{item.text}</Text>
             <Text style={styles.likes}>Likes: {item.likeCount}</Text>

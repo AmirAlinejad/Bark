@@ -9,7 +9,7 @@ const InClubView = ({ navigation, route }) => {
   
   const [memberCount, setMemberCount] = useState(0);
   const [clubName, setClubName] = useState('');
-
+  const { imageUris } = route.params;
   useEffect(() => {
     if (route?.params?.clubName) {
       setClubName(route.params.clubName);
@@ -73,6 +73,12 @@ const InClubView = ({ navigation, route }) => {
               navigation.navigate('PinnedMessagesScreen', { clubName })}
             style={[styles.button, styles.buttonLast]}>
             <Text style={styles.buttonText}>Pinned Messages</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() =>
+              navigation.navigate('ImageGalleryScreen', { imageUris })}
+            style={[styles.button, styles.buttonLast]}>
+            <Text style={styles.buttonText}>Image Gallery</Text>
           </TouchableOpacity>
           {/* Add more buttons for additional screens here */}
         </View>

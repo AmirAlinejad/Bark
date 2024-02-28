@@ -30,15 +30,18 @@ export default function Chat({ route, navigation }) {
   const [likedMessages, setLikedMessages] = useState({});
   const [pinnedMessagesCount, setPinnedMessagesCount] = useState(0);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [imageUris, setImageUris] = useState([]);
   const clubName = route?.params?.clubName;
 
   const onBackPress = () => {
     navigation.navigate("HomeScreen");
     
   }
+  /*
   const handleTapOutside = () => {
     setIsExpanded(false); // Close the expanded buttons
   };
+  */
   const toggleExpand = () => {
     setIsExpanded((prev) => !prev);
   };
@@ -253,17 +256,26 @@ const handleImageUploadAndSend = () => {
   useLayoutEffect(() => {
     const q = query(collection(firestore, 'chats'), where('clubName', '==', clubName), orderBy('createdAt', 'desc'));
     const unsubscribeChatMessages = onSnapshot(q, (querySnapshot) => {
-      const fetchedMessages = querySnapshot.docs.map((doc) => ({
-        _id: doc.id,
-        createdAt: doc.data().createdAt.toDate(),
-        text: doc.data().text,
-        user: doc.data().user,
-        image: doc.data().image,
-        likeCount: doc.data().likeCount || 0,
-      }));
+      const fetchedMessages = [];
+      const fetchedImageUris = [];
+      querySnapshot.docs.forEach((doc) => {
+        const data = doc.data();
+        fetchedMessages.push({
+          _id: doc.id,
+          createdAt: data.createdAt.toDate(),
+          text: data.text,
+          user: data.user,
+          image: data.image,
+          likeCount: data.likeCount || 0,
+        });
+        if (data.image) {
+          fetchedImageUris.push(data.image);
+        }
+      });
       setMessages(fetchedMessages);
+      setImageUris(fetchedImageUris);
     });
-
+  
     return () => unsubscribeChatMessages();
   }, [clubName]);
 
@@ -389,7 +401,7 @@ const handleImageUploadAndSend = () => {
     <View style={styles.container}>
       <View style={styles.header}>
         <IconButton onPress={onBackPress} icon="arrow-left" size={30} />
-        <TouchableOpacity style={styles.clubNameContainer} onPress={() => navigation.navigate("InClubView", { clubName })}>
+        <TouchableOpacity style={styles.clubNameContainer} onPress={() => navigation.navigate("InClubView", { clubName, imageUris })}>
           <View style={styles.imageContainer}>
             {/* Placeholder image */}
           </View>
