@@ -3,6 +3,7 @@ import { View, Text, Button, StyleSheet, ActivityIndicator } from 'react-native'
 import { useNavigation } from '@react-navigation/native';
 import { sendEmailVerification } from 'firebase/auth';
 import { FIREBASE_AUTH } from '../../backend/FirebaseConfig';
+import Header from '../../components/Header';
 
 const VerifyEmail = () => {
   const navigation = useNavigation();
@@ -40,16 +41,19 @@ const VerifyEmail = () => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.text}>Please verify your email. Check your inbox for a verification link.</Text>
-      {isSending ? (
-        <ActivityIndicator size="small" />
-      ) : (
-        <Button
-          title="Resend Email"
-          onPress={resendVerificationEmail}
-          color="#3498db" // You can adjust the color to match your app's theme
-        />
-      )}
+      <Header navigation={navigation} text="Verify Email" back={true} style={styles.header} />
+      <View style={styles.content}>
+        <Text style={styles.text}>Please verify your email. Check your inbox for a verification link.</Text>
+        {isSending ? (
+          <ActivityIndicator size="small" />
+        ) : (
+          <Button
+            title="Resend Email"
+            onPress={resendVerificationEmail}
+            color="#3498db" // You can adjust the color to match your app's theme
+          />
+        )}
+      </View>
     </View>
   );
 };
@@ -57,14 +61,29 @@ const VerifyEmail = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    justifyContent: 'center',
+    backgroundColor: 'white',
+    paddingTop: 20,
+    paddingHorizontal: 20,
+  },
+  header: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 1,
+    width:'100%'
+  },
+  content: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   text: {
     textAlign: 'center',
     fontSize: 16,
-    marginBottom: 20, // Add some space between the text and the button
+    marginBottom: 20,
   },
 });
 

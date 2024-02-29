@@ -31,6 +31,7 @@ const Header = ({ navigation, text, back, numberOfLines }) => {
 
 const styles = StyleSheet.create({
   container: {
+    width: '100%',
     marginTop: 50,
     marginLeft: 30,
     justifyContent: 'left',
@@ -39,11 +40,12 @@ const styles = StyleSheet.create({
   },
   title: {
     ...title,
-    textAlign: 'center',
+    marginLeft: '5%',
   },
   textNormal: {
     ...textNormal,
     marginTop: 20,
+    
   },
 });
 
