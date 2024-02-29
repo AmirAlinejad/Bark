@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useLayoutEffect, useCallback } from 'react';
-import { TouchableOpacity, View, Text, StyleSheet, Image, TextInput } from 'react-native';
+import { TouchableOpacity, View, Text, Image, TextInput } from 'react-native';
 import { GiftedChat, Send, Bubble, Message } from 'react-native-gifted-chat';
 import {
   collection,
@@ -33,6 +33,59 @@ export default function Chat({ route, navigation }) {
   const [imageUris, setImageUris] = useState([]);
   const clubName = route?.params?.clubName;
 
+  //updates when messages are pinned
+  useEffect(() => {
+    const unsubscribe = onSnapshot(query(collection(firestore, 'chats'), where('clubName', '==', clubName), where('pinned', '==', true)), () => {
+      getPinnedMessagesCount(); // Update the count of pinned messages
+    });
+    
+    return () => unsubscribe();
+  }, [clubName]);
+  
+  
+  //updates which messages are liked
+  useEffect(() => {
+    // Function to fetch liked messages
+    const fetchLikedMessages = async () => {
+      const likedMessagesQuery = query(collection(firestore, 'messagesLikes', auth.currentUser.uid, 'likes'));
+      const querySnapshot = await getDocs(likedMessagesQuery);
+      const likedMessagesIds = {};
+      querySnapshot.forEach((doc) => {
+        likedMessagesIds[doc.id] = true; // Assumes doc.id is the message id
+      });
+      setLikedMessages(likedMessagesIds);
+    };
+  
+    fetchLikedMessages();
+  }, [auth.currentUser.uid]);
+
+  //update the chat when new messages are sent.
+  useLayoutEffect(() => {
+    const q = query(collection(firestore, 'chats'), where('clubName', '==', clubName), orderBy('createdAt', 'desc'));
+    const unsubscribeChatMessages = onSnapshot(q, (querySnapshot) => {
+      const fetchedMessages = [];
+      const fetchedImageUris = [];
+      querySnapshot.docs.forEach((doc) => {
+        const data = doc.data();
+        fetchedMessages.push({
+          _id: doc.id,
+          createdAt: data.createdAt.toDate(),
+          text: data.text,
+          user: data.user,
+          image: data.image,
+          likeCount: data.likeCount || 0,
+        });
+        if (data.image) {
+          fetchedImageUris.push(data.image);
+        }
+      });
+      setMessages(fetchedMessages);
+      setImageUris(fetchedImageUris);
+    });
+  
+    return () => unsubscribeChatMessages();
+  }, [clubName]);
+
   const onBackPress = () => {
     navigation.navigate("HomeScreen");
     
@@ -42,9 +95,15 @@ export default function Chat({ route, navigation }) {
     setIsExpanded(false); // Close the expanded buttons
   };
   */
+
+
+  //expand modal when a + button is pressed
   const toggleExpand = () => {
     setIsExpanded((prev) => !prev);
   };
+
+
+  //Like and unliking messages.
   const toggleLike = async (messageId) => {
     // Check if the message is already liked by the current user
     const isLiked = !!likedMessages[messageId];
@@ -82,7 +141,7 @@ export default function Chat({ route, navigation }) {
 
 
   
-// CustomInputToolbar component definition
+// CustomInputToolbar component which shows up for chat
 function CustomInputToolbar({ onSend, handleImageUploadAndSend }) {
   const [messageText, setMessageText] = useState('');
 
@@ -154,23 +213,18 @@ const getPinnedMessagesCount = async () => {
 const navigateToSearchPinnedMessages = () => {
   navigation.navigate('PinnedMessagesScreen', { clubName });
 }
-useEffect(() => {
-  const unsubscribe = onSnapshot(query(collection(firestore, 'chats'), where('clubName', '==', clubName), where('pinned', '==', true)), () => {
-    getPinnedMessagesCount(); // Update the count of pinned messages
-  });
-  
-  return () => unsubscribe();
-}, [clubName]);
+
 
 //Displays the date above messages
 const formatDate = (date) => {
   const options = { year: 'numeric', month: 'long', day: 'numeric' };
   return date.toLocaleDateString(undefined, options);
 };
+
+
 //Null the automatic day rendering
 const renderDay = (props) => {
   return null;
-
 }
 // Renders each chat message
 const renderMessage = (props) => {
@@ -241,46 +295,10 @@ const handleImageUploadAndSend = () => {
     }
   };
 
-  useEffect(() => {
-    const unsubscribeLikedMessages = onSnapshot(query(collection(firestore, 'messagesLikes', auth.currentUser.uid, 'likes')), (querySnapshot) => {
-      const updatedLikedMessages = {};
-      querySnapshot.forEach((doc) => {
-        updatedLikedMessages[doc.id] = true;
-      });
-      setLikedMessages(updatedLikedMessages);
-    });
-
-    return () => unsubscribeLikedMessages();
-  }, []);
-
-  useLayoutEffect(() => {
-    const q = query(collection(firestore, 'chats'), where('clubName', '==', clubName), orderBy('createdAt', 'desc'));
-    const unsubscribeChatMessages = onSnapshot(q, (querySnapshot) => {
-      const fetchedMessages = [];
-      const fetchedImageUris = [];
-      querySnapshot.docs.forEach((doc) => {
-        const data = doc.data();
-        fetchedMessages.push({
-          _id: doc.id,
-          createdAt: data.createdAt.toDate(),
-          text: data.text,
-          user: data.user,
-          image: data.image,
-          likeCount: data.likeCount || 0,
-        });
-        if (data.image) {
-          fetchedImageUris.push(data.image);
-        }
-      });
-      setMessages(fetchedMessages);
-      setImageUris(fetchedImageUris);
-    });
   
-    return () => unsubscribeChatMessages();
-  }, [clubName]);
-
-  const onSend = useCallback((messages = []) => {
-    setMessages((previousMessages) => GiftedChat.append(previousMessages, messages));
+//Send messages
+const onSend = useCallback((messages = []) => {
+      setMessages((previousMessages) => GiftedChat.append(previousMessages, messages));
     messages.forEach((message) => {
       addDoc(collection(firestore, 'chats'), { ...message, clubName, likeCount: 0 });
     });

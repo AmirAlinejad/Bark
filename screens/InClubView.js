@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { View, Text, StyleSheet, TouchableOpacity} from 'react-native';
 import Header from '../components/Header';
 import { db } from '../backend/FirebaseConfig'; 
 import { ref, get } from 'firebase/database'; // Import ref and get from Firebase
