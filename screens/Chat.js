@@ -34,58 +34,68 @@ export default function Chat({ route, navigation }) {
   const clubName = route?.params?.clubName;
 
   //updates when messages are pinned
-  useEffect(() => {
-    const unsubscribe = onSnapshot(query(collection(firestore, 'chats'), where('clubName', '==', clubName), where('pinned', '==', true)), () => {
-      getPinnedMessagesCount(); // Update the count of pinned messages
-    });
-    
-    return () => unsubscribe();
-  }, [clubName]);
   
   
   //updates which messages are liked
   useEffect(() => {
-    // Function to fetch liked messages
+    let unsubscribeMessages = () => {};
+    let unsubscribePinnedMessages = () => {};
+  
+    // Fetch liked messages
     const fetchLikedMessages = async () => {
       const likedMessagesQuery = query(collection(firestore, 'messagesLikes', auth.currentUser.uid, 'likes'));
       const querySnapshot = await getDocs(likedMessagesQuery);
       const likedMessagesIds = {};
       querySnapshot.forEach((doc) => {
-        likedMessagesIds[doc.id] = true; // Assumes doc.id is the message id
+        likedMessagesIds[doc.id] = true;
       });
       setLikedMessages(likedMessagesIds);
     };
   
-    fetchLikedMessages();
-  }, [auth.currentUser.uid]);
-
-  //update the chat when new messages are sent.
-  useLayoutEffect(() => {
-    const q = query(collection(firestore, 'chats'), where('clubName', '==', clubName), orderBy('createdAt', 'desc'));
-    const unsubscribeChatMessages = onSnapshot(q, (querySnapshot) => {
-      const fetchedMessages = [];
-      const fetchedImageUris = [];
-      querySnapshot.docs.forEach((doc) => {
-        const data = doc.data();
-        fetchedMessages.push({
+    // Fetch chat messages and image URIs
+    const fetchMessages = () => {
+      const q = query(collection(firestore, 'chats'), where('clubName', '==', clubName), orderBy('createdAt', 'desc'));
+      unsubscribeMessages = onSnapshot(q, (querySnapshot) => {
+        const fetchedMessages = querySnapshot.docs.map(doc => ({
           _id: doc.id,
-          createdAt: data.createdAt.toDate(),
-          text: data.text,
-          user: data.user,
-          image: data.image,
-          likeCount: data.likeCount || 0,
-        });
-        if (data.image) {
-          fetchedImageUris.push(data.image);
-        }
+          createdAt: doc.data().createdAt.toDate(),
+          text: doc.data().text,
+          user: doc.data().user,
+          image: doc.data().image,
+          likeCount: doc.data().likeCount || 0,
+        }));
+        setMessages(fetchedMessages);
+        setImageUris(fetchedMessages.filter(m => m.image).map(m => m.image));
       });
-      setMessages(fetchedMessages);
-      setImageUris(fetchedImageUris);
-    });
+    };
   
-    return () => unsubscribeChatMessages();
-  }, [clubName]);
+    // Fetch the count of pinned messages
+    const fetchPinnedMessagesCount = () => {
+      const pinnedMessagesQuery = query(collection(firestore, 'chats'), where('clubName', '==', clubName), where('pinned', '==', true));
+      unsubscribePinnedMessages = onSnapshot(pinnedMessagesQuery, (snapshot) => {
+        setPinnedMessagesCount(snapshot.size);
+      });
+    };
+  
+    // Ensure all data fetching is performed
+    const initializeChat = async () => {
+      await fetchLikedMessages();
+      fetchMessages();
+      fetchPinnedMessagesCount();
+    };
+  
+    // Call the initialize function
+    initializeChat();
+  
+    // Cleanup function to unsubscribe from firestore updates on component unmount
+    return () => {
+      unsubscribeMessages();
+      unsubscribePinnedMessages();
+    };
+  }, [clubName, auth.currentUser.uid]);
+  
 
+  
   const onBackPress = () => {
     navigation.navigate("HomeScreen");
     
