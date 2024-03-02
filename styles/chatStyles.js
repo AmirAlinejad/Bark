@@ -154,7 +154,7 @@ export const styles = StyleSheet.create({
   },
   messageImageContainer: {
     position: 'relative',
-    padding: 10,
+    padding: 0,
     flexDirection: 'column',
     alignItems: 'flex-start', // Align items to the start to keep the image and button aligned
   },
@@ -172,7 +172,7 @@ export const styles = StyleSheet.create({
   likeButtonOtherUser: {
     position: 'fixed',
     right: -275, // Adjust the right position as needed
-    bottom: -20,
+    bottom: -30,
   },
   clubNameContainer: {
     flexDirection: 'row',

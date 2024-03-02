@@ -63,7 +63,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'white',
+    backgroundColor: '#FAFAFA',
     paddingTop: 20,
     paddingHorizontal: 20,
   },
@@ -73,12 +73,14 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     zIndex: 1,
-    width:'100%'
+    width:'100%',
+    backgroundColor: '#FAFAFA',
   },
   content: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    
   },
   text: {
     textAlign: 'center',

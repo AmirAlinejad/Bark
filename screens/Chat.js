@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useLayoutEffect, useCallback } from 'react';
 import { TouchableOpacity, View, Text, Image, TextInput } from 'react-native';
-import { GiftedChat, Send, Bubble, Message } from 'react-native-gifted-chat';
+import { GiftedChat, Send, Bubble, Message,Time } from 'react-native-gifted-chat';
 import {
   collection,
   addDoc,
@@ -175,7 +175,7 @@ function CustomInputToolbar({ onSend, handleImageUploadAndSend }) {
     <KeyboardAvoidingView behavior="padding" style={styles.customToolbar}>
       {/* Main button */}
     <TouchableOpacity onPress={toggleExpand} style={styles.toolbarButton}>
-      <Ionicons name='add-circle' size={24} color="black" />
+      <Ionicons name='add-circle' size={30} color="black" />
     </TouchableOpacity>
 
     
@@ -208,7 +208,7 @@ function CustomInputToolbar({ onSend, handleImageUploadAndSend }) {
         returnKeyType="done" // Prevents new lines
       />
       <TouchableOpacity onPress={sendTextMessage} style={styles.toolbarButton}>
-        <Ionicons name="send" size={24} color={Colors.black} />
+        <Ionicons name="send" size={30} color={Colors.black} />
       </TouchableOpacity>
     </KeyboardAvoidingView>
   );
@@ -236,6 +236,24 @@ const formatDate = (date) => {
 const renderDay = (props) => {
   return null;
 }
+
+const renderTime = (props) => {
+  const { currentMessage, previousMessage, nextMessage } = props;
+
+  // Check if there's a next message and if it's from the same user
+  const isLastMessageInSeries = nextMessage && nextMessage.user && nextMessage.user._id === currentMessage.user._id;
+
+  // Render the time only if it's the last message in a series of consecutive messages from the same user
+  if (!isLastMessageInSeries) {
+    return (
+      <Time {...props} />
+    );
+  }
+
+  return null;
+};
+
+
 // Renders each chat message
 const renderMessage = (props) => {
   const { currentMessage, previousMessage } = props;
@@ -453,6 +471,7 @@ const onSend = useCallback((messages = []) => {
         textInputStyle={styles.textInput}
         renderMessage={renderMessage}
         renderDay={renderDay}
+        renderTime={renderTime}
       />
     </View>
   );
