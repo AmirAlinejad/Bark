@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { View, TextInput, FlatList, Text, StyleSheet, Image } from 'react-native';
-import { firestore } from '../backend/FirebaseConfig'; // Import your Firebase config
+import { firestore } from '../../backend/FirebaseConfig'; // Import your Firebase config
 import { query, collection, where, getDocs } from 'firebase/firestore';
-import Header from '../components/Header';
+import Header from '../../components/Header';
 
 const MessageSearchScreen = ({ route, navigation }) => {
   const [searchTerm, setSearchTerm] = useState('');

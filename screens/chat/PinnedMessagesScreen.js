@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, FlatList, TextInput, Image, StyleSheet } from 'react-native';
 import { collection, query, where, getDocs } from 'firebase/firestore';
-import { firestore } from '../backend/FirebaseConfig';
-import Header from '../components/Header';
+import { firestore } from '../../backend/FirebaseConfig';
+import Header from '../../components/Header';
 
 export default function PinnedMessagesScreen({ route, navigation }) {
   const { clubName } = route.params;

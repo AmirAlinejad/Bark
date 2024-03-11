@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, FlatList, Text, Button, TouchableOpacity, TextInput, Alert } from 'react-native';
-import Header from '../components/Header';
+import Header from '../../components/Header';
 import { ref, get, remove, update } from 'firebase/database';
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
-import { db } from '../backend/FirebaseConfig';
+import { db } from '../../backend/FirebaseConfig';
 import Modal from 'react-native-modal';
 
 const UserList = ({ route, navigation }) => {
