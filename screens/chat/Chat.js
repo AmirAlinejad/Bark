@@ -230,21 +230,9 @@ const formatDate = (date) => {
 const renderDay = (props) => {
   return null;
 }
-
 const renderTime = (props) => {
-  const { currentMessage, previousMessage, nextMessage } = props;
-
-  // Check if there's a next message and if it's from the same user
-  const isLastMessageInSeries = nextMessage && nextMessage.user && nextMessage.user._id === currentMessage.user._id;
-
-  // Render the time only if it's the last message in a series of consecutive messages from the same user
-  if (!isLastMessageInSeries) {
-    return (
-      <Time {...props} />
-    );
-  }
-
-  return null;
+  // Always render the time component for every message
+  return <Time {...props} />;
 };
 
 
