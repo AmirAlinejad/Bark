@@ -24,7 +24,7 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import { KeyboardAvoidingView} from 'react-native';
 import { Alert } from 'react-native';
 import { styles } from '../../styles/chatStyles'; 
-
+import SlackMessage from './SlackMessage';
 export default function Chat({ route, navigation }) {
   const [messages, setMessages] = useState([]);
   const [likedMessages, setLikedMessages] = useState({});
@@ -238,43 +238,7 @@ const renderTime = (props) => {
 
 // Renders each chat message
 const renderMessage = (props) => {
-  const { currentMessage, previousMessage } = props;
-  let isNewDay = false;
-  if (currentMessage && previousMessage) {
-    const currentDate = new Date(currentMessage.createdAt).toDateString();
-    const prevDate = new Date(previousMessage.createdAt).toDateString();
-    isNewDay = currentDate !== prevDate;
-  }
-
-  const isCurrentUser = currentMessage.user._id === auth?.currentUser?.email;
-
-
-
-  return (
-    <TouchableOpacity
-      onLongPress={() => togglePin(currentMessage._id)} // Add onLongPress handler
-      activeOpacity={0.7} // Add some feedback when pressing
-    >
-      <View style={{ marginBottom: 5 }}>
-        {isNewDay && (
-          <Text style={styles.dateText}>
-            {formatDate(new Date(currentMessage.createdAt))}
-          </Text>
-        )}
-
-      <View style={{ flexDirection: 'row', justifyContent: 'flex-start' }}>
-        <Text style={styles.usernameText}>
-          {isCurrentUser ? 'You' : currentMessage.user.name || currentMessage.user._id}
-        </Text>
-      </View>
-        <Message {...props}
-          containerStyle={{
-            left: { backgroundColor: 'white' },
-            right: { backgroundColor: 'white' },
-          }} />
-      </View>
-    </TouchableOpacity>
-  );
+  return <SlackMessage {...props} />;
 };
 
 //uploads images
@@ -452,8 +416,9 @@ const onSend = useCallback((messages = []) => {
         messagesContainerStyle={styles.messagesContainer}
         textInputStyle={styles.textInput}
         renderMessage={renderMessage}
-        renderDay={renderDay}
         renderTime={renderTime}
+        showAvatarForEveryMessage={true}
+        
       />
     </View>
   );

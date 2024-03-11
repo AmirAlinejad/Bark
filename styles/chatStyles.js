@@ -129,23 +129,7 @@ export const styles = StyleSheet.create({
     padding: 10,
     fontSize: 16,
   },
-  usernameText: {
-    fontSize: 12,
-    paddingHorizontal: 5,
-    paddingTop: 2,
-    paddingBottom: 2,
-    // Common style for username text
-  },
-  usernameRight: {
-    // Specific style for the current user's username
-    alignSelf: 'flex-end',
-    color: 'gray', // Example color
-  },
-  usernameLeft: {
-    // Specific style for other users' usernames
-    alignSelf: 'flex-start',
-    color: 'gray', // Example color
-  },
+  
   dateText: {
     alignSelf: 'center',
     fontSize: 14,

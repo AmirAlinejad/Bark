@@ -1,5 +1,7 @@
 import * as ImagePicker from 'expo-image-picker';
+import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 
+// Assuming Firebase is already initialized elsewhere in your project
 export const uploadImage = async (callback) => {
     const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
 
@@ -15,10 +17,22 @@ export const uploadImage = async (callback) => {
         quality: 1,
     });
 
-    if (!pickerResult.canceled && pickerResult.assets && pickerResult.assets.length > 0) {
-        // Use the first image in the assets array
+    if (!pickerResult.cancelled && pickerResult.assets && pickerResult.assets.length > 0) {
         const selectedImageUri = pickerResult.assets[0].uri;
-        callback(selectedImageUri);
+        const blob = await fetch(selectedImageUri).then((res) => res.blob());
+        
+        const storage = getStorage();
+        const imageName = `chatImages/${new Date().toISOString()}-${pickerResult.assets[0].fileName}`;
+        const imageRef = storageRef(storage, imageName);
+
+        uploadBytes(imageRef, blob).then((snapshot) => {
+            getDownloadURL(snapshot.ref).then((downloadURL) => {
+                console.log('File available at', downloadURL);
+                callback(downloadURL); // This URL can be used in the chat message
+            });
+        }).catch((error) => {
+            console.error("Error uploading image: ", error);
+            alert("Error uploading image, please try again.");
+        });
     }
 };
-
