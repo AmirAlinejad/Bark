@@ -449,7 +449,7 @@ const onSend = useCallback((messages = []) => {
           <Text style={styles.clubNameText}>{clubName}</Text>
         </TouchableOpacity>
         
-        <IconButton icon="magnify" size={30} onPress={() => navigation.navigate("UserList", { clubName })} style={styles.searchButton} />
+        <IconButton icon="magnify" size={30} onPress={() => navigation.navigate("MessageSearchScreen", { clubName })} style={styles.searchButton} />
       </View>
       <TouchableOpacity style={styles.pinnedMessagesContainer} onPress={navigateToSearchPinnedMessages}>
         {pinnedMessagesCount > 0 && <View style={styles.blueBar}></View>}

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Image, TouchableOpacity, StyleSheet, FlatList } from 'react-native';
+import { Image, TouchableOpacity, StyleSheet, FlatList, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import Header from '../../components/Header'; // Adjust the import path as per your project structure
 
@@ -16,7 +16,7 @@ const ImageGalleryScreen = ({ route }) => {
   );
 
   return (
-    <>
+    <View style={styles.container}>
       <Header navigation={navigation} text="Gallery" back={true} />
       <FlatList
         data={imageUris}
@@ -25,7 +25,7 @@ const ImageGalleryScreen = ({ route }) => {
         numColumns={4} // Or however many columns you want
         contentContainerStyle={styles.container}
       />
-    </>
+    </View>
   );
 };
 

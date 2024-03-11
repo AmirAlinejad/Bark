@@ -53,9 +53,9 @@ const styles = StyleSheet.create({
   saveButton: {
     position: 'absolute',
     bottom: 20,
-    backgroundColor: 'blue',
+    backgroundColor: 'orange',
     padding: 10,
-    borderRadius: 5,
+    borderRadius: 10,
   },
   saveButtonText: {
     color: 'white',
