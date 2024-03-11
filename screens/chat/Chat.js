@@ -260,8 +260,7 @@ const renderMessage = (props) => {
 
   const isCurrentUser = currentMessage.user._id === auth?.currentUser?.email;
 
-  // Adjusted style application to align usernames correctly
-  const usernameAlignmentStyle = isCurrentUser ? styles.usernameRight : styles.usernameLeft;
+
 
   return (
     <TouchableOpacity
@@ -275,11 +274,11 @@ const renderMessage = (props) => {
           </Text>
         )}
 
-        <View style={{ flexDirection: 'row', justifyContent: isCurrentUser ? 'flex-end' : 'flex-start' }}>
-          <Text style={[styles.usernameText, usernameAlignmentStyle]}>
-            {isCurrentUser ? 'You' : currentMessage.user.name || currentMessage.user._id}
-          </Text>
-        </View>
+      <View style={{ flexDirection: 'row', justifyContent: 'flex-start' }}>
+        <Text style={styles.usernameText}>
+          {isCurrentUser ? 'You' : currentMessage.user.name || currentMessage.user._id}
+        </Text>
+      </View>
         <Message {...props}
           containerStyle={{
             left: { backgroundColor: 'white' },
@@ -458,7 +457,7 @@ const onSend = useCallback((messages = []) => {
       <GiftedChat
         messages={messages}
         onSend={messages => onSend(messages)}
-        user={{ _id: auth?.currentUser?.email, avatar: 'https://i.pravatar.cc/300' }}
+        user={{ _id: 1, avatar: 'https://i.pravatar.cc/300' }}
         renderBubble={renderBubble}
         renderMessageImage={renderMessageImage}
         renderInputToolbar={props => <CustomInputToolbar {...props} onSend={onSend} handleImageUploadAndSend={handleImageUploadAndSend} />}

@@ -165,9 +165,9 @@ export const styles = StyleSheet.create({
     borderRadius: 13, // Optional: for styled image edges
   },
   likeButtonCurrentUser: {
-    position: 'absolute',
-    right: 325, // Adjust the left position as needed
-    bottom: 0,
+    position: 'fixed',
+    right: -275, // Adjust the left position as needed
+    bottom: -30,
   },
   likeButtonOtherUser: {
     position: 'fixed',
