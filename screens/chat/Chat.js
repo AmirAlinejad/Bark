@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useLayoutEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { TouchableOpacity, View, Text, Image, TextInput } from 'react-native';
 import { GiftedChat, Send, Bubble, Message,Time } from 'react-native-gifted-chat';
 import {
@@ -21,7 +21,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { uploadImage } from '../../components/imageUploadUtils'; // Import the utility function
 import { Colors } from '../../styles/Colors';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import { KeyboardAvoidingView,ScrollView } from 'react-native';
+import { KeyboardAvoidingView} from 'react-native';
 import { Alert } from 'react-native';
 import { styles } from '../../styles/chatStyles'; 
 
@@ -214,12 +214,6 @@ function CustomInputToolbar({ onSend, handleImageUploadAndSend }) {
   );
 }
 
-// Function to get the count of pinned messages
-const getPinnedMessagesCount = async () => {
-  const q = query(collection(firestore, 'chats'), where('clubName', '==', clubName), where('pinned', '==', true));
-  const querySnapshot = await getDocs(q);
-  setPinnedMessagesCount(querySnapshot.size); // Update the count of pinned messages
-}
 const navigateToSearchPinnedMessages = () => {
   navigation.navigate('PinnedMessagesScreen', { clubName });
 }
@@ -331,9 +325,10 @@ const onSend = useCallback((messages = []) => {
       addDoc(collection(firestore, 'chats'), { ...message, clubName, likeCount: 0 });
     });
   }, [clubName]);
-  const renderMessageImage = (props) => {
-    const { currentMessage } = props;
-    const isLiked = !!likedMessages[currentMessage._id];
+
+
+
+  const renderMessageImage = (props) => {  
     return (
       <View style={styles.messageImageContainer}>
         <TouchableOpacity onPress={() => onImagePress(props.currentMessage.image)}>
@@ -350,7 +345,7 @@ const onSend = useCallback((messages = []) => {
   const renderBubble = (props) => {
     const { currentMessage } = props;
     const isLiked = !!likedMessages[currentMessage._id];
-    const isPinned = currentMessage.pinned; // Check if the message is pinned
+    
   
     const isCurrentUser = currentMessage.user._id === auth?.currentUser?.email;
   

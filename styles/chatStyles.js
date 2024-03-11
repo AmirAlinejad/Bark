@@ -1,7 +1,6 @@
 // chatStyles.js
-
 import { StyleSheet } from 'react-native';
-import { Colors } from './Colors';
+
 
 export const styles = StyleSheet.create({
   container: {
@@ -113,6 +112,7 @@ export const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
+
   likeCount: { marginLeft: 5 },
  
   messagesContainer: {
@@ -167,7 +167,7 @@ export const styles = StyleSheet.create({
   likeButtonCurrentUser: {
     position: 'absolute',
     right: 325, // Adjust the left position as needed
-    bottom: 10,
+    bottom: 0,
   },
   likeButtonOtherUser: {
     position: 'fixed',
