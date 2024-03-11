@@ -79,6 +79,12 @@ const InClubView = ({ navigation, route }) => {
             style={[styles.button, styles.buttonLast]}>
             <Text style={styles.buttonText}>Image Gallery</Text>
           </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() =>
+              navigation.navigate('AdminChat', { clubName })}
+            style={[styles.button, styles.buttonLast]}>
+            <Text style={styles.buttonText}>Admin Chat</Text>
+          </TouchableOpacity>
           {/* Add more buttons for additional screens here */}
         </View>
       </View>

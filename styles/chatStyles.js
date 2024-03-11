@@ -167,12 +167,12 @@ export const styles = StyleSheet.create({
   likeButtonCurrentUser: {
     position: 'fixed',
     right: -275, // Adjust the left position as needed
-    bottom: -30,
+    bottom: -35,
   },
   likeButtonOtherUser: {
     position: 'fixed',
     right: -275, // Adjust the right position as needed
-    bottom: -30,
+    bottom: -35,
   },
   clubNameContainer: {
     flexDirection: 'row',

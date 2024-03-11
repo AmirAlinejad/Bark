@@ -22,6 +22,7 @@ import PinnedMessagesScreen from "./screens/chat/PinnedMessagesScreen";
 import ForgotPassword from "./screens/auth/ForgotPassword";
 import VerifyEmail from "./screens/auth/VerifyEmail";
 import ImageGalleryScreen from "./screens/chat/ImageGalleryScreen";
+import AdminChat from "./screens/chat/AdminChat";
 // stack navigator
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { NavigationContainer } from '@react-navigation/native';
@@ -55,7 +56,7 @@ export default class App extends React.Component {
             <Stack.Screen name="ForgotPassword" component={ForgotPassword} options={{ headerShown: false }}/>
             <Stack.Screen name="VerifyEmail" component={VerifyEmail} options={{ headerShown: false }}/>
             <Stack.Screen name="ImageGalleryScreen" component={ImageGalleryScreen} options={{ headerShown: false }}/>
-
+            <Stack.Screen name="AdminChat" component={AdminChat} options={{ headerShown: false }}/>
           </Stack.Navigator>
         </NavigationContainer>
       );
