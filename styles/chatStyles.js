@@ -118,7 +118,7 @@ export const styles = StyleSheet.create({
   messagesContainer: {
     backgroundColor: 'white',
     width: '100%',
-    paddingBottom: 35,
+    paddingBottom: 45,
   },
   textInput: {
     backgroundColor: '#f2f2f2',
