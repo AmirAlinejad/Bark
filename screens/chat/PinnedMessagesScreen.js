@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, TextInput, FlatList, Text, StyleSheet, Image } from 'react-native';
+import { View, TextInput, FlatList, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
 import { firestore } from '../../backend/FirebaseConfig'; // Import your Firebase config
 import { query, collection, where, getDocs } from 'firebase/firestore';
 import Header from '../../components/Header';
@@ -20,9 +20,9 @@ const PinnedMessagesScreen = ({ route, navigation }) => {
         _id: doc.id,
         text: doc.data().text,
         createdAt: doc.data().createdAt?.toDate(),
-
         user: doc.data().user,
         likeCount: doc.data().likeCount || 0, // Assume you're storing like count in the message document
+        image: doc.data().image, // Assuming image URL is stored in 'image' field
       }));
       setMessages(results);
       setSearchResults(results);
@@ -37,6 +37,10 @@ const PinnedMessagesScreen = ({ route, navigation }) => {
       message.text.toLowerCase().includes(text.toLowerCase())
     );
     setSearchResults(filteredResults);
+  };
+
+  const onViewImage = (imageUri) => {
+    navigation.navigate('ImageViewerScreen', { imageUri });
   };
 
   return (
@@ -62,6 +66,11 @@ const PinnedMessagesScreen = ({ route, navigation }) => {
               <Text style={styles.username}>{item.user ? item.user.name || item.user._id : 'Unknown'}</Text>
             </View>
             <Text>{item.text}</Text>
+            {item.image && (
+              <TouchableOpacity onPress={() => onViewImage(item.image)}>
+                <Text style={styles.viewImageButton}>View Image</Text>
+              </TouchableOpacity>
+            )}
             <Text style={styles.likes}>Likes: {item.likeCount}</Text>
           </View>
         )}
@@ -110,6 +119,10 @@ const styles = StyleSheet.create({
   },
   username: {
     fontWeight: 'bold',
+  },
+  viewImageButton: {
+    color: 'blue',
+    marginTop: 5,
   },
   likes: {
     marginTop: 5,
