@@ -15,6 +15,24 @@ export const styles = StyleSheet.create({
     paddingHorizontal: 10,
     
   },
+  avatarContainer: {
+    alignItems: 'center',
+    marginBottom: 5, // Adjust as needed
+  },
+  usernameAboveAvatar: {
+    fontSize: 12, // Adjust font size as needed
+    color: '#666', // Choose a color that stands out
+    marginBottom: 4, // Space between the username and the avatar
+  },
+  avatarStyle: {
+    // Styles for the avatar container if needed
+  },
+  avatarImageStyle: {
+    // Styles for the avatar image if needed, such as borderRadius to make it round
+    width: 40, // Example size
+    height: 40, // Example size
+    borderRadius: 20, // Half the width/height to create a circle
+  },
   clubNameButton: {
     padding: 10,
     borderRadius: 5,
@@ -93,8 +111,8 @@ export const styles = StyleSheet.create({
     left: { color: 'black' },
   },
   likeButtonImage: {
-    position: 'absolute',
-    right: 100,
+    position: 'fixed',
+    right: 150,
     bottom: 10,
     flexDirection: 'row',
     alignItems: 'center',
@@ -140,12 +158,12 @@ export const styles = StyleSheet.create({
   },
   likeButtonCurrentUser: {
     position: 'fixed',
-    right: -275, // Adjust the left position as needed
+    right: -260, // Adjust the left position as needed
     bottom: -35,
   },
   likeButtonOtherUser: {
     position: 'fixed',
-    right: -275, // Adjust the right position as needed
+    right: -260, // Adjust the right position as needed
     bottom: -35,
   },
   clubNameContainer: {

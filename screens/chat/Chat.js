@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { TouchableOpacity, View, Text, Image, TextInput } from 'react-native';
-import { GiftedChat, Send, Bubble, Message,Time } from 'react-native-gifted-chat';
+import { GiftedChat, Send, Bubble, Message,Time, Avatar } from 'react-native-gifted-chat';
 import {
   collection,
   addDoc,
@@ -254,6 +254,7 @@ const handleImageUploadAndSend = () => {
       createdAt: new Date(),
       user: {
         _id: auth?.currentUser?.email,
+        name: 'Username',
         avatar: 'https://i.pravatar.cc/300',
       },
       image: imageUri,
@@ -327,7 +328,24 @@ const onSend = useCallback((messages = []) => {
       />
     );
   };
-  
+  const renderAvatar = (props) => {
+    // Check if an avatar is present for the current message
+    if (props.currentMessage.user.avatar) {
+      return (
+        <View style={styles.avatarContainer}>
+          <Text style={styles.usernameAboveAvatar}>{props.currentMessage.user.name}</Text>
+          <Avatar
+            {...props}
+            containerStyle={styles.avatarStyle}
+            avatarStyle={styles.avatarImageStyle}
+          />
+        </View>
+      );
+    } else {
+      // Return null or a default avatar component if no avatar is present
+      return null;
+    }
+  };
   const deleteMessage = async (messageId) => {
     try {
       // Remove the message from the local state
@@ -422,6 +440,7 @@ const onSend = useCallback((messages = []) => {
         textInputStyle={styles.textInput}
         renderMessage={renderMessage}
         renderTime={renderTime}
+        renderAvatar={renderAvatar}
         showAvatarForEveryMessage={true}
         
       />
