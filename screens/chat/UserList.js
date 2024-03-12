@@ -137,12 +137,13 @@ const UserList = ({ route, navigation }) => {
     hideConfirmation(); // Hide the modal after removing the member
     Alert.alert("Removal Success", "Member has been successfully removed from the club.");
   };
+  
 
   const renderMember = ({ item }) => {
     const canPromote = item.id !== currentUserId && (currentUserPrivilege === 'owner' || (currentUserPrivilege === 'admin' && item.privilege === 'member'));
     const canDemote = item.id !== currentUserId && (currentUserPrivilege === 'owner' || (currentUserPrivilege === 'admin' && item.privilege === 'admin'));
     const canRemove = item.id !== currentUserId && (currentUserPrivilege === 'owner' || (currentUserPrivilege === 'admin' && item.privilege === 'member'));
-  
+    
     return (
       <View style={styles.memberContainer}>
         <View style={styles.memberInfo}>
@@ -154,7 +155,7 @@ const UserList = ({ route, navigation }) => {
             <Button title="Promote" onPress={() => showConfirmation(`Are you sure you want to promote ${item.userName}?`, item.id, true)} />
           )}
           {canDemote && (
-            <Button title="Demote" onPress={() => showConfirmation(`Are you sure you want to demote ${item.userName}?`, item.id, false)} />
+            <Button title="Demote" onPress={() => demoteMember(item.id, item.privilege)} />
           )}
           {canRemove && (
             <Button title="Remove" color="red" onPress={() => showConfirmation(`Are you sure you want to remove ${item.userName}?`, item.id)} />
@@ -190,7 +191,16 @@ const UserList = ({ route, navigation }) => {
         <View style={styles.modalContainer}>
           <Text style={styles.modalText}>{confirmationMessage}</Text>
           <View style={styles.modalButtons}>
-            <Button title="Yes" onPress={() => promotionAction ? promoteMember(memberToRemove, filteredMembers.find(member => member.id === memberToRemove).privilege) : demoteMember(memberToRemove, filteredMembers.find(member => member.id === memberToRemove).privilege)} />
+          <Button 
+              title="Yes" 
+              onPress={() => {
+                if (promotionAction) {
+                  promoteMember(memberToRemove, filteredMembers.find(member => member.id === memberToRemove).privilege);
+                } else {
+                  removeMemberConfirmed();
+                }
+              }} 
+            />
             <Button title="No" onPress={hideConfirmation} />
           </View>
         </View>

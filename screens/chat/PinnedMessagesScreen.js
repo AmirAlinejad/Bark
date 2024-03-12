@@ -1,93 +1,91 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, TextInput, Image, StyleSheet } from 'react-native';
-import { collection, query, where, getDocs } from 'firebase/firestore';
-import { firestore } from '../../backend/FirebaseConfig';
+import { View, TextInput, FlatList, Text, StyleSheet, Image } from 'react-native';
+import { firestore } from '../../backend/FirebaseConfig'; // Import your Firebase config
+import { query, collection, where, getDocs } from 'firebase/firestore';
 import Header from '../../components/Header';
 
-export default function PinnedMessagesScreen({ route, navigation }) {
-  const { clubName } = route.params;
-  const [searchQuery, setSearchQuery] = useState('');
-  const [pinnedMessages, setPinnedMessages] = useState([]);
+const PinnedMessagesScreen = ({ route, navigation }) => {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [messages, setMessages] = useState([]);
+  const [searchResults, setSearchResults] = useState([]);
+  const clubName = route?.params?.clubName; // Assume you pass the clubName as a parameter
 
   useEffect(() => {
-    const getPinnedMessages = async () => {
-      const q = query(
-        collection(firestore, 'chats'),
-        where('pinned', '==', true),
-        where('clubName', '==', clubName)
-      );
+    const fetchMessages = async () => {
+      const messagesRef = collection(firestore, 'chats');
+      const q = query(messagesRef, where('clubName', '==', clubName), where('pinned', '==', true));
+
       const querySnapshot = await getDocs(q);
-      const pinnedMessagesData = querySnapshot.docs.map((doc) => ({
-        id: doc.id,
-        data: doc.data(),
+      const results = querySnapshot.docs.map(doc => ({
+        _id: doc.id,
+        text: doc.data().text,
+        createdAt: doc.data().createdAt?.toDate(),
+
+        user: doc.data().user,
+        likeCount: doc.data().likeCount || 0, // Assume you're storing like count in the message document
       }));
-      setPinnedMessages(pinnedMessagesData);
+      setMessages(results);
+      setSearchResults(results);
     };
 
-    getPinnedMessages();
+    fetchMessages();
   }, [clubName]);
 
-  const filteredPinnedMessages = pinnedMessages.filter((message) =>
-    message.data.text.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const handleSearch = (text) => {
+    setSearchTerm(text);
+    const filteredResults = messages.filter(message =>
+      message.text.toLowerCase().includes(text.toLowerCase())
+    );
+    setSearchResults(filteredResults);
+  };
 
   return (
     <View style={styles.container}>
       <Header navigation={navigation} text="Pinned Messages" back={true} />
-      <View style={styles.searchContainer}>
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Search messages..."
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-        />
-      </View>
-      <Text style={styles.sectionTitle}>Pinned Messages</Text>
+      <TextInput
+        style={styles.searchInput}
+        placeholder="Search messages..."
+        value={searchTerm}
+        onChangeText={handleSearch}
+      />
       <FlatList
-        data={filteredPinnedMessages}
+        data={searchResults}
+        keyExtractor={item => item._id}
         renderItem={({ item }) => (
           <View style={styles.messageItem}>
             <View style={styles.messageHeader}>
-              <Text style={styles.username}>{item.data.user.name || item.data.user._id}</Text>
+              {item.user && item.user.avatar ? (
+                <Image source={{ uri: item.user.avatar }} style={styles.avatar} />
+              ) : (
+                <View style={styles.placeholderAvatar} />
+              )}
+              <Text style={styles.username}>{item.user ? item.user.name || item.user._id : 'Unknown'}</Text>
             </View>
-            <Text>{item.data.text}</Text>
-            <Text style={styles.likes}>Likes: {item.data.likeCount}</Text>
+            <Text>{item.text}</Text>
+            <Text style={styles.likes}>Likes: {item.likeCount}</Text>
           </View>
         )}
-        keyExtractor={(item) => item.id}
-        ListEmptyComponent={<Text>No pinned messages found.</Text>}
       />
     </View>
   );
-}
+};
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    paddingHorizontal: 10,
     backgroundColor: "#FAFAFA",
   },
-  searchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 10,
-    marginTop: 10,
-  },
   searchInput: {
-    flex: 1,
     height: 40,
+    marginBottom: 20,
     borderWidth: 1,
-    borderColor: 'black',
-    paddingHorizontal: 10,
+    padding: 10,
+    borderColor: 'gray',
     borderRadius: 5,
   },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginVertical: 10,
-    paddingHorizontal: 10,
-  },
   messageItem: {
-    backgroundColor: '#FAFAFA',
+    backgroundColor: 'lightgrey',
     padding: 10,
     borderRadius: 5,
     marginBottom: 10,
@@ -96,6 +94,19 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 5,
+  },
+  avatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    marginRight: 10,
+  },
+  placeholderAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#ccc',
+    marginRight: 10,
   },
   username: {
     fontWeight: 'bold',
@@ -106,3 +117,5 @@ const styles = StyleSheet.create({
     color: 'grey',
   },
 });
+
+export default PinnedMessagesScreen;

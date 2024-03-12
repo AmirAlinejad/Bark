@@ -40,8 +40,6 @@ export const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderColor: '#ccc',
     marginTop: -50,
-    
-    
   },
   input: {
     flex: 1,
@@ -129,20 +127,12 @@ export const styles = StyleSheet.create({
     padding: 10,
     fontSize: 16,
   },
-  
-  dateText: {
-    alignSelf: 'center',
-    fontSize: 14,
-    color: '#666',
-    paddingVertical: 8,
-  },
   messageImageContainer: {
     position: 'relative',
     padding: 0,
     flexDirection: 'column',
     alignItems: 'flex-start', // Align items to the start to keep the image and button aligned
   },
- 
   messageImage: {
     width: 200,
     height: 200,

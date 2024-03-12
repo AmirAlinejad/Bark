@@ -163,6 +163,7 @@ function CustomInputToolbar({ onSend, handleImageUploadAndSend }) {
         text: messageText,
         user: {
           _id: auth?.currentUser?.email,
+          name: 'Username', 
           avatar: 'https://i.pravatar.cc/300',
         },
       };
@@ -238,7 +239,11 @@ const renderTime = (props) => {
 
 // Renders each chat message
 const renderMessage = (props) => {
-  return <SlackMessage {...props} />;
+  return (
+    <TouchableOpacity onLongPress={() => togglePin(props.currentMessage._id)}>
+      <SlackMessage {...props} />
+    </TouchableOpacity>
+  );
 };
 
 //uploads images
@@ -279,16 +284,16 @@ const onSend = useCallback((messages = []) => {
 
 
 
-  const renderMessageImage = (props) => {  
+  const renderMessageImage = (props) => {
     return (
       <View style={styles.messageImageContainer}>
         <TouchableOpacity onPress={() => onImagePress(props.currentMessage.image)}>
           <Image source={{ uri: props.currentMessage.image }} style={styles.messageImage} />
         </TouchableOpacity>
-        
       </View>
     );
   };
+  
   const onImagePress = (imageUri) => {
     navigation.navigate('ImageViewerScreen', { imageUri });
   };
