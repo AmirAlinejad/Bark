@@ -41,7 +41,9 @@ const InClubView = ({ navigation, route }) => {
       console.error('Error fetching member count:', error);
     }
   };
-
+  const navigateToQRCodeScreen = () => {
+    navigation.navigate('QRCodeScreen', { clubName });
+  };
   const fetchCurrentUserPrivilege = async () => {
     const auth = getAuth();
     const user = auth.currentUser;
@@ -92,6 +94,13 @@ const InClubView = ({ navigation, route }) => {
               navigation.navigate('MessageSearchScreen', { clubName })}
             style={styles.button}>
             <Text style={styles.buttonText}>Search Messages</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={() =>
+              navigation.navigate('QRCodeScreen', { clubName })}
+            style={styles.button}>
+            <Text style={styles.buttonText}>QR Code</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
