@@ -18,6 +18,9 @@ export const styles = StyleSheet.create({
   avatarContainer: {
     alignItems: 'center',
     marginBottom: 5, // Adjust as needed
+    position: 'absolute', // Position the avatar container absolutely
+    top: 10, // Adjust the top position as needed
+    left: 10, // Adjust the left position as needed
   },
   usernameAboveAvatar: {
     fontSize: 12, // Adjust font size as needed
@@ -68,7 +71,7 @@ export const styles = StyleSheet.create({
     borderRadius: 20,
     paddingHorizontal: 10,
     marginHorizontal: 5,
-    backgroundColor: 'white',
+    backgroundColor: '#D3D3D3',
   },
   toolbarButton: {
     padding: 5,
@@ -77,27 +80,25 @@ export const styles = StyleSheet.create({
   },
   pinnedMessagesContainer: {
     flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 10, // Add some right margin for spacing
+    marginLeft: 10, // Add some right margin for spacing
   },
  
   pinnedMessagesText: {
-    color: 'blue',
+    color: 'gray',
     fontSize: 16,
-    fontWeight: 'bold',
-    textAlign: 'center'
+    textAlign: 'left',
+    fontStyle: 'italic',
   },
   bubbleWrapperStyle: ({ position }) => ({
     right: position === 'right' ? {
       backgroundColor: 'white',
-      marginRight: 0,
+      marginRight: 10,
       flex: 1,
       minHeight: 40,
     } : {},
     left: position === 'left' ? {
       backgroundColor: "white",
-      marginLeft: 0,
+      marginLeft: 50,
       flex: 1,
       minHeight: 40,
     } : {},

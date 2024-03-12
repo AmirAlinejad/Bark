@@ -204,7 +204,7 @@ function CustomInputToolbar({ onSend, handleImageUploadAndSend }) {
         value={messageText}
         
         onChangeText={setMessageText}
-        placeholder="Type a message..."
+        placeholder="Send messages..."
         multiline={true} maxHeight={70}
         returnKeyType="done" // Prevents new lines
       />
