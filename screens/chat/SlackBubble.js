@@ -7,10 +7,9 @@ import {
   StyleSheet,
   TouchableOpacity,
   View,
-  ViewPropTypes,
   Platform,
 } from 'react-native'
-
+import ViewPropTypes from 'deprecated-react-native-prop-types';
 import {
   MessageText,
   MessageImage,
@@ -200,6 +199,11 @@ const styles = StyleSheet.create({
     marginTop: Platform.OS === 'android' ? -2 : 0,
     flexDirection: 'row',
     alignItems: 'baseline',
+  },
+  slackImage: {
+    borderRadius: 3,
+    marginLeft: 0,
+    marginRight: 0,
   },
   
 })

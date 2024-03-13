@@ -14,6 +14,8 @@ import {
   updateDoc,
   deleteDoc,
   doc,
+  startAfter,
+  limit
 } from 'firebase/firestore';
 import { auth, firestore } from '../../backend/FirebaseConfig';
 import { IconButton } from 'react-native-paper';
@@ -32,16 +34,20 @@ export default function Chat({ route, navigation }) {
   const [likedMessages, setLikedMessages] = useState({});
   const [pinnedMessagesCount, setPinnedMessagesCount] = useState(0);
   const [imageUris, setImageUris] = useState([]);
+  const [lastVisible, setLastVisible] = useState(null); // To keep track of the last loaded document
+  const [isLoadingEarlier, setIsLoadingEarlier] = useState(false); // Loading state for earlier messages
+  const [hasMoreMessages, setHasMoreMessages] = useState(true);
+;
   const clubName = route?.params?.clubName;
 
-  //updates when messages are pinned
+ 
   
   
   //updates which messages are liked
   useEffect(() => {
     let unsubscribeMessages = () => {};
     let unsubscribePinnedMessages = () => {};
-  
+    fetchInitialMessages();
     // Fetch liked messages
     const fetchLikedMessages = async () => {
       const likedMessagesQuery = query(collection(firestore, 'messagesLikes', auth.currentUser.uid, 'likes'));
@@ -53,22 +59,7 @@ export default function Chat({ route, navigation }) {
       setLikedMessages(likedMessagesIds);
     };
   
-    // Fetch chat messages and image URIs
-    const fetchMessages = () => {
-      const q = query(collection(firestore, 'chats'), where('clubName', '==', clubName), orderBy('createdAt', 'desc'));
-      unsubscribeMessages = onSnapshot(q, (querySnapshot) => {
-        const fetchedMessages = querySnapshot.docs.map(doc => ({
-          _id: doc.id,
-          createdAt: doc.data().createdAt.toDate(),
-          text: doc.data().text,
-          user: doc.data().user,
-          image: doc.data().image,
-          likeCount: doc.data().likeCount || 0,
-        }));
-        setMessages(fetchedMessages);
-        setImageUris(fetchedMessages.filter(m => m.image).map(m => m.image));
-      });
-    };
+    
   
     // Fetch the count of pinned messages
     const fetchPinnedMessagesCount = () => {
@@ -80,8 +71,7 @@ export default function Chat({ route, navigation }) {
   
     // Ensure all data fetching is performed
     const initializeChat = async () => {
-      await fetchLikedMessages();
-      fetchMessages();
+      fetchLikedMessages();
       fetchPinnedMessagesCount();
     };
   
@@ -96,6 +86,78 @@ export default function Chat({ route, navigation }) {
   }, [clubName, auth.currentUser.uid]);
   
 
+  
+  const fetchInitialMessages = async () => {
+    setIsLoadingEarlier(true);
+    const q = query(
+      collection(firestore, 'chats'),
+      where('clubName', '==', clubName),
+      orderBy('createdAt', 'desc'),
+      limit(20)
+    );
+
+    try {
+      const documentSnapshots = await getDocs(q);
+      const fetchedMessages = documentSnapshots.docs.map(doc => ({
+        _id: doc.id,
+        createdAt: doc.data().createdAt.toDate(),
+        text: doc.data().text,
+        user: doc.data().user,
+        image: doc.data().image,
+        likeCount: doc.data().likeCount || 0,
+      })) // Reverse the array to display the messages in correct order
+
+      setMessages(fetchedMessages);
+      if (documentSnapshots.docs.length > 0) {
+        setLastVisible(documentSnapshots.docs[documentSnapshots.docs.length - 1]);
+      }
+      setHasMoreMessages(documentSnapshots.docs.length === 20);
+    } catch (error) {
+      console.error("Error fetching initial messages: ", error);
+    } finally {
+      setIsLoadingEarlier(false);
+    }
+  };
+
+  const loadEarlierMessages = async () => {
+    if (!lastVisible || isLoadingEarlier || !hasMoreMessages) return;
+
+    setIsLoadingEarlier(true);
+    const nextQuery = query(
+      collection(firestore, 'chats'),
+      where('clubName', '==', clubName),
+      orderBy('createdAt', 'desc'),
+      startAfter(lastVisible),
+      limit(20)
+    );
+
+    try {
+      const documentSnapshots = await getDocs(nextQuery);
+      const newMessages = documentSnapshots.docs.map(doc => ({
+        _id: doc.id,
+        createdAt: doc.data().createdAt.toDate(),
+        text: doc.data().text,
+        user: doc.data().user,
+        image: doc.data().image,
+        likeCount: doc.data().likeCount || 0,
+      })) // Reverse to maintain chronological order
+
+      if (newMessages.length > 0) {
+        setMessages(prevMessages => [...prevMessages, ...newMessages]); // Append older messages
+        setLastVisible(documentSnapshots.docs[documentSnapshots.docs.length - 1]); // Update for next pagination
+      }
+
+      setHasMoreMessages(newMessages.length === 20);
+    } catch (error) {
+      console.error("Error loading earlier messages:", error);
+    } finally {
+      setIsLoadingEarlier(false);
+    }
+  };
+  
+  
+  
+  
   
   const onBackPress = () => {
     navigation.navigate("HomeScreen");
@@ -188,10 +250,6 @@ const navigateToSearchPinnedMessages = () => {
   navigation.navigate('PinnedMessagesScreen', { clubName });
 }
 
-const renderTime = (props) => {
-  // Always render the time component for every message
-  return <Time {...props} />;
-};
 
 
 // Renders each chat message
@@ -232,29 +290,17 @@ const handleImageUploadAndSend = () => {
   };
 
   
-//Send messages
-const onSend = useCallback((messages = []) => {
-      setMessages((previousMessages) => GiftedChat.append(previousMessages, messages));
-    messages.forEach((message) => {
-      addDoc(collection(firestore, 'chats'), { ...message, clubName, likeCount: 0 });
+  const onSend = useCallback((newMessages = []) => {
+    setMessages(previousMessages => GiftedChat.append(previousMessages, newMessages));
+    newMessages.forEach(async (message) => {
+      try {
+        await addDoc(collection(firestore, 'chats'), { ...message, clubName, likeCount: 0 });
+      } catch (error) {
+        console.error("Error sending message:", error);
+      }
     });
   }, [clubName]);
 
-
-
-  const renderMessageImage = (props) => {
-    return (
-      <View style={styles.messageImageContainer}>
-        <TouchableOpacity onPress={() => onImagePress(props.currentMessage.image)}>
-          <Image source={{ uri: props.currentMessage.image }} style={styles.messageImage} />
-        </TouchableOpacity>
-      </View>
-    );
-  };
-  
-  const onImagePress = (imageUri) => {
-    navigation.navigate('ImageViewerScreen', { imageUri });
-  };
   
   const renderBubble = (props) => {
     const { currentMessage } = props;
@@ -374,12 +420,15 @@ const onSend = useCallback((messages = []) => {
         onSend={messages => onSend(messages)}
         user={{ _id: 1, avatar: 'https://i.pravatar.cc/300' }}
         renderBubble={renderBubble}
-        renderMessageImage={renderMessageImage}
+        
         renderInputToolbar={props => <CustomInputToolbar {...props} onSend={onSend} handleImageUploadAndSend={handleImageUploadAndSend} />}
         messagesContainerStyle={styles.messagesContainer}
         textInputStyle={styles.textInput}
         renderMessage={renderMessage}
-        renderTime={renderTime}
+        loadEarlier={hasMoreMessages}
+        isLoadingEarlier={isLoadingEarlier}
+        onLoadEarlier={loadEarlierMessages}
+        infiniteScroll
         showAvatarForEveryMessage={true}
         
       />
