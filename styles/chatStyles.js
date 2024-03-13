@@ -16,7 +16,7 @@ export const styles = StyleSheet.create({
     
   },
   avatarContainer: {
-    alignItems: 'center',
+    alignItems: 'left',
     marginBottom: 5, // Adjust as needed
     position: 'absolute', // Position the avatar container absolutely
     top: 10, // Adjust the top position as needed

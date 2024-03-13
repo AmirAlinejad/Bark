@@ -1,8 +1,6 @@
-/* eslint-disable no-underscore-dangle, no-use-before-define */
-
 import PropTypes from 'prop-types'
 import React from 'react'
-import { View, ViewPropTypes, StyleSheet } from 'react-native'
+import { View, ViewPropTypes, StyleSheet, Text } from 'react-native'
 
 import { Avatar, Day, utils } from 'react-native-gifted-chat'
 import Bubble from './SlackBubble'
@@ -40,37 +38,28 @@ export default class Message extends React.Component {
   }
 
   renderAvatar() {
-    if (!this.props.showAvatarForEveryMessage) {
-        let extraStyle = {};
-        if (
-          isSameUser(this.props.currentMessage, this.props.previousMessage) &&
-          isSameDay(this.props.currentMessage, this.props.previousMessage)
-        ) {
-          extraStyle = { height: 0 }; // Hide avatar
-        }
+    const { currentMessage, showAvatarForEveryMessage } = this.props;
 
-        const avatarProps = this.getInnerComponentProps();
+    if (currentMessage.user && currentMessage.user.avatar) {
+        let avatarProps = this.getInnerComponentProps();
+
+        // Conditionally render the username above the avatar if applicable
+        let usernameText = showAvatarForEveryMessage || (!isSameUser(currentMessage, this.props.previousMessage) || !isSameDay(currentMessage, this.props.previousMessage)) ? (
+            <Text style={styles.usernameAboveAvatar}>{currentMessage.user.name}</Text>
+        ) : null;
+
         return (
-          <Avatar
-            {...avatarProps}
-            imageStyle={{
-              left: [styles.slackAvatar, avatarProps.imageStyle, extraStyle],
-            }}
-          />
+            <View style={styles.avatarContainer}>
+                {usernameText}
+                <Avatar {...avatarProps} imageStyle={styles.avatarImageStyle} />
+            </View>
         );
     } else {
-        // If showAvatarForEveryMessage is true, ignore conditional styling
-        const avatarProps = this.getInnerComponentProps();
-        return (
-          <Avatar
-            {...avatarProps}
-            imageStyle={{
-              left: [styles.slackAvatar, avatarProps.imageStyle],
-            }}
-          />
-        );
+        return null;
     }
 }
+
+
 
   render() {
     const marginBottom = isSameUser(
@@ -105,6 +94,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
     marginLeft: 8,
     marginRight: 0,
+    marginTop: 20, // Added space for the username to show
   },
   slackAvatar: {
     // The bottom should roughly line up with the first line of message text.
@@ -112,6 +102,22 @@ const styles = StyleSheet.create({
     width: 40,
     borderRadius: 3,
   },
+  avatarContainer: {
+    alignItems: 'center',
+    marginBottom: 5, // Adjust as needed
+    position: 'absolute', // Position the avatar container absolutely
+    top: 10, // Adjust the top position as needed
+    left: 10, // Adjust the left position as needed
+    
+},
+usernameAboveAvatar: {
+  fontSize: 12,
+  color: '#000',
+  marginBottom: 4,
+  zIndex: 5, // Ensure it's above other components, adjust as necessary
+  backgroundColor: 'transparent',
+    
+},
 })
 
 Message.defaultProps = {

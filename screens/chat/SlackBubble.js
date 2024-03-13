@@ -4,7 +4,6 @@ import PropTypes from 'prop-types'
 import React from 'react'
 import {
   Text,
-  Clipboard,
   StyleSheet,
   TouchableOpacity,
   View,
@@ -94,60 +93,7 @@ export default class Bubble extends React.Component {
     }
     return null
   }
-
-  renderTicks() {
-    const { currentMessage } = this.props
-    if (this.props.renderTicks) {
-      return this.props.renderTicks(currentMessage)
-    }
-    if (currentMessage.user._id !== this.props.user._id) {
-      return null
-    }
-    if (currentMessage.sent || currentMessage.received) {
-      return (
-        <View style={[styles.headerItem, styles.tickView]}>
-          {currentMessage.sent && (
-            <Text
-              style={[styles.standardFont, styles.tick, this.props.tickStyle]}
-            >
-              ✓
-            </Text>
-          )}
-          {currentMessage.received && (
-            <Text
-              style={[styles.standardFont, styles.tick, this.props.tickStyle]}
-            >
-              ✓
-            </Text>
-          )}
-        </View>
-      )
-    }
-    return null
-  }
-
-  renderUsername() {
-    const username = this.props.currentMessage.user.name
-    if (username) {
-      const { containerStyle, wrapperStyle, ...usernameProps } = this.props
-      if (this.props.renderUsername) {
-        return this.props.renderUsername(usernameProps)
-      }
-      return (
-        <Text
-          style={[
-            styles.standardFont,
-            styles.headerItem,
-            styles.username,
-            this.props.usernameStyle,
-          ]}
-        >
-          {username}
-        </Text>
-      )
-    }
-    return null
-  }
+  
 
   renderTime() {
     if (this.props.currentMessage.createdAt) {
@@ -255,20 +201,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'baseline',
   },
-  /* eslint-disable react-native/no-color-literals */
-  tick: {
-    backgroundColor: 'transparent',
-    color: 'white',
-  },
-  /* eslint-enable react-native/no-color-literals */
-  tickView: {
-    flexDirection: 'row',
-  },
-  slackImage: {
-    borderRadius: 3,
-    marginLeft: 0,
-    marginRight: 0,
-  },
+  
 })
 
 Bubble.contextTypes = {
