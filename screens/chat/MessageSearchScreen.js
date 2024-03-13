@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, TextInput, FlatList, Text, StyleSheet, Image } from 'react-native';
+import { View, TextInput, FlatList, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
 import { firestore } from '../../backend/FirebaseConfig'; // Import your Firebase config
 import { query, collection, where, getDocs } from 'firebase/firestore';
 import Header from '../../components/Header';
@@ -20,9 +20,9 @@ const MessageSearchScreen = ({ route, navigation }) => {
         _id: doc.id,
         text: doc.data().text,
         createdAt: doc.data().createdAt?.toDate(),
-
         user: doc.data().user,
         likeCount: doc.data().likeCount || 0, // Assume you're storing like count in the message document
+        image: doc.data().image, // Add this line to handle images
       }));
       setMessages(results);
       setSearchResults(results);
@@ -37,6 +37,10 @@ const MessageSearchScreen = ({ route, navigation }) => {
       message.text.toLowerCase().includes(text.toLowerCase())
     );
     setSearchResults(filteredResults);
+  };
+
+  const onViewImage = (imageUri) => {
+    navigation.navigate('ImageViewerScreen', { imageUri });
   };
 
   return (
@@ -62,6 +66,11 @@ const MessageSearchScreen = ({ route, navigation }) => {
               <Text style={styles.username}>{item.user ? item.user.name || item.user._id : 'Unknown'}</Text>
             </View>
             <Text>{item.text}</Text>
+            {item.image && (
+              <TouchableOpacity onPress={() => onViewImage(item.image)}>
+                <Text style={styles.viewImageButton}>View Image</Text>
+              </TouchableOpacity>
+            )}
             <Text style={styles.likes}>Likes: {item.likeCount}</Text>
           </View>
         )}
@@ -69,7 +78,6 @@ const MessageSearchScreen = ({ route, navigation }) => {
     </View>
   );
 };
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -115,6 +123,10 @@ const styles = StyleSheet.create({
     marginTop: 5,
     fontSize: 12,
     color: 'grey',
+  },
+  viewImageButton: {
+    color: 'blue', // This was already set to blue. Ensure this line is present.
+    marginTop: 5,
   },
 });
 

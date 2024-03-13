@@ -152,7 +152,7 @@ function CustomInputToolbar({ onSend, handleImageUploadAndSend }) {
         text: messageText,
         user: {
           _id: auth?.currentUser?.email,
-          name: username, 
+          name: "Username", 
           avatar: 'https://i.pravatar.cc/300',
         },
       };
