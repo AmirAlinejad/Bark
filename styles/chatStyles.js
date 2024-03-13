@@ -91,14 +91,15 @@ export const styles = StyleSheet.create({
   },
   bubbleWrapperStyle: ({ position }) => ({
     right: position === 'right' ? {
-      backgroundColor: 'white',
-      marginRight: 10,
+      backgroundColor: 'transparent',
+      marginRight: 40,
       flex: 1,
       minHeight: 40,
     } : {},
     left: position === 'left' ? {
-      backgroundColor: "white",
-      marginLeft: 50,
+      backgroundColor: "transparent",
+      marginLeft: 60,
+      marginTop: 0,
       flex: 1,
       minHeight: 40,
     } : {},

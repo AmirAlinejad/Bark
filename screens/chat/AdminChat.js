@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { TouchableOpacity, View, Text, Image, TextInput } from 'react-native';
-import { GiftedChat, Send, Bubble, Message,Time } from 'react-native-gifted-chat';
+import { GiftedChat,  Bubble, Time, Avatar } from 'react-native-gifted-chat';
 import {
   collection,
   addDoc,
@@ -25,11 +25,12 @@ import { KeyboardAvoidingView} from 'react-native';
 import { Alert } from 'react-native';
 import { styles } from '../../styles/chatStyles'; 
 import SlackMessage from './SlackMessage';
+
+
 export default function Chat({ route, navigation }) {
   const [messages, setMessages] = useState([]);
   const [likedMessages, setLikedMessages] = useState({});
   const [pinnedMessagesCount, setPinnedMessagesCount] = useState(0);
-  const [isExpanded, setIsExpanded] = useState(false);
   const [imageUris, setImageUris] = useState([]);
   const clubName = route?.params?.clubName;
 
@@ -100,18 +101,6 @@ export default function Chat({ route, navigation }) {
     navigation.navigate("HomeScreen");
     
   }
-  /*
-  const handleTapOutside = () => {
-    setIsExpanded(false); // Close the expanded buttons
-  };
-  */
-
-
-  //expand modal when a + button is pressed
-  const toggleExpand = () => {
-    setIsExpanded((prev) => !prev);
-  };
-
 
   //Like and unliking messages.
   const toggleLike = async (messageId) => {
@@ -154,7 +143,7 @@ export default function Chat({ route, navigation }) {
 // CustomInputToolbar component which shows up for chat
 function CustomInputToolbar({ onSend, handleImageUploadAndSend }) {
   const [messageText, setMessageText] = useState('');
-
+  
   const sendTextMessage = useCallback(() => {
     if (messageText.trim()) {
       const message = {
@@ -163,7 +152,7 @@ function CustomInputToolbar({ onSend, handleImageUploadAndSend }) {
         text: messageText,
         user: {
           _id: auth?.currentUser?.email,
-          name: 'Username', 
+          name: "Username", 
           avatar: 'https://i.pravatar.cc/300',
         },
       };
@@ -175,36 +164,16 @@ function CustomInputToolbar({ onSend, handleImageUploadAndSend }) {
   return (
     <KeyboardAvoidingView behavior="padding" style={styles.customToolbar}>
       {/* Main button */}
-    <TouchableOpacity onPress={toggleExpand} style={styles.toolbarButton}>
+    <TouchableOpacity onPress={handleImageUploadAndSend} style={styles.toolbarButton}>
       <Ionicons name='add-circle' size={30} color="black" />
     </TouchableOpacity>
 
-    
-
-      {/* Expanded buttons container */}
-      {isExpanded && (
-        <View style={styles.expandedButtonsContainer}>
-          {/* Additional buttons */}
-          <TouchableOpacity style={styles.expandedButton}>
-            <Text style={styles.buttonText}>Create Poll</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.expandedButton} onPress={handleImageUploadAndSend}>
-            <Text style={styles.buttonText}>Camera Roll</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.expandedButton}>
-            <Text style={styles.buttonText}>Upload Files</Text>
-          </TouchableOpacity>
-          
-          {/* Add more buttons as needed */}
-        </View>
-      )}
-    
       <TextInput
         style={[styles.input, { maxHeight: 100 }]} // Add maxHeight here
         value={messageText}
         
         onChangeText={setMessageText}
-        placeholder="Type a message..."
+        placeholder="Send messages..."
         multiline={true} maxHeight={70}
         returnKeyType="done" // Prevents new lines
       />
@@ -219,18 +188,6 @@ const navigateToSearchPinnedMessages = () => {
   navigation.navigate('PinnedMessagesScreen', { clubName });
 }
 
-
-//Displays the date above messages
-const formatDate = (date) => {
-  const options = { year: 'numeric', month: 'long', day: 'numeric' };
-  return date.toLocaleDateString(undefined, options);
-};
-
-
-//Null the automatic day rendering
-const renderDay = (props) => {
-  return null;
-}
 const renderTime = (props) => {
   // Always render the time component for every message
   return <Time {...props} />;
@@ -254,6 +211,7 @@ const handleImageUploadAndSend = () => {
       createdAt: new Date(),
       user: {
         _id: auth?.currentUser?.email,
+        name: 'Username',
         avatar: 'https://i.pravatar.cc/300',
       },
       image: imageUri,
@@ -428,4 +386,3 @@ const onSend = useCallback((messages = []) => {
     </View>
   );
 }
-
