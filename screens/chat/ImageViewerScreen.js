@@ -32,9 +32,7 @@ export default function ImageViewerScreen({ route }) {
       </View>
 
       <Image source={{ uri: imageUri }} style={styles.image} />
-      <TouchableOpacity style={styles.saveButton} onPress={saveImage}>
-        <Text style={styles.saveButtonText}>Save Image</Text>
-      </TouchableOpacity>
+      
     </View>
   );
 }

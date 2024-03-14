@@ -379,6 +379,13 @@ const updateMessageLikeCount = async (messageId, increment) => {
     }
   };
   
+  const collectImageUris = useCallback(() => {
+    // Filter messages to get those with images, then map to extract the image URIs
+    const uris = messages
+      .filter((message) => message.image)
+      .map((message) => message.image);
+    return uris;
+  }, [messages]);
 
   const togglePin = async (messageId) => {
     const messageRef = doc(firestore, 'chats', messageId);
@@ -435,7 +442,10 @@ const updateMessageLikeCount = async (messageId, increment) => {
     <View style={styles.container}>
       <View style={styles.header}>
         <IconButton onPress={onBackPress} icon="arrow-left" size={30} />
-        <TouchableOpacity style={styles.clubNameContainer} onPress={() => navigation.navigate("InClubView", { clubName, imageUris })}>
+        <TouchableOpacity style={styles.clubNameContainer} onPress={() => {
+          const imageUris = collectImageUris();
+          navigation.navigate('InClubView', { clubName, imageUris });
+        }}>
           <View style={styles.imageContainer}>
             {/* Placeholder image */}
           </View>
