@@ -15,7 +15,8 @@ import {
   deleteDoc,
   doc,
   startAfter,
-  limit
+  limit,
+  runTransaction
 } from 'firebase/firestore';
 import { auth, firestore } from '../../backend/FirebaseConfig';
 import { IconButton } from 'react-native-paper';
@@ -164,41 +165,54 @@ export default function Chat({ route, navigation }) {
     
   }
 
-  //Like and unliking messages.
   const toggleLike = async (messageId) => {
-    // Check if the message is already liked by the current user
     const isLiked = !!likedMessages[messageId];
-    
-    // Update the local state of likedMessages immediately
-    setLikedMessages((prevLikedMessages) => ({
-      ...prevLikedMessages,
-      [messageId]: !isLiked,
-    }));
   
-    // Update the like count locally
-    setMessages((prevMessages) =>
-      prevMessages.map((message) =>
-        message._id === messageId
-          ? {
-              ...message,
-              likeCount: isLiked ? message.likeCount - 1 : message.likeCount + 1,
-            }
-          : message
+    // Optimistically update the UI for like status
+    setLikedMessages((prev) => ({ ...prev, [messageId]: !isLiked }));
+  
+    // Optimistically update the like count in the UI
+    setMessages((currentMessages) =>
+      currentMessages.map((message) =>
+        message._id === messageId ? { ...message, likeCount: (message.likeCount || 0) + (isLiked ? -1 : 1) } : message
       )
     );
   
-    // Perform the database operation
-    const messageRef = doc(firestore, 'messagesLikes', auth.currentUser.uid, 'likes', messageId);
-    const likedMessage = await getDoc(messageRef);
+    // Firestore update for the user's like status and global like count
+    try {
+      const userLikeDocRef = doc(firestore, 'messagesLikes', auth.currentUser.uid, 'likes', messageId);
+      const messageRef = doc(firestore, 'chats', messageId);
   
-    if (likedMessage.exists()) {
-      await deleteDoc(messageRef);
-      updateMessageLikeCount(messageId, -1); // Decrement like count
-    } else {
-      await setDoc(messageRef, { liked: true });
-      updateMessageLikeCount(messageId, 1); // Increment like count
+      if (isLiked) {
+        // Remove the like
+        await deleteDoc(userLikeDocRef);
+      } else {
+        // Add a like
+        await setDoc(userLikeDocRef, { liked: true });
+      }
+  
+      // Update the global like count atomically
+      await runTransaction(firestore, async (transaction) => {
+        const messageDoc = await transaction.get(messageRef);
+        if (!messageDoc.exists()) {
+          throw new Error("Document does not exist!");
+        }
+        const currentLikeCount = messageDoc.data().likeCount || 0;
+        transaction.update(messageRef, { likeCount: currentLikeCount + (isLiked ? -1 : 1) });
+      });
+    } catch (error) {
+      console.error("Failed to toggle like: ", error);
+      // Rollback optimistic UI update if transaction fails
+      setLikedMessages((prev) => ({ ...prev, [messageId]: isLiked }));
+      setMessages((currentMessages) =>
+        currentMessages.map((message) =>
+          message._id === messageId ? { ...message, likeCount: (message.likeCount || 0) + (isLiked ? 1 : -1) } : message
+        )
+      );
     }
   };
+  
+  
 
 
   
@@ -279,27 +293,46 @@ const handleImageUploadAndSend = () => {
     onSend([message]);
   });
 };
-//updates the like count
-  const updateMessageLikeCount = async (messageId, increment) => {
-    const messageRef = doc(firestore, 'chats', messageId);
-    const messageSnapshot = await getDoc(messageRef);
-    if (messageSnapshot.exists()) {
-      const currentLikeCount = messageSnapshot.data().likeCount || 0;
-      await updateDoc(messageRef, { likeCount: currentLikeCount + increment });
+const updateMessageLikeCount = async (messageId, increment) => {
+  const messageRef = doc(firestore, 'chats', messageId);
+  
+  // Run a transaction to ensure accurate like count updates in concurrent scenarios
+  await runTransaction(firestore, async (transaction) => {
+    const messageDoc = await transaction.get(messageRef);
+    if (!messageDoc.exists()) {
+      console.error("Document does not exist!");
+      return;
     }
-  };
+
+    const newLikeCount = (messageDoc.data().likeCount || 0) + increment;
+    transaction.update(messageRef, { likeCount: newLikeCount });
+  });
+};
+
 
   
-  const onSend = useCallback((newMessages = []) => {
-    setMessages(previousMessages => GiftedChat.append(previousMessages, newMessages));
-    newMessages.forEach(async (message) => {
-      try {
-        await addDoc(collection(firestore, 'chats'), { ...message, clubName, likeCount: 0 });
-      } catch (error) {
-        console.error("Error sending message:", error);
-      }
+  const onSend = useCallback(async (newMessages = []) => {
+    const updates = newMessages.map(async (message) => {
+      // Prepare the message with additional data but without a predetermined _id
+      const messageData = { ...message, clubName, likeCount: 0, createdAt: new Date() };
+  
+      // Remove the temporary client-side ID
+      delete messageData._id;
+  
+      // Add the message to Firestore and wait for the operation to complete
+      const docRef = await addDoc(collection(firestore, 'chats'), messageData);
+  
+      // Use the Firestore-generated ID to update the message
+      return { ...message, _id: docRef.id };
     });
+  
+    // Wait for all Firestore operations to complete and retrieve the updated messages
+    const updatedMessages = await Promise.all(updates);
+  
+    // Update the local state with messages that now include the Firestore-generated IDs
+    setMessages((previousMessages) => GiftedChat.append(previousMessages, updatedMessages));
   }, [clubName]);
+  
 
   
   const renderBubble = (props) => {
