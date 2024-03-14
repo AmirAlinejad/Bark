@@ -247,14 +247,13 @@ function CustomInputToolbar({ onSend, handleImageUploadAndSend }) {
       <TextInput
         style={[styles.input, { maxHeight: 100 }]} // Add maxHeight here
         value={messageText}
-        
         onChangeText={setMessageText}
         placeholder="Send messages..."
         multiline={true} maxHeight={70}
         returnKeyType="done" // Prevents new lines
       />
       <TouchableOpacity onPress={sendTextMessage} style={styles.toolbarButton}>
-        <Ionicons name="send" size={30} color={Colors.black} />
+        <Ionicons name="send" size={24} color={Colors.black} />
       </TouchableOpacity>
     </KeyboardAvoidingView>
   );
@@ -455,8 +454,9 @@ const updateMessageLikeCount = async (messageId, increment) => {
         <IconButton icon="magnify" size={30} onPress={() => navigation.navigate("MessageSearchScreen", { clubName })} style={styles.searchButton} />
       </View>
       <TouchableOpacity style={styles.pinnedMessagesContainer} onPress={navigateToSearchPinnedMessages}>
-        {pinnedMessagesCount > 0 && <View style={styles.blueBar}></View>}
-        {pinnedMessagesCount > 0 && <Text style={styles.pinnedMessagesText}>{pinnedMessagesCount} Pinned Messages</Text>}
+        {pinnedMessagesCount > 0 && <View style={styles.blueBar}><MaterialCommunityIcons name="pin" size={24} color="black" /></View>}
+        {pinnedMessagesCount > 0 && pinnedMessagesCount != 1 && <Text style={styles.pinnedMessagesText}>{pinnedMessagesCount} Pinned Messages</Text>}
+        {pinnedMessagesCount == 1 && <Text style={styles.pinnedMessagesText}>{pinnedMessagesCount} Pinned Message</Text>}
       </TouchableOpacity>
       <GiftedChat
         messages={messages}

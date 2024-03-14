@@ -93,7 +93,7 @@ const styles = StyleSheet.create({
     borderRadius: 5,
   },
   messageItem: {
-    backgroundColor: 'lightgrey',
+    backgroundColor: '#F2F2F2',
     padding: 10,
     borderRadius: 5,
     marginBottom: 10,

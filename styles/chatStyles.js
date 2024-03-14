@@ -15,27 +15,6 @@ export const styles = StyleSheet.create({
     paddingHorizontal: 10,
     
   },
-  avatarContainer: {
-    alignItems: 'left',
-    marginBottom: 5, // Adjust as needed
-    position: 'absolute', // Position the avatar container absolutely
-    top: 10, // Adjust the top position as needed
-    left: 10, // Adjust the left position as needed
-  },
-  usernameAboveAvatar: {
-    fontSize: 12, // Adjust font size as needed
-    color: '#666', // Choose a color that stands out
-    marginBottom: 4, // Space between the username and the avatar
-  },
-  avatarStyle: {
-    // Styles for the avatar container if needed
-  },
-  avatarImageStyle: {
-    // Styles for the avatar image if needed, such as borderRadius to make it round
-    width: 40, // Example size
-    height: 40, // Example size
-    borderRadius: 20, // Half the width/height to create a circle
-  },
   clubNameButton: {
     padding: 10,
     borderRadius: 5,
@@ -71,7 +50,7 @@ export const styles = StyleSheet.create({
     borderRadius: 20,
     paddingHorizontal: 10,
     marginHorizontal: 5,
-    backgroundColor: '#D3D3D3',
+    backgroundColor: '#F2F2F2',
   },
   toolbarButton: {
     padding: 5,
@@ -185,22 +164,5 @@ export const styles = StyleSheet.create({
   parentContainer: {
     flex: 1,
     position: 'relative',
-  },
-  
-  expandedButtonsContainer: {
-    position: 'absolute',
-    bottom: 60, // Adjust this value as needed
-    right: 200, // Adjust this value as needed
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    borderRadius: 10,
-    padding: 10,
-    zIndex: 1, // Ensure the expanded buttons are above other elements except the main button
-  },
-  expandedButton: {
-    padding: 10,
-    marginVertical: 5,
-    backgroundColor: 'white',
-    borderRadius: 8,
-    alignItems: 'center',
   },
 });
