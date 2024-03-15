@@ -36,7 +36,7 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 20,
     paddingHorizontal: 10,
-    backgroundColor: '#fff',
+    backgroundColor: 'white',
     borderTopWidth: 1,
     borderColor: '#ccc',
     marginTop: -50,
