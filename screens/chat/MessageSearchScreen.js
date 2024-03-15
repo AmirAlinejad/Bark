@@ -1,47 +1,52 @@
-import React, { useState, useEffect } from 'react';
-import { View, TextInput, FlatList, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
-import { firestore } from '../../backend/FirebaseConfig'; // Import your Firebase config
-import { query, collection, where, getDocs } from 'firebase/firestore';
+import React, { useState } from 'react';
+import { View, Text, FlatList, StyleSheet, TextInput, Image } from 'react-native';
 import Header from '../../components/Header';
 
 const MessageSearchScreen = ({ route, navigation }) => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [messages, setMessages] = useState([]);
-  const [searchResults, setSearchResults] = useState([]);
-  const clubName = route?.params?.clubName; // Assume you pass the clubName as a parameter
+  const { clubName, groupChats } = route.params;
+  const [searchQuery, setSearchQuery] = useState('');
 
-  useEffect(() => {
-    const fetchMessages = async () => {
-      const messagesRef = collection(firestore, 'chats');
-      const q = query(messagesRef, where('clubName', '==', clubName));
+  // Retrieve messages for the specified clubName
+  const messages = groupChats[clubName] || [];
 
-      const querySnapshot = await getDocs(q);
-      const results = querySnapshot.docs.map(doc => ({
-        _id: doc.id,
-        text: doc.data().text,
-        createdAt: doc.data().createdAt?.toDate(),
-        user: doc.data().user,
-        likeCount: doc.data().likeCount || 0, // Assume you're storing like count in the message document
-        image: doc.data().image, // Add this line to handle images
-      }));
-      setMessages(results);
-      setSearchResults(results);
-    };
+  // Filter messages based on search query
+  const filteredMessages = messages.filter(message =>
+    message.text.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
-    fetchMessages();
-  }, [clubName]);
+  // Render each message item
+  const renderMessage = ({ item }) => (
+    <View style={styles.messageItem}>
+      <View style={styles.avatarContainer}>
+        <Image source={{ uri: item.user.avatar }} style={styles.avatar} />
+      </View>
+      <View style={styles.messageContent}>
+        <Text style={styles.senderName}>{item.user.name}</Text>
+        <Text style={styles.messageText}>{item.text}</Text>
+        <Text style={styles.dateTime}>{formatDateTime(item.createdAt)}</Text>
+      </View>
+    </View>
+  );
+  // Format date and time in a human-readable format with AM/PM indicator
+const formatDateTime = (dateTime) => {
+  const messageDate = new Date(dateTime);
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const month = months[messageDate.getMonth()];
+  const day = messageDate.getDate();
+  const year = messageDate.getFullYear();
+  let hours = messageDate.getHours();
+  const minutes = messageDate.getMinutes();
 
-  const handleSearch = (text) => {
-    setSearchTerm(text);
-    const filteredResults = messages.filter(message =>
-      message.text.toLowerCase().includes(text.toLowerCase())
-    );
-    setSearchResults(filteredResults);
-  };
+  // Convert hours to 12-hour format and determine AM/PM
+  const ampm = hours >= 12 ? 'PM' : 'AM';
+  hours = hours % 12 || 12; // Convert 0 to 12 for 12-hour format
 
-  const onViewImage = (imageUri) => {
-    navigation.navigate('ImageViewerScreen', { imageUri });
-  };
+  // Pad single-digit minutes with leading zero
+  const formattedMinutes = (minutes < 10 ? '0' : '') + minutes;
+
+  return `${month} ${day}, ${year} ${hours}:${formattedMinutes} ${ampm}`;
+};
+
 
   return (
     <View style={styles.container}>
@@ -49,84 +54,61 @@ const MessageSearchScreen = ({ route, navigation }) => {
       <TextInput
         style={styles.searchInput}
         placeholder="Search messages..."
-        value={searchTerm}
-        onChangeText={handleSearch}
+        value={searchQuery}
+        onChangeText={text => setSearchQuery(text)}
       />
       <FlatList
-        data={searchResults}
-        keyExtractor={item => item._id}
-        renderItem={({ item }) => (
-          <View style={styles.messageItem}>
-            <View style={styles.messageHeader}>
-              {item.user && item.user.avatar ? (
-                <Image source={{ uri: item.user.avatar }} style={styles.avatar} />
-              ) : (
-                <View style={styles.placeholderAvatar} />
-              )}
-              <Text style={styles.username}>{item.user ? item.user.name || item.user._id : 'Unknown'}</Text>
-            </View>
-            <Text>{item.text}</Text>
-            {item.image && (
-              <TouchableOpacity onPress={() => onViewImage(item.image)}>
-                <Text style={styles.viewImageButton}>View Image</Text>
-              </TouchableOpacity>
-            )}
-            <Text style={styles.likes}>Likes: {item.likeCount}</Text>
-          </View>
-        )}
+        data={filteredMessages}
+        renderItem={renderMessage}
+        keyExtractor={(item) => item.id.toString()}
+        contentContainerStyle={styles.messageList}
       />
     </View>
   );
 };
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingHorizontal: 10,
     backgroundColor: "#FAFAFA",
+    paddingHorizontal: 10,
   },
   searchInput: {
-    height: 40,
-    marginBottom: 20,
-    borderWidth: 1,
-    padding: 10,
-    borderColor: 'gray',
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 10,
+    paddingVertical: 8,
     borderRadius: 5,
+    marginBottom: 10,
+  },
+  messageList: {
+    paddingBottom: 20,
   },
   messageItem: {
-    backgroundColor: '#F2F2F2',
+    flexDirection: 'row',
+    backgroundColor: '#f0f0f0',
     padding: 10,
     borderRadius: 5,
     marginBottom: 10,
   },
-  messageHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  senderName: {
+    fontWeight: 'bold',
     marginBottom: 5,
+  },
+  messageText: {
+    fontSize: 16,
+    marginBottom: 5,
+  },
+  dateTime: {
+    color: 'gray',
+    fontSize: 12,
+  },
+  avatarContainer: {
+    marginRight: 10,
   },
   avatar: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    marginRight: 10,
-  },
-  placeholderAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#ccc',
-    marginRight: 10,
-  },
-  username: {
-    fontWeight: 'bold',
-  },
-  likes: {
-    marginTop: 5,
-    fontSize: 12,
-    color: 'grey',
-  },
-  viewImageButton: {
-    color: 'blue', // This was already set to blue. Ensure this line is present.
-    marginTop: 5,
   },
 });
 

@@ -1,27 +1,23 @@
+// InClubView.js
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity} from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import Header from '../../components/Header';
-import { db } from '../../backend/FirebaseConfig'; 
+import { db } from '../../backend/FirebaseConfig';
 import { ref, get } from 'firebase/database'; // Import ref and get from Firebase
 import { getAuth } from 'firebase/auth';
 import { useFocusEffect } from '@react-navigation/native';
 
-
 const InClubView = ({ navigation, route }) => {
-  
   const [memberCount, setMemberCount] = useState(0);
-  const [clubName, setClubName] = useState('');
   const [currentUserPrivilege, setCurrentUserPrivilege] = useState('');
-  const { imageUris } = route.params;
-  
+  const { clubName, groupChats } = route.params;
+
   useFocusEffect(() => {
     if (route?.params?.clubName) {
-      setClubName(route.params.clubName);
       fetchMemberCount(route.params.clubName);
       fetchCurrentUserPrivilege();
     }
   });
-  
 
   const fetchMemberCount = async (clubName) => {
     try {
@@ -41,9 +37,11 @@ const InClubView = ({ navigation, route }) => {
       console.error('Error fetching member count:', error);
     }
   };
+
   const navigateToQRCodeScreen = () => {
     navigation.navigate('QRCodeScreen', { clubName });
   };
+
   const fetchCurrentUserPrivilege = async () => {
     const auth = getAuth();
     const user = auth.currentUser;
@@ -62,8 +60,6 @@ const InClubView = ({ navigation, route }) => {
       console.log("User not authenticated.");
     }
   };
-  
-  
 
   return (
     <View style={styles.container}>
@@ -84,6 +80,7 @@ const InClubView = ({ navigation, route }) => {
             onPress={() =>
               navigation.navigate('UserList', {
                 clubName: clubName,
+                groupChats: groupChats, // Pass groupChats to UserList screen
               })}
             style={[styles.button, styles.buttonFirst]}>
             <Text style={styles.buttonText}>Search Members</Text>
@@ -91,34 +88,41 @@ const InClubView = ({ navigation, route }) => {
 
           <TouchableOpacity
             onPress={() =>
-              navigation.navigate('MessageSearchScreen', { clubName })}
+              navigation.navigate('MessageSearchScreen', {
+                clubName,
+                groupChats, // Pass groupChats to MessageSearchScreen
+              })}
             style={styles.button}>
             <Text style={styles.buttonText}>Search Messages</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             onPress={() =>
-              navigation.navigate('QRCodeScreen', { clubName })}
+              navigation.navigate('QRCodeScreen', {
+                clubName,
+                groupChats, // Pass groupChats to QRCodeScreen
+              })}
             style={styles.button}>
             <Text style={styles.buttonText}>QR Code</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             onPress={() =>
-              navigation.navigate('PinnedMessagesScreen', { clubName })}
+              navigation.navigate('PinnedMessagesScreen', {
+                clubName,
+                groupChats, // Pass groupChats to PinnedMessagesScreen
+              })}
             style={[styles.button, styles.buttonLast]}>
             <Text style={styles.buttonText}>Pinned Messages</Text>
           </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() =>
-              navigation.navigate('ImageGalleryScreen', { imageUris })}
-            style={[styles.button, styles.buttonLast]}>
-            <Text style={styles.buttonText}>Image Gallery</Text>
-          </TouchableOpacity>
+
           {currentUserPrivilege === 'admin' || currentUserPrivilege === 'owner' && (
             <TouchableOpacity
               onPress={() =>
-                navigation.navigate('AdminChat', { clubName })}
+                navigation.navigate('AdminChat', {
+                  clubName,
+                  groupChats, // Pass groupChats to AdminChat
+                })}
               style={[styles.button, styles.buttonLast]}>
               <Text style={styles.buttonText}>Admin Chat</Text>
             </TouchableOpacity>
@@ -143,7 +147,7 @@ const styles = StyleSheet.create({
   contentContainer: {
     flex: 1, // Fill remaining space
     justifyContent: 'space-between', // Ensure content is spaced evenly
-     // Ensure footer doesn't overlap content
+    // Ensure footer doesn't overlap content
   },
   imageContainer: {
     alignItems: 'center',

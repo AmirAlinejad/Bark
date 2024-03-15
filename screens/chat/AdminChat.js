@@ -1,480 +1,306 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { TouchableOpacity, View, Text, Image, TextInput } from 'react-native';
-import { GiftedChat,  Bubble, Time, Avatar } from 'react-native-gifted-chat';
-import {
-  collection,
-  addDoc,
-  orderBy,
-  query,
-  onSnapshot,
-  where,
-  setDoc,
-  getDoc,
-  getDocs,
-  updateDoc,
-  deleteDoc,
-  doc,
-  startAfter,
-  limit,
-  runTransaction
-} from 'firebase/firestore';
-import { auth, firestore } from '../../backend/FirebaseConfig';
-import { IconButton } from 'react-native-paper';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { uploadImage } from '../../components/imageUploadUtils'; // Import the utility function
-import { Colors } from '../../styles/Colors';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, Image, TextInput, TouchableOpacity, FlatList, KeyboardAvoidingView, StyleSheet, Platform } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { FontAwesome } from '@expo/vector-icons';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import { KeyboardAvoidingView} from 'react-native';
-import { Alert } from 'react-native';
-import { styles } from '../../styles/chatStyles'; 
-import SlackMessage from './SlackMessage';
+import * as ImagePicker from 'expo-image-picker';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { Colors } from '../../styles/Colors';
 
-
-export default function Chat({ route, navigation }) {
-  const [messages, setMessages] = useState([]);
+const Chat = ({ route, auth, navigation }) => {
+  const [groupChats, setGroupChats] = useState({});
+  const [messageText, setMessageText] = useState('');
   const [likedMessages, setLikedMessages] = useState({});
-  const [pinnedMessagesCount, setPinnedMessagesCount] = useState(0);
-  const [imageUris, setImageUris] = useState([]);
-  const [lastVisible, setLastVisible] = useState(null); // To keep track of the last loaded document
-  const [isLoadingEarlier, setIsLoadingEarlier] = useState(false); // Loading state for earlier messages
-  const [hasMoreMessages, setHasMoreMessages] = useState(true);
-;
+  const flatListRef = useRef(null);
   const clubName = route?.params?.clubName;
 
- 
-  
-  
-  //updates which messages are liked
   useEffect(() => {
-    let unsubscribeMessages = () => {};
-    let unsubscribePinnedMessages = () => {};
-    fetchInitialMessages();
-    // Fetch liked messages
-    const fetchLikedMessages = async () => {
-      const likedMessagesQuery = query(collection(firestore, 'messagesLikes', auth.currentUser.uid, 'likes'));
-      const querySnapshot = await getDocs(likedMessagesQuery);
-      const likedMessagesIds = {};
-      querySnapshot.forEach((doc) => {
-        likedMessagesIds[doc.id] = true;
-      });
-      setLikedMessages(likedMessagesIds);
-    };
-  
-    
-  
-    // Fetch the count of pinned messages
-    const fetchPinnedMessagesCount = () => {
-      const pinnedMessagesQuery = query(collection(firestore, 'adminchats'), where('clubName', '==', clubName), where('pinned', '==', true));
-      unsubscribePinnedMessages = onSnapshot(pinnedMessagesQuery, (snapshot) => {
-        setPinnedMessagesCount(snapshot.size);
-      });
-    };
-  
-    // Ensure all data fetching is performed
-    const initializeChat = async () => {
-      fetchLikedMessages();
-      fetchPinnedMessagesCount();
-    };
-  
-    // Call the initialize function
-    initializeChat();
-  
-    // Cleanup function to unsubscribe from firestore updates on component unmount
-    return () => {
-      unsubscribeMessages();
-      unsubscribePinnedMessages();
-    };
-  }, [clubName, auth.currentUser.uid]);
-  
+    loadGroupChats();
+  }, []);
 
-  
-  const fetchInitialMessages = async () => {
-    setIsLoadingEarlier(true);
-    const q = query(
-      collection(firestore, 'adminchats'),
-      where('clubName', '==', clubName),
-      orderBy('createdAt', 'desc'),
-      limit(20)
-    );
+  useEffect(() => {
+    saveGroupChats();
+  }, [groupChats]);
 
+  useEffect(() => {
+    saveLikedMessages();
+  }, [likedMessages]);
+
+  const loadGroupChats = async () => {
     try {
-      const documentSnapshots = await getDocs(q);
-      const fetchedMessages = documentSnapshots.docs.map(doc => ({
-        _id: doc.id,
-        createdAt: doc.data().createdAt.toDate(),
-        text: doc.data().text,
-        user: doc.data().user,
-        image: doc.data().image,
-        likeCount: doc.data().likeCount || 0,
-      })) // Reverse the array to display the messages in correct order
-
-      setMessages(fetchedMessages);
-      if (documentSnapshots.docs.length > 0) {
-        setLastVisible(documentSnapshots.docs[documentSnapshots.docs.length - 1]);
+      const savedGroupChats = await AsyncStorage.getItem('groupChats');
+      if (savedGroupChats) {
+        setGroupChats(JSON.parse(savedGroupChats));
       }
-      setHasMoreMessages(documentSnapshots.docs.length === 20);
+
+      const likedMessagesStatus = await AsyncStorage.getItem('likedMessages');
+      if (likedMessagesStatus) {
+        setLikedMessages(JSON.parse(likedMessagesStatus));
+      }
     } catch (error) {
-      console.error("Error fetching initial messages: ", error);
-    } finally {
-      setIsLoadingEarlier(false);
+      console.error('Error loading group chats:', error);
     }
   };
 
-  const loadEarlierMessages = async () => {
-    if (!lastVisible || isLoadingEarlier || !hasMoreMessages) return;
-
-    setIsLoadingEarlier(true);
-    const nextQuery = query(
-      collection(firestore, 'adminchats'),
-      where('clubName', '==', clubName),
-      orderBy('createdAt', 'desc'),
-      startAfter(lastVisible),
-      limit(20)
-    );
-
+  const saveGroupChats = async () => {
     try {
-      const documentSnapshots = await getDocs(nextQuery);
-      const newMessages = documentSnapshots.docs.map(doc => ({
-        _id: doc.id,
-        createdAt: doc.data().createdAt.toDate(),
-        text: doc.data().text,
-        user: doc.data().user,
-        image: doc.data().image,
-        likeCount: doc.data().likeCount || 0,
-      })) // Reverse to maintain chronological order
-
-      if (newMessages.length > 0) {
-        setMessages(prevMessages => [...prevMessages, ...newMessages]); // Append older messages
-        setLastVisible(documentSnapshots.docs[documentSnapshots.docs.length - 1]); // Update for next pagination
-      }
-
-      setHasMoreMessages(newMessages.length === 20);
+      await AsyncStorage.setItem('groupChats', JSON.stringify(groupChats));
     } catch (error) {
-      console.error("Error loading earlier messages:", error);
-    } finally {
-      setIsLoadingEarlier(false);
+      console.error('Error saving group chats:', error);
     }
   };
-  
-  
-  
-  
-  
-  const onBackPress = () => {
-    navigation.navigate("HomeScreen");
-    
-  }
 
-  const toggleLike = async (messageId) => {
-    const isLiked = !!likedMessages[messageId];
-  
-    // Optimistically update the UI for like status
-    setLikedMessages((prev) => ({ ...prev, [messageId]: !isLiked }));
-  
-    // Optimistically update the like count in the UI
-    setMessages((currentMessages) =>
-      currentMessages.map((message) =>
-        message._id === messageId ? { ...message, likeCount: (message.likeCount || 0) + (isLiked ? -1 : 1) } : message
-      )
-    );
-  
-    // Firestore update for the user's like status and global like count
+  const saveLikedMessages = async () => {
     try {
-      const userLikeDocRef = doc(firestore, 'messagesLikes', auth.currentUser.uid, 'likes', messageId);
-      const messageRef = doc(firestore, 'adminchats', messageId);
-  
-      if (isLiked) {
-        // Remove the like
-        await deleteDoc(userLikeDocRef);
-      } else {
-        // Add a like
-        await setDoc(userLikeDocRef, { liked: true });
-      }
-  
-      // Update the global like count atomically
-      await runTransaction(firestore, async (transaction) => {
-        const messageDoc = await transaction.get(messageRef);
-        if (!messageDoc.exists()) {
-          throw new Error("Document does not exist!");
-        }
-        const currentLikeCount = messageDoc.data().likeCount || 0;
-        transaction.update(messageRef, { likeCount: currentLikeCount + (isLiked ? -1 : 1) });
-      });
+      await AsyncStorage.setItem('likedMessages', JSON.stringify(likedMessages));
     } catch (error) {
-      console.error("Failed to toggle like: ", error);
-      // Rollback optimistic UI update if transaction fails
-      setLikedMessages((prev) => ({ ...prev, [messageId]: isLiked }));
-      setMessages((currentMessages) =>
-        currentMessages.map((message) =>
-          message._id === messageId ? { ...message, likeCount: (message.likeCount || 0) + (isLiked ? 1 : -1) } : message
-        )
-      );
+      console.error('Error saving liked messages:', error);
     }
   };
-  
-  
 
+  const onSendMessage = () => {
+    if (messageText.trim() === '' || !clubName) return;
 
-  
-// CustomInputToolbar component which shows up for chat
-function CustomInputToolbar({ onSend, handleImageUploadAndSend }) {
-  const [messageText, setMessageText] = useState('');
-  
-  const sendTextMessage = useCallback(() => {
-    if (messageText.trim()) {
-      const message = {
-        _id: Date.now().toString(),
-        createdAt: new Date(),
-        text: messageText,
-        user: {
-          _id: auth?.currentUser?.email,
-          name: "Username", 
-          avatar: 'https://i.pravatar.cc/300',
-        },
-      };
-      onSend([message]);
-      setMessageText('');
-    }
-  }, [messageText, onSend]);
-
-  return (
-    <KeyboardAvoidingView behavior="padding" style={styles.customToolbar}>
-      {/* Main button */}
-    <TouchableOpacity onPress={handleImageUploadAndSend} style={styles.toolbarButton}>
-      <Ionicons name='add-circle' size={30} color="black" />
-    </TouchableOpacity>
-
-      <TextInput
-        style={[styles.input, { maxHeight: 100 }]} // Add maxHeight here
-        value={messageText}
-        onChangeText={setMessageText}
-        placeholder="Send messages..."
-        multiline={true} maxHeight={70}
-        returnKeyType="done" // Prevents new lines
-      />
-      <TouchableOpacity onPress={sendTextMessage} style={styles.toolbarButton}>
-        <Ionicons name="send" size={24} color={Colors.black} />
-      </TouchableOpacity>
-    </KeyboardAvoidingView>
-  );
-}
-
-const navigateToSearchPinnedMessages = () => {
-  navigation.navigate('PinnedMessagesScreen', { clubName });
-}
-
-
-
-// Renders each chat message
-const renderMessage = (props) => {
-  return (
-    <TouchableOpacity onLongPress={() => togglePin(props.currentMessage._id)}>
-      <SlackMessage {...props} />
-    </TouchableOpacity>
-  );
-};
-
-//uploads images
-const handleImageUploadAndSend = () => {
-  uploadImage((imageUri) => {
-    const message = {
-      _id: Date.now().toString(),
+    const newMessage = {
+      id: Date.now().toString(),
       createdAt: new Date(),
+      text: messageText.trim(),
       user: {
         _id: auth?.currentUser?.email,
-        name: 'Username',
+        name: "Username", 
         avatar: 'https://i.pravatar.cc/300',
       },
-      image: imageUri,
-      text: '', // Ensure text is always defined
+      likes: 0, // Initialize likes to 0
     };
 
-    onSend([message]);
-  });
-};
-const updateMessageLikeCount = async (messageId, increment) => {
-  const messageRef = doc(firestore, 'adminchats', messageId);
-  
-  // Run a transaction to ensure accurate like count updates in concurrent scenarios
-  await runTransaction(firestore, async (transaction) => {
-    const messageDoc = await transaction.get(messageRef);
-    if (!messageDoc.exists()) {
-      console.error("Document does not exist!");
-      return;
+    const updatedChats = { ...groupChats };
+    if (!updatedChats[clubName]) {
+      updatedChats[clubName] = [];
     }
+    updatedChats[clubName].push(newMessage);
 
-    const newLikeCount = (messageDoc.data().likeCount || 0) + increment;
-    transaction.update(messageRef, { likeCount: newLikeCount });
-  });
-};
+    setGroupChats(updatedChats);
+    setMessageText('');
 
+    // Scroll to the end after updating messages
+    scrollToBottom();
+  };
 
-  
-  const onSend = useCallback(async (newMessages = []) => {
-    const updates = newMessages.map(async (message) => {
-      // Prepare the message with additional data but without a predetermined _id
-      const messageData = { ...message, clubName, likeCount: 0, createdAt: new Date() };
-  
-      // Remove the temporary client-side ID
-      delete messageData._id;
-  
-      // Add the message to Firestore and wait for the operation to complete
-      const docRef = await addDoc(collection(firestore, 'adminchats'), messageData);
-  
-      // Use the Firestore-generated ID to update the message
-      return { ...message, _id: docRef.id };
-    });
-  
-    // Wait for all Firestore operations to complete and retrieve the updated messages
-    const updatedMessages = await Promise.all(updates);
-  
-    // Update the local state with messages that now include the Firestore-generated IDs
-    setMessages((previousMessages) => GiftedChat.append(previousMessages, updatedMessages));
-  }, [clubName]);
-  
+  const onAddImage = async () => {
+    // Add image functionality similar to your implementation
+  };
 
-  
-  const renderBubble = (props) => {
-    const { currentMessage } = props;
-    const isLiked = !!likedMessages[currentMessage._id];
+  const scrollToBottom = () => {
+    if (flatListRef.current) {
+      flatListRef.current.scrollToEnd({ animated: true });
+    }
+  };
+
+  const onLikePress = (clubName, messageId) => {
+    const updatedChats = { ...groupChats };
+    const chatMessages = updatedChats[clubName];
+    const messageIndex = chatMessages.findIndex(message => message.id === messageId);
     
-  
-    const isCurrentUser = currentMessage.user._id === auth?.currentUser?.email;
-  
-    return (
-      <Bubble
-        {...props}
-        wrapperStyle={styles.bubbleWrapperStyle(props)}
-        textStyle={styles.bubbleTextStyle}
-        timeTextStyle={styles.bubbleTimeTextStyle}
-        onLongPress={() => togglePin(currentMessage._id)} // Add onLongPress handler
-        renderCustomView={() => (
-          <View style={[styles.likeButton, isCurrentUser ? styles.likeButtonCurrentUser : styles.likeButtonOtherUser]}>
-            <TouchableOpacity
-              onPress={() => toggleLike(currentMessage._id)}
-              style={styles.likeButtonInner}
-            >
-              <MaterialCommunityIcons name={isLiked ? 'heart' : 'heart-outline'} size={24} color={isLiked ? 'red' : 'grey'} />
-              <Text style={styles.likeCount}>{currentMessage.likeCount || 0}</Text>
-            </TouchableOpacity>
-            
-          </View>
-        )}
-      />
-    );
-  };
-  
-  const deleteMessage = async (messageId) => {
-    try {
-      // Remove the message from the local state
-      setMessages((prevMessages) =>
-        prevMessages.filter((message) => message._id !== messageId)
-      );
-  
-      // Delete the message from Firestore
-      await deleteDoc(doc(firestore, 'adminchats', messageId));
-    } catch (error) {
-      console.error('Error deleting message:', error);
+    if (messageIndex !== -1) {
+      chatMessages[messageIndex].likes += likedMessages[messageId] ? -1 : 1;
+      setLikedMessages(prev => {
+        const newState = { ...prev };
+        newState[messageId] = !newState[messageId];
+        return newState;
+      });
+      setGroupChats(updatedChats);
     }
   };
-  
-  const collectImageUris = useCallback(() => {
-    // Filter messages to get those with images, then map to extract the image URIs
-    const uris = messages
-      .filter((message) => message.image)
-      .map((message) => message.image);
-    return uris;
-  }, [messages]);
 
-  const togglePin = async (messageId) => {
-    const messageRef = doc(firestore, 'adminchats', messageId);
-    const messageSnapshot = await getDoc(messageRef);
-    if (messageSnapshot.exists()) {
-      const currentPinStatus = messageSnapshot.data().pinned || false;
-      const confirmationMessage = currentPinStatus ? 'Unpin this message?' : 'Pin this message?'; // Confirmation message based on current pin status
-  
-      // Check if the message belongs to the current user
-      const isCurrentUser = messageSnapshot.data().user._id === auth.currentUser?.email;
-  
-      // Determine the additional option text based on whether the message belongs to the current user
-      const additionalOptionText = isCurrentUser ? 'Delete this message?' : null;
-  
-      // Show confirmation dialog
-      Alert.alert(
-        'Confirmation',
-        confirmationMessage,
-        [
-          {
-            text: 'Cancel',
-            style: 'cancel',
-          },
-          {
-            text: 'OK',
-            onPress: async () => {
-              // Toggle pin status if user confirms
-              await updateDoc(messageRef, { pinned: !currentPinStatus });
-              // Update the local state to reflect the change
-              setMessages((prevMessages) =>
-                prevMessages.map((message) =>
-                  message._id === messageId ? { ...message, pinned: !currentPinStatus } : message
-                )
-              );
-            },
-          },
-          // Add the additional option if applicable
-          additionalOptionText && {
-            text: additionalOptionText,
-            onPress: () => {
-              // Call the deleteMessage function if the additional option is selected
-              deleteMessage(messageId);
-            },
-          },
-        ].filter(Boolean), // Filter out null options
-        { cancelable: false }
-      );
-    }
-  };
-  
+
+  const navigateToSearchPinnedMessages = () => {
+    navigation.navigate('PinnedMessagesScreen', { clubName });
+  }
+
+  const renderMessage = ({ item }) => (
+    <View style={styles.messageContainer}>
+      <View style={styles.messageContent}>
+        <Image source={{ uri: item.user.avatar }} style={styles.avatar} />
+        <View>
+          <Text style={styles.senderName}>{item.user.name}</Text>
+          <Text style={styles.messageText}>{item.text}</Text>
+        </View>
+      </View>
+      <TouchableOpacity onPress={() => onLikePress(clubName, item.id)} style={styles.likeButton}>
+        <Ionicons name="heart" size={20} color={likedMessages[item.id] ? 'red' : 'black'} />
+        <Text style={styles.likeCount}>{item.likes}</Text>
+      </TouchableOpacity>
+    </View>
+  );
   
 
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <IconButton onPress={onBackPress} icon="arrow-left" size={30} />
-        <TouchableOpacity style={styles.clubNameContainer} onPress={() => {
-          const imageUris = collectImageUris();
-          navigation.navigate('InClubView', { clubName, imageUris });
-        }}>
+        <TouchableOpacity style={styles.headerIcon}>
+          <FontAwesome name="arrow-left" size={20} color="black" />
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.clubNameContainer} onPress={() => navigation.navigate("InClubView", { clubName })}>
           <View style={styles.imageContainer}>
             {/* Placeholder image */}
           </View>
           <Text style={styles.clubNameText}>{clubName}</Text>
         </TouchableOpacity>
-        
-        <IconButton icon="magnify" size={30} onPress={() => navigation.navigate("MessageSearchScreen", { clubName })} style={styles.searchButton} />
+        <TouchableOpacity style={styles.headerIcon} onPress={navigation.navigate("InClubView", { clubName })}>
+          <FontAwesome name="search" size={20} color="black" />
+        </TouchableOpacity>
       </View>
       <TouchableOpacity style={styles.pinnedMessagesContainer} onPress={navigateToSearchPinnedMessages}>
-        {pinnedMessagesCount > 0 && <View style={styles.blueBar}><MaterialCommunityIcons name="pin" size={24} color="black" /></View>}
-        {pinnedMessagesCount > 0 && pinnedMessagesCount != 1 && <Text style={styles.pinnedMessagesText}>{pinnedMessagesCount} Pinned Messages</Text>}
-        {pinnedMessagesCount == 1 && <Text style={styles.pinnedMessagesText}>{pinnedMessagesCount} Pinned Message</Text>}
+        {<View style={styles.blueBar}><MaterialCommunityIcons name="pin" size={24} color="black" /></View>}
+        {<Text style={styles.pinnedMessagesText}> Pinned Messages</Text>}
       </TouchableOpacity>
-      <GiftedChat
-        messages={messages}
-        onSend={messages => onSend(messages)}
-        user={{ _id: 1, avatar: 'https://i.pravatar.cc/300' }}
-        renderBubble={renderBubble}
-        
-        renderInputToolbar={props => <CustomInputToolbar {...props} onSend={onSend} handleImageUploadAndSend={handleImageUploadAndSend} />}
-        messagesContainerStyle={styles.messagesContainer}
-        textInputStyle={styles.textInput}
-        renderMessage={renderMessage}
-        loadEarlier={hasMoreMessages}
-        isLoadingEarlier={isLoadingEarlier}
-        onLoadEarlier={loadEarlierMessages}
-        infiniteScroll
-        showAvatarForEveryMessage={true}
-        
+      <FlatList
+        ref={flatListRef}
+        data={groupChats[clubName] || []}
+        renderItem={renderMessage}
+        keyExtractor={(item) => item.id.toString()}
+        onContentSizeChange={() => scrollToBottom()}
+        contentContainerStyle={{ paddingBottom: 50 }} 
       />
+      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"}>
+        <View style={styles.toolbar}>
+          <TouchableOpacity style={styles.toolbarButton} onPress={onAddImage}>
+            <Ionicons name='add-circle' size={30} color="black" />
+          </TouchableOpacity>
+          <TextInput
+            style={styles.input}
+            value={messageText}
+            onChangeText={setMessageText}
+            placeholder="Type a message..."
+          />
+          <TouchableOpacity onPress={onSendMessage} style={styles.sendButton}>
+        <Ionicons name="send" size={30} color={Colors.black} />
+      </TouchableOpacity>
+        </View>
+      </KeyboardAvoidingView>
     </View>
   );
 }
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "white",
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 40,
+    paddingHorizontal: 10,
+    justifyContent: 'space-between',
+  },
+  headerText: {
+    color: 'black',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  headerIcon: {
+    padding: 5,
+  },
+  messageContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 10,
+    paddingBottom: 20,
+  },
+  messageContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  messageText: {
+    marginLeft: 5,
+  },
+  senderName: {
+    fontWeight: 'bold',
+    marginRight: 5,
+  },
+  likeButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  likeCount: {
+    marginLeft: 5,
+  },
+  toolbar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 20,
+    borderTopWidth: 1,
+    borderTopColor: 'gray',
+    backgroundColor: '#f0f0f0',
+    marginTop: -10,
+  },
+  input: {
+    flex: 1,
+    borderColor: '#f0f0f0',
+    borderRadius: 5,
+    paddingHorizontal: 10,
+  },
+  sendButton: {
+    marginLeft: 10,
+    padding: 10,
+    backgroundColor: '#f0f0f0',
+    borderRadius: 5,
+  },
+  sendButtonText: {
+    color: 'white',
+  },
+  avatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    marginRight: 10,
+  },
+  messageImage: {
+    width: 100,
+    height: 100,
+    resizeMode: 'contain',
+    borderRadius: 10,
+  },
+  pinnedMessagesContainer: {
+    flexDirection: 'row',
+    marginLeft: 10, // Add some right margin for spacing
+  },
+ 
+  pinnedMessagesText: {
+    color: 'gray',
+    fontSize: 16,
+    textAlign: 'left',
+    fontStyle: 'italic',
+  },
+  clubNameButton: {
+    padding: 10,
+    borderRadius: 5,
+    margin: 5,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  clubNameText: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: 'black',
+  },
+  clubNameContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    marginLeft: 10,
+  },
+  imageContainer: {
+    width: 30,
+    height: 30,
+    borderRadius: 5,
+    overflow: 'hidden',
+    marginRight: 10,
+    backgroundColor: 'lightgray', // Placeholder background color
+  },
+});
+
+export default Chat;
