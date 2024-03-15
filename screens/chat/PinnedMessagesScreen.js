@@ -117,6 +117,8 @@ const styles = StyleSheet.create({
   messageText: {
     fontSize: 16,
     marginBottom: 5,
+    flexWrap: 'wrap', // Allow text to wrap to the next line
+    maxWidth: '90%',
   },
   dateTime: {
     color: 'gray',

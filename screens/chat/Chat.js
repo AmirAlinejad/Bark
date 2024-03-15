@@ -7,27 +7,44 @@ import * as ImagePicker from 'expo-image-picker';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Colors } from '../../styles/Colors';
 import { Alert } from 'react-native';
+import ImageViewerScreen from './ImageViewerScreen'; // Import ImageViewerScreen component
+
 const Chat = ({ route, auth, navigation }) => {
   const [groupChats, setGroupChats] = useState({});
   const [messageText, setMessageText] = useState('');
   const [likedMessages, setLikedMessages] = useState({});
   const [pinnedMessagesCount, setPinnedMessagesCount] = useState(0);
+  const [imageUris, setImageUris] = useState([]);
+
   const flatListRef = useRef(null);
   const clubName = route?.params?.clubName;
 
   useEffect(() => {
+    loadLikedMessages();
     loadGroupChats();
   }, []);
 
   useEffect(() => {
     saveGroupChats();
     updatePinnedMessagesCount(); 
+    collectImageUris()
   }, [groupChats]);
 
   useEffect(() => {
     saveLikedMessages();
   }, [likedMessages]);
 
+  const loadLikedMessages = async () => {
+    try {
+      const likedMessagesStatus = await AsyncStorage.getItem('likedMessages');
+      if (likedMessagesStatus) {
+        setLikedMessages(JSON.parse(likedMessagesStatus));
+      }
+    } catch (error) {
+      console.error('Error loading liked messages:', error);
+    }
+  };
+  
   const loadGroupChats = async () => {
     try {
       const savedGroupChats = await AsyncStorage.getItem('groupChats');
@@ -59,6 +76,7 @@ const Chat = ({ route, auth, navigation }) => {
       console.error('Error saving liked messages:', error);
     }
   };
+
   const togglePin = async (messageId) => {
     // Retrieve the message from the groupChats state based on the messageId
     const message = groupChats[clubName].find(message => message.id === messageId);
@@ -75,12 +93,14 @@ const Chat = ({ route, auth, navigation }) => {
     // Save the updated groupChats to AsyncStorage
     await saveGroupChats();
   };
+
   const updatePinnedMessagesCount = () => {
     if (groupChats[clubName]) {
       const pinnedCount = groupChats[clubName].filter(message => message.pinned).length;
       setPinnedMessagesCount(pinnedCount);
     }
   };
+
   const deleteMessage = async (messageId) => {
     // Filter out the message to be deleted from the groupChats state
     const updatedChats = {
@@ -93,6 +113,17 @@ const Chat = ({ route, auth, navigation }) => {
   
     // Save the updated groupChats to AsyncStorage
     await saveGroupChats();
+  };
+  const collectImageUris = () => {
+    const uris = [];
+    Object.values(groupChats).forEach(messages => {
+      messages.forEach(message => {
+        if (message.image) {
+          uris.push(message.image);
+        }
+      });
+    });
+    setImageUris(uris);
   };
   const onSendMessage = () => {
     if (messageText.trim() === '' || !clubName) return;
@@ -123,7 +154,24 @@ const Chat = ({ route, auth, navigation }) => {
   };
 
   const onAddImage = async () => {
-    // Add image functionality similar to your implementation
+    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+    if (!permissionResult.granted) {
+      alert("You've refused to allow this app to access your photos!");
+      return;
+    }
+
+    let pickerResult = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 1,
+    });
+
+    if (!pickerResult.cancelled && pickerResult.assets && pickerResult.assets.length > 0) {
+      const selectedImageUri = pickerResult.assets[0].uri;
+      navigation.navigate('ImageViewerScreen', { imageUri: selectedImageUri }); // Navigate to ImageViewerScreen with image URI
+    }
   };
 
   const scrollToBottom = () => {
@@ -138,23 +186,33 @@ const Chat = ({ route, auth, navigation }) => {
     const messageIndex = chatMessages.findIndex(message => message.id === messageId);
     
     if (messageIndex !== -1) {
+      // Toggle the like status for the current message
       chatMessages[messageIndex].likes += likedMessages[messageId] ? -1 : 1;
+      
+      // Toggle the liked status for the current message for the current user
       setLikedMessages(prev => {
         const newState = { ...prev };
         newState[messageId] = !newState[messageId];
         return newState;
       });
+  
+      // Update the groupChats state
       setGroupChats(updatedChats);
+  
+      // Save the updated liked messages to AsyncStorage
+      saveLikedMessages();
     }
   };
+  
 
   const navigateToMessageSearchScreen = () => {
     navigation.navigate('MessageSearchScreen', { clubName, groupChats });
-  }
+  };
 
   const navigateToSearchPinnedMessages = () => {
     navigation.navigate('PinnedMessagesScreen', { clubName, groupChats });
-  }
+  };
+
   const handleLongPress = (messageId) => {
     // Retrieve the message from the groupChats state based on the messageId
     const message = groupChats[clubName].find(message => message.id === messageId);
@@ -183,18 +241,19 @@ const Chat = ({ route, auth, navigation }) => {
       { cancelable: true }
     );
   };
-  
 
   const renderMessage = ({ item }) => (
+    
     <TouchableOpacity 
-      onLongPress={() => handleLongPress(item.id)} // Use onLongPress instead of LongPressGestureHandler
+      onLongPress={() => handleLongPress(item.id)}
       style={styles.messageContainer}
     >
       <View style={styles.messageContent}>
         <Image source={{ uri: item.user.avatar }} style={styles.avatar} />
         <View>
           <Text style={styles.senderName}>{item.user.name}</Text>
-          <Text style={styles.messageText}>{item.text}</Text>
+          {item.text && <Text style={styles.messageText}>{item.text}</Text>}
+          {item.image && <TouchableOpacity onPress={() => navigation.navigate('ImageViewerScreen', { imageUri: item.image })}><Image source={{ uri: item.image }} style={styles.messageImage} /></TouchableOpacity>}
         </View>
       </View>
       <TouchableOpacity onPress={() => onLikePress(clubName, item.id)} style={styles.likeButton}>
@@ -203,8 +262,6 @@ const Chat = ({ route, auth, navigation }) => {
       </TouchableOpacity>
     </TouchableOpacity>
   );
-  
-  
 
   return (
     <View style={styles.container}>
@@ -212,7 +269,7 @@ const Chat = ({ route, auth, navigation }) => {
         <TouchableOpacity style={styles.headerIcon} onPress={() => navigation.goBack()}>
           <FontAwesome name="arrow-left" size={20} color="black" />
         </TouchableOpacity>
-        <TouchableOpacity style={styles.clubNameContainer} onPress={() => navigation.navigate("InClubView", { clubName, groupChats })}>
+        <TouchableOpacity style={styles.clubNameContainer} onPress={() => navigation.navigate("InClubView", { clubName, groupChats, imageUris })}>
           <View style={styles.imageContainer}>
             {/* Placeholder image */}
           </View>
@@ -224,10 +281,8 @@ const Chat = ({ route, auth, navigation }) => {
       </View>
       <TouchableOpacity style={styles.pinnedMessagesContainer} onPress={navigateToSearchPinnedMessages}>
         {<View style={styles.blueBar}><MaterialCommunityIcons name="pin" size={24} color="black" /></View>}
-        <TouchableOpacity style={styles.pinnedMessagesContainer} onPress={navigateToSearchPinnedMessages}>
         {pinnedMessagesCount > 0 && <View style={styles.blueBar}></View>}
         {pinnedMessagesCount > 0 && <Text style={styles.pinnedMessagesText}>{pinnedMessagesCount} Pinned Messages</Text>}
-        </TouchableOpacity>
       </TouchableOpacity>
       <FlatList
         ref={flatListRef}
@@ -249,8 +304,8 @@ const Chat = ({ route, auth, navigation }) => {
             placeholder="Type a message..."
           />
           <TouchableOpacity onPress={onSendMessage} style={styles.sendButton}>
-        <Ionicons name="send" size={30} color={Colors.black} />
-      </TouchableOpacity>
+            <Ionicons name="send" size={30} color={Colors.black} />
+          </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
     </View>
@@ -283,13 +338,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 10,
     paddingBottom: 20,
+    maxWidth: '60%',
   },
   messageContent: {
     flexDirection: 'row',
     alignItems: 'center',
+    
   },
   messageText: {
     marginLeft: 5,
+    maxWidth: '100%',
   },
   senderName: {
     fontWeight: 'bold',
@@ -297,7 +355,11 @@ const styles = StyleSheet.create({
   },
   likeButton: {
     flexDirection: 'row',
-    alignItems: 'center',
+  alignItems: 'center',
+  position: "absolute", // Corrected typo here
+  right: -120, // Adjust right positioning as needed
+  
+
   },
   likeCount: {
     marginLeft: 5,
@@ -330,7 +392,7 @@ const styles = StyleSheet.create({
   avatar: {
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: 10,
     marginRight: 10,
   },
   messageImage: {
@@ -344,7 +406,6 @@ const styles = StyleSheet.create({
     marginLeft: 10, // Add some right margin for spacing
     marginTop:10,
   },
- 
   pinnedMessagesText: {
     color: 'gray',
     fontSize: 16,

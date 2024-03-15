@@ -10,7 +10,7 @@ import { useFocusEffect } from '@react-navigation/native';
 const InClubView = ({ navigation, route }) => {
   const [memberCount, setMemberCount] = useState(0);
   const [currentUserPrivilege, setCurrentUserPrivilege] = useState('');
-  const { clubName, groupChats } = route.params;
+  const { clubName, groupChats, imageUris } = route.params;
 
   useFocusEffect(() => {
     if (route?.params?.clubName) {
@@ -38,9 +38,7 @@ const InClubView = ({ navigation, route }) => {
     }
   };
 
-  const navigateToQRCodeScreen = () => {
-    navigation.navigate('QRCodeScreen', { clubName });
-  };
+  
 
   const fetchCurrentUserPrivilege = async () => {
     const auth = getAuth();
@@ -98,6 +96,28 @@ const InClubView = ({ navigation, route }) => {
 
           <TouchableOpacity
             onPress={() =>
+              navigation.navigate('PinnedMessagesScreen', {
+                clubName,
+                groupChats, // Pass groupChats to PinnedMessagesScreen
+              })}
+            style={[styles.button, styles.buttonLast]}>
+            <Text style={styles.buttonText}>Pinned Messages</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={() =>
+              navigation.navigate('ImageGalleryScreen', {
+                clubName,
+                groupChats,
+                imageUris 
+              })}
+            style={[styles.button, styles.buttonLast]}>
+            <Text style={styles.buttonText}>Image Gallery</Text>
+          </TouchableOpacity>
+          
+
+          <TouchableOpacity
+            onPress={() =>
               navigation.navigate('QRCodeScreen', {
                 clubName,
                 groupChats, // Pass groupChats to QRCodeScreen
@@ -106,15 +126,7 @@ const InClubView = ({ navigation, route }) => {
             <Text style={styles.buttonText}>QR Code</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity
-            onPress={() =>
-              navigation.navigate('PinnedMessagesScreen', {
-                clubName,
-                groupChats, // Pass groupChats to PinnedMessagesScreen
-              })}
-            style={[styles.button, styles.buttonLast]}>
-            <Text style={styles.buttonText}>Pinned Messages</Text>
-          </TouchableOpacity>
+          
 
           {currentUserPrivilege === 'admin' || currentUserPrivilege === 'owner' && (
             <TouchableOpacity

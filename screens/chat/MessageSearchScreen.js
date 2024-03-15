@@ -11,8 +11,9 @@ const MessageSearchScreen = ({ route, navigation }) => {
 
   // Filter messages based on search query
   const filteredMessages = messages.filter(message =>
-    message.text.toLowerCase().includes(searchQuery.toLowerCase())
+    message.text && message.text.toLowerCase().includes(searchQuery.toLowerCase())
   );
+  
 
   // Render each message item
   const renderMessage = ({ item }) => (
@@ -97,6 +98,8 @@ const styles = StyleSheet.create({
   messageText: {
     fontSize: 16,
     marginBottom: 5,
+    flexWrap: 'wrap', // Allow text to wrap to the next line
+    maxWidth: '90%',
   },
   dateTime: {
     color: 'gray',
