@@ -1,21 +1,44 @@
-import React, { useState } from 'react';
-import { View, Text, FlatList, StyleSheet, TextInput, Image } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, FlatList, StyleSheet, TextInput, Image, Alert } from 'react-native';
+import { query, collection, where, onSnapshot } from 'firebase/firestore';
+import { firestore } from '../../backend/FirebaseConfig'; // Make sure this path matches your project structure
 import { MaterialIcons } from '@expo/vector-icons';
-import Header from '../../components/Header';
-import { Colors } from '../../styles/Colors'; // Import your color constants here
+import Header from '../../components/Header'; // Adjust this import to match your project structure
+import { Colors } from '../../styles/Colors'; // Adjust this import to match your project structure
 
 const PinnedMessagesScreen = ({ route, navigation }) => {
-  const { clubName, groupChats } = route.params;
+  const { clubName } = route.params;
   const [searchQuery, setSearchQuery] = useState('');
+  const [pinnedMessages, setPinnedMessages] = useState([]);
 
-  // Filter pinned messages based on search query
-  const filteredPinnedMessages = groupChats[clubName].filter(
-    message =>
-      message.pinned &&
-      message.text.toLowerCase().includes(searchQuery.toLowerCase())
+  useEffect(() => {
+    const messagesQuery = query(
+      collection(firestore, 'chats'),
+      where('clubName', '==', clubName),
+      where('pinned', '==', true)
+    );
+
+    const unsubscribe = onSnapshot(messagesQuery, (querySnapshot) => {
+      const fetchedMessages = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        createdAt: doc.data().createdAt.toDate(),
+      }));
+      setPinnedMessages(fetchedMessages);
+    }, (error) => {
+      Alert.alert("Error fetching pinned messages:", error.message);
+    });
+
+    return () => unsubscribe();
+  }, [clubName]);
+
+  const filteredPinnedMessages = pinnedMessages.filter(
+    message => message.text.toLowerCase().includes(searchQuery.toLowerCase())
   );
-
-  // Render each pinned message item
+  const formatDateTime = (dateTime) => {
+    const options = { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true };
+    return dateTime.toLocaleString('en-US', options);
+  };
   const renderPinnedMessage = ({ item }) => (
     <View style={styles.messageItem}>
       <View style={styles.avatarContainer}>
@@ -24,40 +47,17 @@ const PinnedMessagesScreen = ({ route, navigation }) => {
       <View style={styles.messageContent}>
         <Text style={styles.senderName}>{item.user.name}</Text>
         <Text style={styles.messageText}>{item.text}</Text>
+        {/* Assuming `createdAt` is a Date object */}
         <Text style={styles.dateTime}>{formatDateTime(item.createdAt)}</Text>
       </View>
     </View>
   );
 
-  // Format date and time in a human-readable format with AM/PM indicator
-  const formatDateTime = (dateTime) => {
-    const messageDate = new Date(dateTime);
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    const month = months[messageDate.getMonth()];
-    const day = messageDate.getDate();
-    const year = messageDate.getFullYear();
-    let hours = messageDate.getHours();
-    const minutes = messageDate.getMinutes();
-
-    // Convert hours to 12-hour format and determine AM/PM
-    const ampm = hours >= 12 ? 'PM' : 'AM';
-    hours = hours % 12 || 12; // Convert 0 to 12 for 12-hour format
-
-    // Pad single-digit minutes with leading zero
-    const formattedMinutes = (minutes < 10 ? '0' : '') + minutes;
-
-    return `${month} ${day}, ${year} ${hours}:${formattedMinutes} ${ampm}`;
-  };
-
   return (
     <View style={styles.container}>
       <Header navigation={navigation} text="Pinned Messages" back={true} />
       <View style={styles.searchContainer}>
-        <MaterialIcons
-          name="search"
-          size={24}
-          color={Colors.gray}
-        />
+        <MaterialIcons name="search" size={24} color={Colors.gray} />
         <TextInput
           style={styles.searchInput}
           placeholder="Search messages"
@@ -68,7 +68,7 @@ const PinnedMessagesScreen = ({ route, navigation }) => {
       <FlatList
         data={filteredPinnedMessages}
         renderItem={renderPinnedMessage}
-        keyExtractor={(item) => item.id.toString()}
+        keyExtractor={(item) => item.id}
       />
     </View>
   );
@@ -117,8 +117,6 @@ const styles = StyleSheet.create({
   messageText: {
     fontSize: 16,
     marginBottom: 5,
-    flexWrap: 'wrap', // Allow text to wrap to the next line
-    maxWidth: '90%',
   },
   dateTime: {
     color: 'gray',

@@ -1,21 +1,39 @@
-import React, { useState } from 'react';
-import { View, Text, FlatList, StyleSheet, TextInput, Image } from 'react-native';
-import Header from '../../components/Header';
+import React, { useState, useEffect } from 'react';
+import { View, Text, FlatList, StyleSheet, TextInput, Image, Alert } from 'react-native';
+import { query, collection, where, onSnapshot } from 'firebase/firestore';
+import { firestore } from '../../backend/FirebaseConfig'; // Update this path according to your project structure
+import Header from '../../components/Header'; // Update this import based on your project structure
 
 const MessageSearchScreen = ({ route, navigation }) => {
-  const { clubName, groupChats } = route.params;
+  const { clubName } = route.params;
   const [searchQuery, setSearchQuery] = useState('');
+  const [messages, setMessages] = useState([]);
 
-  // Retrieve messages for the specified clubName
-  const messages = groupChats[clubName] || [];
+  useEffect(() => {
+    const fetchMessages = () => {
+      const messagesQuery = query(collection(firestore, 'chats'), where('clubName', '==', clubName));
 
-  // Filter messages based on search query
+      const unsubscribe = onSnapshot(messagesQuery, (querySnapshot) => {
+        const fetchedMessages = querySnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+          createdAt: doc.data().createdAt.toDate(),
+        }));
+        setMessages(fetchedMessages);
+      }, (error) => {
+        Alert.alert("Error fetching messages", error.message);
+      });
+
+      return unsubscribe;
+    };
+
+    return fetchMessages();
+  }, [clubName]);
+
   const filteredMessages = messages.filter(message =>
-    message.text && message.text.toLowerCase().includes(searchQuery.toLowerCase())
+    message.text.toLowerCase().includes(searchQuery.toLowerCase())
   );
-  
 
-  // Render each message item
   const renderMessage = ({ item }) => (
     <View style={styles.messageItem}>
       <View style={styles.avatarContainer}>
@@ -28,26 +46,11 @@ const MessageSearchScreen = ({ route, navigation }) => {
       </View>
     </View>
   );
-  // Format date and time in a human-readable format with AM/PM indicator
-const formatDateTime = (dateTime) => {
-  const messageDate = new Date(dateTime);
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  const month = months[messageDate.getMonth()];
-  const day = messageDate.getDate();
-  const year = messageDate.getFullYear();
-  let hours = messageDate.getHours();
-  const minutes = messageDate.getMinutes();
 
-  // Convert hours to 12-hour format and determine AM/PM
-  const ampm = hours >= 12 ? 'PM' : 'AM';
-  hours = hours % 12 || 12; // Convert 0 to 12 for 12-hour format
-
-  // Pad single-digit minutes with leading zero
-  const formattedMinutes = (minutes < 10 ? '0' : '') + minutes;
-
-  return `${month} ${day}, ${year} ${hours}:${formattedMinutes} ${ampm}`;
-};
-
+  const formatDateTime = (dateTime) => {
+    const options = { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true };
+    return dateTime.toLocaleString('en-US', options);
+  };
 
   return (
     <View style={styles.container}>
@@ -56,12 +59,12 @@ const formatDateTime = (dateTime) => {
         style={styles.searchInput}
         placeholder="Search messages..."
         value={searchQuery}
-        onChangeText={text => setSearchQuery(text)}
+        onChangeText={setSearchQuery}
       />
       <FlatList
         data={filteredMessages}
         renderItem={renderMessage}
-        keyExtractor={(item) => item.id.toString()}
+        keyExtractor={(item) => item.id}
         contentContainerStyle={styles.messageList}
       />
     </View>
@@ -80,6 +83,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 5,
     marginBottom: 10,
+    fontSize: 16,
   },
   messageList: {
     paddingBottom: 20,
@@ -91,20 +95,6 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     marginBottom: 10,
   },
-  senderName: {
-    fontWeight: 'bold',
-    marginBottom: 5,
-  },
-  messageText: {
-    fontSize: 16,
-    marginBottom: 5,
-    flexWrap: 'wrap', // Allow text to wrap to the next line
-    maxWidth: '90%',
-  },
-  dateTime: {
-    color: 'gray',
-    fontSize: 12,
-  },
   avatarContainer: {
     marginRight: 10,
   },
@@ -112,6 +102,21 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
+  },
+  messageContent: {
+    flex: 1,
+  },
+  senderName: {
+    fontWeight: 'bold',
+    marginBottom: 5,
+  },
+  messageText: {
+    fontSize: 16,
+    marginBottom: 5,
+  },
+  dateTime: {
+    color: 'gray',
+    fontSize: 12,
   },
 });
 
