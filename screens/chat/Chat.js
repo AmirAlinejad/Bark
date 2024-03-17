@@ -20,7 +20,9 @@ import {
   arrayRemove,
   runTransaction
 } from 'firebase/firestore';
-import { auth, firestore } from '../../backend/FirebaseConfig';
+import { getDatabase, ref, get } from 'firebase/database';
+import { getAuth, onAuthStateChanged } from 'firebase/auth';
+import { auth, firestore, db } from '../../backend/FirebaseConfig';
 import { IconButton } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { uploadImage } from '../../components/imageUploadUtils'; // Import the utility function
@@ -98,44 +100,51 @@ export default function Chat({ route, navigation }) {
 
 
 
-  const handleLongPress = (message) => {
+  const handleLongPress = async (message) => {
     const userId = auth.currentUser.uid;
-    const messageRef = doc(firestore, 'chats', message._id);
-    const isCurrentUserMessage = message.user._id === userId;
+    const db = getDatabase();
   
-    // Define the delete option text if the message belongs to the current user
-    let deleteOptionText = isCurrentUserMessage ? 'Delete Message' : null;
+    // Correctly form the reference to the user's data in the Realtime Database
+    const userRef = ref(db, `clubs/${clubName}/clubMembers/${userId}`);
   
-    Alert.alert(
-      'Options',
-      'Select an option',
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-        {
-          text: message.pinned ? 'Unpin' : 'Pin',
-          onPress: async () => {
-            // Toggle pin status
-            const newPinStatus = !message.pinned;
-            await updateDoc(messageRef, { pinned: newPinStatus });
+    try {
+      const snapshot = await get(userRef);
+      if (snapshot.exists()) {
+        const currentUserPrivilege = snapshot.val().privilege;
+        console.log(`Current user privilege: ${currentUserPrivilege}`);
   
-            // Update the local state to reflect the change
-            setMessages((prevMessages) =>
-              prevMessages.map((m) => (m._id === message._id ? { ...m, pinned: newPinStatus } : m))
-            );
+        let options = [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: message.pinned ? 'Unpin' : 'Pin',
+            onPress: async () => {
+              // Assuming this part remains unchanged as it likely updates Firestore
+              const newPinStatus = !message.pinned;
+              await updateDoc(doc(firestore, 'chats', message._id), { pinned: newPinStatus });
+              // Update local state as necessary
+            },
           },
-        },
-        // Add the delete option if the message belongs to the current user
-        deleteOptionText && {
-          text: deleteOptionText,
-          style: 'destructive',
-          onPress: () => deleteMessage(message._id),
-        },
-      ].filter(Boolean), // Filter out any falsy options
-      { cancelable: false }
-    );
+        ];
+  
+        // Add the delete option based on the fetched privilege
+        if (message.user._id === userId || currentUserPrivilege === 'owner' || currentUserPrivilege === 'admin') {
+          options.push({
+            text: 'Delete Message',
+            style: 'destructive',
+            onPress: () => {
+              // Assuming the delete operation targets Firestore
+              deleteMessage(message._id);
+            },
+          });
+        }
+  
+        Alert.alert('Options', 'Select an option', options.filter(Boolean), { cancelable: false });
+      } else {
+        console.log("User privilege data not found.");
+      }
+    } catch (error) {
+      console.error("Error fetching user privilege:", error);
+    }
   };
   
   const handleImageUploadAndSend = () => {
@@ -573,7 +582,6 @@ const styles = StyleSheet.create({
     marginBottom: 10, // Add some space between date and message
   },
   dateWrapper: {
-    backgroundColor: '#eee',
     borderRadius: 10,
     paddingHorizontal: 10,
     paddingVertical: 5,
@@ -582,8 +590,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#dbe9f4', // Light gray background color for pinned messages
   },
   dateText: {
-    fontSize: 14,
-    fontWeight: 'bold',
+    fontSize: 14, 
     color: 'black',
   },
 });
