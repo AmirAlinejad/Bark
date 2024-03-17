@@ -1,69 +1,52 @@
-// ImageViewerScreen.js
-import React from 'react';
-import { View, Image, TouchableOpacity, StyleSheet, Alert, Text } from 'react-native';
-import { useNavigation } from '@react-navigation/native'; // Import useNavigation
-import * as MediaLibrary from 'expo-media-library';
-import { Ionicons } from '@expo/vector-icons'; // Import the Ionicons package for the X icon
+import React, { useState } from 'react';
+import { View, Image, Modal, StyleSheet, TouchableOpacity } from 'react-native';
+import { useNavigation } from '@react-navigation/native'; // Make sure to import useNavigation
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons'; // Import MaterialIcons
 
 export default function ImageViewerScreen({ route }) {
   const { imageUri } = route.params;
-  const navigation = useNavigation(); // Initialize navigation
+  const navigation = useNavigation(); // Use useNavigation to access navigation
+  const [modalVisible, setModalVisible] = useState(true);
 
-  const saveImage = async () => {
-    try {
-      const { status } = await MediaLibrary.requestPermissionsAsync();
-      if (status === 'granted') {
-        await MediaLibrary.saveToLibraryAsync(imageUri);
-        Alert.alert('Image Saved', 'The image has been saved to your device.');
-      } else {
-        Alert.alert('Permission Denied', 'You need to grant permission to save the image.');
-      }
-    } catch (error) {
-      console.error('Error saving image:', error);
-    }
+  // Function to handle modal close and navigate back
+  const closeModalAndGoBack = () => {
+    setModalVisible(false);
+    navigation.goBack(); // Navigate back to the previous screen in the stack
   };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.backButton}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Ionicons name="close" size={32} color="black" style={{ marginTop: 30 }} /> 
+    <Modal
+      animationType="fade" // Smooth transition
+      transparent={true} // Transparent background
+      visible={modalVisible}
+      onRequestClose={closeModalAndGoBack} // Handle Android hardware back button
+    >
+      <TouchableOpacity style={styles.container} onPress={closeModalAndGoBack}>
+        <Image source={{ uri: imageUri }} style={styles.image} />
+        <TouchableOpacity style={styles.closeButton} onPress={closeModalAndGoBack}>
+          <MaterialIcons name="close" size={30} color="white" />
         </TouchableOpacity>
-      </View>
-
-      <Image source={{ uri: imageUri }} style={styles.image} />
-      
-    </View>
+      </TouchableOpacity>
+    </Modal>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.8)', // Semi-transparent background
     justifyContent: 'center',
     alignItems: 'center',
   },
   image: {
-    width: '100%',
-    height: '100%',
+    width: '90%', // Adjust based on preference
+    height: '80%', // Adjust based on preference
     resizeMode: 'contain',
   },
-  saveButton: {
+  closeButton: {
     position: 'absolute',
-    bottom: 20,
-    backgroundColor: 'orange',
-    padding: 10,
-    borderRadius: 50,
-  },
-  saveButtonText: {
-    color: 'white',
-    fontSize: 18,
-  },
-  backButton: {
-    position: 'absolute',
-    top: 20,
+    top: 40,
     left: 20,
-    zIndex: 1, // Ensure it's above other elements
-
+    zIndex: 1,
   },
 });

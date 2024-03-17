@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, Alert } from 'react-native';
+import { View, StyleSheet, Alert, TouchableOpacity, Text } from 'react-native';
 import CustomInput from '../../components/CustomInput';
 import CustomButton from '../../components/CustomButton';
 import { sendPasswordResetEmail, getAuth } from 'firebase/auth';
 import Header from '../../components/Header';
-
+import {Colors} from "../../styles/Colors"
 const ForgotPassword = ({ navigation }) => {
   const [email, setEmail] = useState('');
   const auth = getAuth();
@@ -43,20 +43,13 @@ const ForgotPassword = ({ navigation }) => {
           style={styles.input}
         />
         <View style={styles.buttonsContainer}>
-          <CustomButton
-            text="Send Password Reset Email"
-            onPress={onResetPasswordPressed}
-            type="primary"
-            bgColor={'orange'}
-            style={styles.button}
-          />
-          <CustomButton
-            text="Back to Sign In"
-            onPress={onBackToSignInPressed}
-            type="secondary"
-            bgColor={'orange'}
-            style={styles.button}
-          />
+          <TouchableOpacity
+          style={[styles.button, { backgroundColor: Colors.primary, width: '90%', maxWidth: 400 }]}
+          onPress={onResetPasswordPressed}
+        >
+          <Text style={styles.buttonText}>Send Reset Email</Text>
+        </TouchableOpacity>
+          
         </View>
       </View>
     </View>
@@ -88,14 +81,17 @@ const styles = StyleSheet.create({
   input: {
     marginBottom: 20,
   },
-  buttonsContainer: {
-    width: '100%',
-    flexDirection: 'column',
-    justifyContent: 'space-between',
-    alignItems: 'center'
-  },
   button: {
-    width: '48%',
+    padding: 15,
+    borderRadius: 10,
+    alignItems: 'center',
+    marginTop: 40,
+    
+  },
+  buttonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });
 

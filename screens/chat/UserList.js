@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, FlatList, Text, Button, TouchableOpacity, TextInput, Alert } from 'react-native';
+import { View, StyleSheet, FlatList, Text, TouchableOpacity, TextInput, Alert } from 'react-native';
 import Header from '../../components/Header';
 import { ref, get, remove, update } from 'firebase/database';
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import { db } from '../../backend/FirebaseConfig';
-import Modal from 'react-native-modal';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons'; // Ensure react-native-vector-icons is installed
 
 const UserList = ({ route, navigation }) => {
   const [clubMembers, setClubMembers] = useState([]);
@@ -13,10 +13,6 @@ const UserList = ({ route, navigation }) => {
   const [selectedPrivilege, setSelectedPrivilege] = useState('all');
   const [currentUserId, setCurrentUserId] = useState(null);
   const [currentUserPrivilege, setCurrentUserPrivilege] = useState('');
-  const [isConfirmationVisible, setConfirmationVisible] = useState(false);
-  const [confirmationMessage, setConfirmationMessage] = useState('');
-  const [memberToRemove, setMemberToRemove] = useState(null);
-  const [promotionAction, setPromotionAction] = useState(false);
   const clubName = route?.params?.clubName;
 
   useEffect(() => {
@@ -43,25 +39,19 @@ const UserList = ({ route, navigation }) => {
   }, [clubMembers, searchQuery, selectedPrivilege]);
 
   const fetchClubMembers = async () => {
-    try {
-      const clubRef = ref(db, `clubs/${clubName}/clubMembers`);
-      const snapshot = await get(clubRef);
-
-      if (snapshot.exists()) {
-        const membersData = snapshot.val();
-        const membersArray = Object.entries(membersData).map(([key, value]) => ({
-          id: key,
-          userName: value.userName,
-          privilege: value.privilege,
-        }));
-
-        setClubMembers(membersArray);
-        filterMembers(searchQuery);
-      } else {
-        Alert.alert("No members found for club", clubName);
-      }
-    } catch (error) {
-      Alert.alert("Error fetching club members", error.message);
+    const clubRef = ref(db, `clubs/${clubName}/clubMembers`);
+    const snapshot = await get(clubRef);
+    if (snapshot.exists()) {
+      const membersData = snapshot.val();
+      const membersArray = Object.entries(membersData).map(([key, value]) => ({
+        id: key,
+        userName: value.userName,
+        privilege: value.privilege,
+      }));
+      setClubMembers(membersArray);
+      filterMembers(searchQuery);
+    } else {
+      Alert.alert("No members found for club", clubName);
     }
   };
 
@@ -81,90 +71,86 @@ const UserList = ({ route, navigation }) => {
     setFilteredMembers(filtered);
   };
 
-  const showConfirmation = (message, memberId, isPromotion = false) => {
-    setConfirmationMessage(message);
-    setMemberToRemove(memberId);
-    setPromotionAction(isPromotion);
-    setConfirmationVisible(true);
+  const actionButtonPressed = (member) => {
+    const buttons = [];
+    // Ensure actions cannot be performed on the owner
+    if (member.privilege !== 'owner') {
+      if (currentUserId !== member.id && (currentUserPrivilege === 'owner' || (currentUserPrivilege === 'admin' && member.privilege === 'member'))) {
+        buttons.push({ text: "Promote", onPress: () => promoteMember(member.id, member.privilege) });
+      }
+      if (currentUserId !== member.id && currentUserPrivilege === 'owner' && member.privilege === 'admin') {
+        buttons.push({ text: "Demote", onPress: () => demoteMember(member.id, member.privilege) });
+      }
+      if (currentUserId !== member.id && (currentUserPrivilege === 'owner' || (currentUserPrivilege === 'admin' && member.privilege !== 'owner'))) {
+        buttons.push({ text: "Remove", onPress: () => removeMemberConfirmed(member.id), style: 'destructive' });
+      }
+    }
+  
+    // Always allow cancel
+    buttons.push({ text: "Cancel", style: 'cancel' });
+  
+    // Only show alert if there are actions available (more than just the Cancel button)
+    if (buttons.length > 1) {
+      Alert.alert("Manage Member", member.userName, buttons, { cancelable: true });
+    }
   };
-
-  const hideConfirmation = () => {
-    setConfirmationMessage('');
-    setMemberToRemove(null);
-    setPromotionAction(false);
-    setConfirmationVisible(false);
-  };
+  
 
   const promoteMember = async (memberId, memberPrivilege) => {
-    let newPrivilege = memberPrivilege === 'member' ? 'admin' : 'owner';
-    if (currentUserPrivilege === 'owner' && memberPrivilege === 'admin') {
-      await update(ref(db, `clubs/${clubName}/clubMembers/${memberId}`), { privilege: 'owner' });
-      await update(ref(db, `clubs/${clubName}/clubMembers/${currentUserId}`), { privilege: 'admin' });
-      setCurrentUserPrivilege('admin');
+    // Assuming memberId is the ID of the member being promoted.
+    if (memberPrivilege !== 'owner') {
+      let newPrivilege = memberPrivilege === 'member' ? 'admin' : 'owner';
+      const memberRef = ref(db, `clubs/${clubName}/clubMembers/${memberId}`);
+      const snapshot = await get(memberRef);
+      
+      if (snapshot.exists()) {
+        const member = snapshot.val();
+        // Promote the member
+        await update(memberRef, { privilege: newPrivilege });
+        
+        // If promoting to owner, demote the current owner to admin
+        if (newPrivilege === 'owner') {
+          await update(ref(db, `clubs/${clubName}/clubMembers/${currentUserId}`), { privilege: 'admin' });
+          setCurrentUserPrivilege('admin');
+          Alert.alert("Ownership Transferred", `You are now an admin. ${member.userName} is the new owner.`);
+        } else {
+          Alert.alert("Promotion Success", `Member has been promoted to ${newPrivilege}.`);
+        }
+      } else {
+        Alert.alert("Error", "Member not found.");
+      }
+      fetchClubMembers();
     } else {
-      await update(ref(db, `clubs/${clubName}/clubMembers/${memberId}`), { privilege: newPrivilege });
+      Alert.alert("Error", "This member is already an owner.");
     }
-
-    fetchClubMembers();
-    hideConfirmation(); // Hide the modal after promoting the member
-    Alert.alert("Promotion Success", `Member has been promoted to ${newPrivilege}.`);
   };
+  
+  
+
   const demoteMember = async (memberId, memberPrivilege) => {
-    let newPrivilege = '';
-    // Determine the new privilege based on the current privilege
-    switch (memberPrivilege) {
-      case 'owner':
-        newPrivilege = 'admin';
-        break;
-      case 'admin':
-        newPrivilege = 'member';
-        break;
-      default:
-        newPrivilege = 'member';
-        break;
-    }
-    
+    let newPrivilege = memberPrivilege === 'admin' ? 'member' : 'admin'; // Simplify for this context
     await update(ref(db, `clubs/${clubName}/clubMembers/${memberId}`), { privilege: newPrivilege });
-    
     fetchClubMembers();
-    hideConfirmation(); // Hide the modal after demoting the member
     Alert.alert("Demotion Success", `Member has been demoted to ${newPrivilege}.`);
   };
 
-  const removeMemberConfirmed = async () => {
-    await remove(ref(db, `clubs/${clubName}/clubMembers/${memberToRemove}`));
+  const removeMemberConfirmed = async (memberId) => {
+    await remove(ref(db, `clubs/${clubName}/clubMembers/${memberId}`));
     fetchClubMembers();
-    hideConfirmation(); // Hide the modal after removing the member
     Alert.alert("Removal Success", "Member has been successfully removed from the club.");
   };
-  
 
-  const renderMember = ({ item }) => {
-    const canPromote = item.id !== currentUserId && (currentUserPrivilege === 'owner' || (currentUserPrivilege === 'admin' && item.privilege === 'member'));
-    const canDemote = item.id !== currentUserId && (currentUserPrivilege === 'owner' || (currentUserPrivilege === 'admin' && item.privilege === 'admin'));
-    const canRemove = item.id !== currentUserId && (currentUserPrivilege === 'owner' || (currentUserPrivilege === 'admin' && item.privilege === 'member'));
-    
-    return (
-      <View style={styles.memberContainer}>
-        <View style={styles.memberInfo}>
-          <Text style={styles.memberName}>{item.userName}</Text>
-          <Text style={styles.memberPrivilege}>{item.privilege}</Text>
-        </View>
-        <View style={styles.actionButtons}>
-          {canPromote && (
-            <Button title="Promote" onPress={() => showConfirmation(`Are you sure you want to promote ${item.userName}?`, item.id, true)} />
-          )}
-          {canDemote && (
-            <Button title="Demote" onPress={() => demoteMember(item.id, item.privilege)} />
-          )}
-          {canRemove && (
-            <Button title="Remove" color="red" onPress={() => showConfirmation(`Are you sure you want to remove ${item.userName}?`, item.id)} />
-          )}
-        </View>
+  const renderMember = ({ item }) => (
+    <View style={styles.memberContainer}>
+      <View style={styles.memberInfo}>
+        <Text style={styles.memberName}>{item.userName}</Text>
+        <Text style={styles.memberPrivilege}>{item.privilege}</Text>
       </View>
-    );
-  };
-  
+      <TouchableOpacity onPress={() => actionButtonPressed(item)}>
+        <Icon name="dots-vertical" size={24} color="black" />
+      </TouchableOpacity>
+    </View>
+  );
 
   return (
     <View style={styles.container}>
@@ -187,24 +173,6 @@ const UserList = ({ route, navigation }) => {
         renderItem={renderMember}
         keyExtractor={(item) => item.id}
       />
-      <Modal isVisible={isConfirmationVisible}>
-        <View style={styles.modalContainer}>
-          <Text style={styles.modalText}>{confirmationMessage}</Text>
-          <View style={styles.modalButtons}>
-          <Button 
-              title="Yes" 
-              onPress={() => {
-                if (promotionAction) {
-                  promoteMember(memberToRemove, filteredMembers.find(member => member.id === memberToRemove).privilege);
-                } else {
-                  removeMemberConfirmed();
-                }
-              }} 
-            />
-            <Button title="No" onPress={hideConfirmation} />
-          </View>
-        </View>
-      </Modal>
     </View>
   );
 };
@@ -213,6 +181,8 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FAFAFA',
+   
+   
   },
   memberContainer: {
     flexDirection: 'row',
@@ -236,13 +206,15 @@ const styles = StyleSheet.create({
     color: 'grey',
   },
   searchBar: {
-    fontSize: 18,
-    padding: 10,
-    marginVertical: 10,
-    marginHorizontal: 20,
-    borderColor: 'black',
-    borderWidth: 1,
-    borderRadius: 5,
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 30,
+    paddingVertical: 8,
+    borderRadius: 10,
+    marginBottom: 10,
+    fontSize: 16,
+    width: '90%',
+    marginLeft: 20,
+
   },
   filterContainer: {
     flexDirection: 'row',
@@ -259,24 +231,6 @@ const styles = StyleSheet.create({
   },
   filterText: {
     fontSize: 16,
-  },
-  actionButtons: {
-    flexDirection: 'row',
-  },
-  modalContainer: {
-    backgroundColor: 'white',
-    padding: 20,
-    borderRadius: 10,
-    alignItems: 'center',
-  },
-  modalText: {
-    fontSize: 18,
-    marginBottom: 20,
-  },
-  modalButtons: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    width: '100%',
   },
 });
 

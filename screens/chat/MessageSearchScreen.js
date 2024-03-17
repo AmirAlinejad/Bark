@@ -1,17 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, StyleSheet, TextInput, Image, Alert } from 'react-native';
+import { View, Text, FlatList, StyleSheet, TextInput, Image, Alert, TouchableOpacity } from 'react-native';
 import { query, collection, where, onSnapshot } from 'firebase/firestore';
 import { firestore } from '../../backend/FirebaseConfig'; // Update this path according to your project structure
 import Header from '../../components/Header'; // Update this import based on your project structure
-
+import {Colors} from '../../styles/Colors'
 const MessageSearchScreen = ({ route, navigation }) => {
-  const { clubName } = route.params;
+  const { clubName, chatName } = route.params;
   const [searchQuery, setSearchQuery] = useState('');
   const [messages, setMessages] = useState([]);
 
   useEffect(() => {
     const fetchMessages = () => {
-      const messagesQuery = query(collection(firestore, 'chats'), where('clubName', '==', clubName));
+      const messagesQuery = query(collection(firestore, chatName), where('clubName', '==', clubName));
 
       const unsubscribe = onSnapshot(messagesQuery, (querySnapshot) => {
         const fetchedMessages = querySnapshot.docs.map(doc => ({
@@ -41,11 +41,20 @@ const MessageSearchScreen = ({ route, navigation }) => {
       </View>
       <View style={styles.messageContent}>
         <Text style={styles.senderName}>{item.user.name}</Text>
-        <Text style={styles.messageText}>{item.text}</Text>
+        {/* Display text message */}
+        {item.text && <Text style={styles.messageText}>{item.text}</Text>}
+        {/* Display image with option to view larger */}
+        {item.image && (
+          <TouchableOpacity onPress={() => navigation.navigate('ImageViewerScreen', { imageUri: item.image })}>
+            <Image source={{ uri: item.image }} style={styles.messageImage} />
+            <Text style={styles.viewImageText}></Text>
+          </TouchableOpacity>
+        )}
         <Text style={styles.dateTime}>{formatDateTime(item.createdAt)}</Text>
       </View>
     </View>
   );
+  
 
   const formatDateTime = (dateTime) => {
     const options = { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true };
@@ -117,6 +126,19 @@ const styles = StyleSheet.create({
   dateTime: {
     color: 'gray',
     fontSize: 12,
+  },
+  messageImage: {
+    width: 100, // Adjust the size as needed
+    height: 100, // Adjust the size as needed
+    resizeMode: 'cover',
+    borderRadius: 5, // Optional: if you want rounded corners
+    marginVertical: 5, // Spacing above and below the image
+  },
+  viewImageText: {
+    fontSize: 14,
+    color: Colors.primary, // Use a color that indicates it's clickable
+    textDecorationLine: 'underline',
+    textAlign: 'center', // Center the text below the image
   },
 });
 

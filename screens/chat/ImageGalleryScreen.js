@@ -1,11 +1,13 @@
-import React from 'react';
 import { Image, TouchableOpacity, StyleSheet, FlatList, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import Header from '../../components/Header'; // Adjust the import path as per your project structure
+import React, { useState, useEffect, useCallback } from 'react';
 
 const ImageGalleryScreen = ({ route }) => {
-  const { imageUris } = route.params;
+  const { clubName, imageUrls } = route.params;
   const navigation = useNavigation();
+  
+  
 
   const renderImageItem = ({ item }) => (
     <TouchableOpacity
@@ -14,12 +16,13 @@ const ImageGalleryScreen = ({ route }) => {
       <Image source={{ uri: item }} style={styles.image} />
     </TouchableOpacity>
   );
+  
 
   return (
     <View style={styles.container}>
       <Header navigation={navigation} text="Gallery" back={true} />
       <FlatList
-        data={imageUris}
+        data={imageUrls}
         renderItem={renderImageItem}
         keyExtractor={(item, index) => index.toString()}
         numColumns={4} // Or however many columns you want

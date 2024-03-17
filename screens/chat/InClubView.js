@@ -1,5 +1,5 @@
 // InClubView.js
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import Header from '../../components/Header';
 import { db } from '../../backend/FirebaseConfig';
@@ -10,14 +10,22 @@ import { useFocusEffect } from '@react-navigation/native';
 const InClubView = ({ navigation, route }) => {
   const [memberCount, setMemberCount] = useState(0);
   const [currentUserPrivilege, setCurrentUserPrivilege] = useState('');
-  const { clubName, groupChats, imageUris } = route.params;
+  const { clubName, imageUrls, chatName } = route.params;
+  console.log('Image URLs:', imageUrls);
 
-  useFocusEffect(() => {
-    if (route?.params?.clubName) {
-      fetchMemberCount(route.params.clubName);
-      fetchCurrentUserPrivilege();
-    }
-  });
+  useFocusEffect(
+    useCallback(() => {
+      const updateState = async () => {
+        await fetchMemberCount(clubName);
+        await fetchCurrentUserPrivilege();
+      };
+  
+      updateState().then(() => {
+        console.log("States refreshed. Current privilege:", currentUserPrivilege);
+      });
+  
+    }, [clubName]) // If clubName is stable, consider adding currentUserPrivilege to the dependency array
+  );
 
   const fetchMemberCount = async (clubName) => {
     try {
@@ -70,6 +78,10 @@ const InClubView = ({ navigation, route }) => {
           <View style={styles.grayImage} />
           <Text style={styles.clubNameText}>{clubName}</Text>
           <Text style={styles.memberCountText}>{`(${memberCount} members)`}</Text>
+          {(chatName =="adminchats") && (
+            <Text style={styles.memberCountText}>Admin chat view</Text>
+
+          )}
         </View>
 
         {/* Navigation buttons */}
@@ -78,7 +90,8 @@ const InClubView = ({ navigation, route }) => {
             onPress={() =>
               navigation.navigate('UserList', {
                 clubName: clubName,
-                groupChats: groupChats, // Pass groupChats to UserList screen
+                chatName
+                // Pass groupChats to UserList screen
               })}
             style={[styles.button, styles.buttonFirst]}>
             <Text style={styles.buttonText}>Search Members</Text>
@@ -88,7 +101,8 @@ const InClubView = ({ navigation, route }) => {
             onPress={() =>
               navigation.navigate('MessageSearchScreen', {
                 clubName,
-                groupChats, // Pass groupChats to MessageSearchScreen
+                chatName
+               // Pass groupChats to MessageSearchScreen
               })}
             style={styles.button}>
             <Text style={styles.buttonText}>Search Messages</Text>
@@ -98,7 +112,8 @@ const InClubView = ({ navigation, route }) => {
             onPress={() =>
               navigation.navigate('PinnedMessagesScreen', {
                 clubName,
-                groupChats, // Pass groupChats to PinnedMessagesScreen
+                chatName,
+                // Pass groupChats to PinnedMessagesScreen
               })}
             style={[styles.button, styles.buttonLast]}>
             <Text style={styles.buttonText}>Pinned Messages</Text>
@@ -108,8 +123,8 @@ const InClubView = ({ navigation, route }) => {
             onPress={() =>
               navigation.navigate('ImageGalleryScreen', {
                 clubName,
-                groupChats,
-                imageUris 
+                imageUrls,
+                chatName
               })}
             style={[styles.button, styles.buttonLast]}>
             <Text style={styles.buttonText}>Image Gallery</Text>
@@ -120,26 +135,20 @@ const InClubView = ({ navigation, route }) => {
             onPress={() =>
               navigation.navigate('QRCodeScreen', {
                 clubName,
-                groupChats, // Pass groupChats to QRCodeScreen
+                
               })}
             style={styles.button}>
             <Text style={styles.buttonText}>QR Code</Text>
           </TouchableOpacity>
-
-          
-
-          {currentUserPrivilege === 'admin' || currentUserPrivilege === 'owner' && (
+          {
+          (currentUserPrivilege === 'admin' || currentUserPrivilege === 'owner') && (
             <TouchableOpacity
-              onPress={() =>
-                navigation.navigate('AdminChat', {
-                  clubName,
-                  groupChats, // Pass groupChats to AdminChat
-                })}
+              onPress={() => navigation.navigate('AdminChat', {clubName})}
               style={[styles.button, styles.buttonLast]}>
               <Text style={styles.buttonText}>Admin Chat</Text>
             </TouchableOpacity>
-          )}
-          {/* Add more buttons for additional screens here */}
+          )
+        }
         </View>
       </View>
 
@@ -158,18 +167,20 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     flex: 1, // Fill remaining space
-    justifyContent: 'space-between', // Ensure content is spaced evenly
+    // Ensure content is spaced evenly
     // Ensure footer doesn't overlap content
   },
   imageContainer: {
     alignItems: 'center',
-    marginBottom: 50,
-    paddingTop: 30,
+    paddingTop: 20,
+    paddingBottom: 20,
+  
   },
   grayImage: {
     width: 200,
     height: 200,
     backgroundColor: '#ccc', // Gray background color
+    borderRadius: 30,
   },
   clubNameText: {
     fontWeight: 'bold',
@@ -182,28 +193,33 @@ const styles = StyleSheet.create({
   },
   buttonsContainer: {
     width: '100%',
-    marginBottom: 300,
-    alignItems: 'flex-start',
-  },
-  button: {
-    marginBottom: 10,
-    backgroundColor: '#FAFAFA',
-    padding: 15,
+    marginBottom: 20,
+    paddingTop: -100, // Reduce or remove padding at the top
     alignItems: 'left',
-    borderRadius: 0,
   },
+  
+  button: {
+    marginBottom: 5, 
+    backgroundColor: '#FAFAFA',
+    paddingVertical: 15, 
+    paddingHorizontal: 20, 
+    alignItems: 'left', 
+    width: '90%', 
+    borderRadius: 5, 
+    alignSelf: 'left', 
+  },
+  
   buttonFirst: {
-    borderTopLeftRadius: 0,
-    borderTopRightRadius: 0,
+    borderTopLeftRadius: 5,
+    borderTopRightRadius: 5,
   },
   buttonLast: {
-    borderBottomLeftRadius: 0,
-    borderBottomRightRadius: 0,
+    borderBottomLeftRadius: 5,
+    borderBottomRightRadius: 5,
   },
   buttonText: {
     color: 'black',
     fontSize: 16,
-    fontWeight: "bold",
   },
   footerText: {
     backgroundColor: '#FAFAFA', // Same background color as container
