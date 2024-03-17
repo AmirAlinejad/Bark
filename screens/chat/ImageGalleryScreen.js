@@ -1,14 +1,14 @@
-import { Image, TouchableOpacity, StyleSheet, FlatList, View } from 'react-native';
+import { Image, TouchableOpacity, StyleSheet, FlatList, View, Dimensions } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import Header from '../../components/Header'; // Adjust the import path as per your project structure
 import React, { useState, useEffect, useCallback } from 'react';
+
+const windowWidth = Dimensions.get('window').width;
 
 const ImageGalleryScreen = ({ route }) => {
   const { clubName, imageUrls } = route.params;
   const navigation = useNavigation();
   
-  
-
   const renderImageItem = ({ item }) => (
     <TouchableOpacity
       style={styles.imageContainer}
@@ -16,7 +16,6 @@ const ImageGalleryScreen = ({ route }) => {
       <Image source={{ uri: item }} style={styles.image} />
     </TouchableOpacity>
   );
-  
 
   return (
     <View style={styles.container}>
@@ -25,8 +24,9 @@ const ImageGalleryScreen = ({ route }) => {
         data={imageUrls}
         renderItem={renderImageItem}
         keyExtractor={(item, index) => index.toString()}
-        numColumns={4} // Or however many columns you want
-        contentContainerStyle={styles.container}
+        horizontal={false}
+        numColumns={Math.floor(windowWidth / 100)} // Adjust based on your desired layout
+        contentContainerStyle={styles.flatlistContainer}
       />
     </View>
   );
@@ -34,19 +34,20 @@ const ImageGalleryScreen = ({ route }) => {
 
 const styles = StyleSheet.create({
   container: {
-    flexGrow: 1,
+    flex: 1,
     backgroundColor: "#FAFAFA",
-
+  },
+  flatlistContainer: {
+    alignItems: 'flex-start',
   },
   imageContainer: {
-    flex: 1,
-    flexDirection: 'column',
-    margin: 0, // Updated to remove space between images
+    width: windowWidth / Math.floor(windowWidth / 100), // Adjust based on your desired layout
+    height: 100,
   },
   image: {
-    height: 100, // Adjust size as needed
-    aspectRatio: 1, // Keeps the aspect ratio of images, adjust as needed
-    resizeMode: 'cover', // Adjust resizeMode to 'cover' for no space between images
+    flex: 1,
+    width: '100%', // Ensure the image takes up the full width of its container
+    resizeMode: 'cover',
   },
 });
 

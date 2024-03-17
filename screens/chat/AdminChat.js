@@ -20,7 +20,9 @@ import {
   arrayRemove,
   runTransaction
 } from 'firebase/firestore';
-import { auth, firestore } from '../../backend/FirebaseConfig';
+import { getDatabase, ref, get } from 'firebase/database';
+import { getAuth, onAuthStateChanged } from 'firebase/auth';
+import { auth, firestore, db } from '../../backend/FirebaseConfig';
 import { IconButton } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { uploadImage } from '../../components/imageUploadUtils'; // Import the utility function
@@ -98,44 +100,51 @@ export default function Chat({ route, navigation }) {
 
 
 
-  const handleLongPress = (message) => {
+  const handleLongPress = async (message) => {
     const userId = auth.currentUser.uid;
-    const messageRef = doc(firestore, 'adminchats', message._id);
-    const isCurrentUserMessage = message.user._id === userId;
+    const db = getDatabase();
   
-    // Define the delete option text if the message belongs to the current user
-    let deleteOptionText = isCurrentUserMessage ? 'Delete Message' : null;
+    // Correctly form the reference to the user's data in the Realtime Database
+    const userRef = ref(db, `clubs/${clubName}/clubMembers/${userId}`);
   
-    Alert.alert(
-      'Options',
-      'Select an option',
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-        {
-          text: message.pinned ? 'Unpin' : 'Pin',
-          onPress: async () => {
-            // Toggle pin status
-            const newPinStatus = !message.pinned;
-            await updateDoc(messageRef, { pinned: newPinStatus });
+    try {
+      const snapshot = await get(userRef);
+      if (snapshot.exists()) {
+        const currentUserPrivilege = snapshot.val().privilege;
+        console.log(`Current user privilege: ${currentUserPrivilege}`);
   
-            // Update the local state to reflect the change
-            setMessages((prevMessages) =>
-              prevMessages.map((m) => (m._id === message._id ? { ...m, pinned: newPinStatus } : m))
-            );
+        let options = [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: message.pinned ? 'Unpin' : 'Pin',
+            onPress: async () => {
+              // Assuming this part remains unchanged as it likely updates Firestore
+              const newPinStatus = !message.pinned;
+              await updateDoc(doc(firestore, 'adminchats', message._id), { pinned: newPinStatus });
+              // Update local state as necessary
+            },
           },
-        },
-        // Add the delete option if the message belongs to the current user
-        deleteOptionText && {
-          text: deleteOptionText,
-          style: 'destructive',
-          onPress: () => deleteMessage(message._id),
-        },
-      ].filter(Boolean), // Filter out any falsy options
-      { cancelable: false }
-    );
+        ];
+  
+        // Add the delete option based on the fetched privilege
+        if (message.user._id === userId || currentUserPrivilege === 'owner' || currentUserPrivilege === 'admin') {
+          options.push({
+            text: 'Delete Message',
+            style: 'destructive',
+            onPress: () => {
+              // Assuming the delete operation targets Firestore
+              deleteMessage(message._id);
+            },
+          });
+        }
+  
+        Alert.alert('Options', 'Select an option', options.filter(Boolean), { cancelable: false });
+      } else {
+        console.log("User privilege data not found.");
+      }
+    } catch (error) {
+      console.error("Error fetching user privilege:", error);
+    }
   };
   
   const handleImageUploadAndSend = () => {
@@ -179,23 +188,25 @@ export default function Chat({ route, navigation }) {
   };
   
   const formatDate = (date) => {
-    const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+    const options = { weekday: 'short', year: 'numeric', month: 'long', day: 'numeric' };
     return date.toLocaleDateString(undefined, options);
   };
+
+
   const formatTime = (date) => {
     const hours = date.getHours();
     const minutes = date.getMinutes();
     const amOrPm = hours >= 12 ? 'PM' : 'AM';
     const twelveHourFormatHours = hours % 12 || 12; // Convert 0 to 12 in 12-hour format
+
+    // Removed the condition to add leading zero for hours
+    const formattedHours = twelveHourFormatHours; // Directly use the calculated hour
+    const formattedMinutes = minutes < 10 ? `0${minutes}` : minutes; // Keep the leading zero for minutes if necessary
   
-    // Add leading zeros if necessary
-    const formattedHours = twelveHourFormatHours < 10 ? `0${twelveHourFormatHours}` : twelveHourFormatHours;
-    const formattedMinutes = minutes < 10 ? `0${minutes}` : minutes;
-  
-    // Return the formatted time string
+    // Return the formatted time string without leading zero for hours
     return `${formattedHours}:${formattedMinutes} ${amOrPm}`;
-  };
-  
+};
+
   const renderMessage = ({ item, index }) => {
     const userId = auth.currentUser.uid; // Assuming this is how you identify the current user
     const isLikedByUser = item.likes?.includes(userId);
@@ -235,16 +246,14 @@ export default function Chat({ route, navigation }) {
               <Text style={styles.messageTime}>{formatTime(item.createdAt)}</Text>
             </View>
           </View>
-          {isLikedByUser && (
-            <TouchableOpacity onPress={() => toggleLike(item)} style={styles.likeButton}>
-              <Ionicons
-                name='heart'
-                size={24}
-                color='red'
-              />
-              <Text style={styles.likeCountText}>{item.likeCount || 0}</Text>
-            </TouchableOpacity>
-          )}
+          <TouchableOpacity onPress={() => toggleLike(item)} style={styles.likeButton}>
+        <Ionicons
+          name={isLikedByUser ? "heart" : "heart-outline"}
+          size={24}
+          color={isLikedByUser ? "red" : "black"} // Change to "black" for outline
+        />
+        <Text style={styles.likeCountText}>{item.likeCount || 0}</Text>
+      </TouchableOpacity>
         </TouchableOpacity>
       </>
     );
@@ -355,6 +364,7 @@ export default function Chat({ route, navigation }) {
   </TouchableOpacity>
 </View>
 <Text style={styles.adminViewText}>Admin View</Text>
+
 {( pinnedMessageCount > 0 &&
 <TouchableOpacity style={styles.pinnedMessagesContainer} onPress={navigateToSearchPinnedMessages}>
   <View style={styles.blueBar}>
@@ -368,7 +378,7 @@ export default function Chat({ route, navigation }) {
       style={{
         position: 'absolute', // Ensures it's positioned relative to the container.
         right: 20, // Adjust this value to ensure it's comfortably reachable.
-        bottom: 100, // Adjust this so it's above your keyboard avoiding view or other lower components.
+        bottom: 90, // Adjust this so it's above your keyboard avoiding view or other lower components.
         backgroundColor: 'rgba(255,255,255,0.9)',
         borderRadius: 25,
         padding: 10, // Increasing padding can help with touchability.
@@ -407,6 +417,7 @@ export default function Chat({ route, navigation }) {
             maxHeight={120}
             onContentSizeChange={() => scrollToBottom()}
             returnKeyType="done" // Prevents new lines
+            placeholderTextColor="#888888"
           />
           <TouchableOpacity onPress={sendMessage} style={styles.sendButton}>
             <Ionicons name="send" size={24} color={Colors.black} />
@@ -476,7 +487,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     position: "absolute", // Corrected typo here
-    right: 20, // Adjust right positioning as needed
+    right: 25, // Adjust right positioning as needed
   },
   likeCount: {
     marginLeft: 5,
@@ -486,7 +497,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between', // Spread out the items evenly
     alignItems: 'center',
     paddingHorizontal: 15,
-    paddingVertical: 20,
+    paddingTop: 10,
+    paddingBottom: 20,
     borderTopWidth: 1,
     borderTopColor: '#EEEEEE',
     backgroundColor: 'white',
@@ -501,16 +513,19 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   
+
   input: {
     flex: 1,
     borderColor: 'white',
     borderRadius: 10,
     marginLeft: 10,
     backgroundColor: "#EEEEEE",
-    paddingHorizontal: 20, // Adjust this as needed
-    height: '60%',
+    paddingHorizontal: 20,
+    height: '75%',
     width: '65%',
     textAlign: 'left',
+    // Adjust lineHeight for cursor height. Increase this value to make the cursor taller.
+    lineHeight: 20, 
   },
   sendButton: {
     padding: 10,
@@ -526,7 +541,7 @@ const styles = StyleSheet.create({
   avatar: {
     width: 40,
     height: 40,
-    borderRadius: 10,
+    borderRadius: 40,
     marginRight: 10,
   },
   messageTime: {
@@ -534,8 +549,8 @@ const styles = StyleSheet.create({
     color: 'gray',
   },
   messageImage: {
-    width: 100,
-    height: 100,
+    width: 200,
+    height: 200,
     resizeMode: 'contain',
     borderRadius: 10,
   },
@@ -582,7 +597,6 @@ const styles = StyleSheet.create({
     marginBottom: 10, // Add some space between date and message
   },
   dateWrapper: {
-    backgroundColor: '#eee',
     borderRadius: 10,
     paddingHorizontal: 10,
     paddingVertical: 5,
@@ -591,8 +605,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#dbe9f4', // Light gray background color for pinned messages
   },
   dateText: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: 'black',
+    fontSize: 14, 
+    color: 'gray',
   },
 });

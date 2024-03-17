@@ -188,23 +188,25 @@ export default function Chat({ route, navigation }) {
   };
   
   const formatDate = (date) => {
-    const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+    const options = { weekday: 'short', year: 'numeric', month: 'long', day: 'numeric' };
     return date.toLocaleDateString(undefined, options);
   };
+
+
   const formatTime = (date) => {
     const hours = date.getHours();
     const minutes = date.getMinutes();
     const amOrPm = hours >= 12 ? 'PM' : 'AM';
     const twelveHourFormatHours = hours % 12 || 12; // Convert 0 to 12 in 12-hour format
+
+    // Removed the condition to add leading zero for hours
+    const formattedHours = twelveHourFormatHours; // Directly use the calculated hour
+    const formattedMinutes = minutes < 10 ? `0${minutes}` : minutes; // Keep the leading zero for minutes if necessary
   
-    // Add leading zeros if necessary
-    const formattedHours = twelveHourFormatHours < 10 ? `0${twelveHourFormatHours}` : twelveHourFormatHours;
-    const formattedMinutes = minutes < 10 ? `0${minutes}` : minutes;
-  
-    // Return the formatted time string
+    // Return the formatted time string without leading zero for hours
     return `${formattedHours}:${formattedMinutes} ${amOrPm}`;
-  };
-  
+};
+
   const renderMessage = ({ item, index }) => {
     const userId = auth.currentUser.uid; // Assuming this is how you identify the current user
     const isLikedByUser = item.likes?.includes(userId);
@@ -374,7 +376,7 @@ export default function Chat({ route, navigation }) {
       style={{
         position: 'absolute', // Ensures it's positioned relative to the container.
         right: 20, // Adjust this value to ensure it's comfortably reachable.
-        bottom: 100, // Adjust this so it's above your keyboard avoiding view or other lower components.
+        bottom: 90, // Adjust this so it's above your keyboard avoiding view or other lower components.
         backgroundColor: 'rgba(255,255,255,0.9)',
         borderRadius: 25,
         padding: 10, // Increasing padding can help with touchability.
@@ -413,6 +415,7 @@ export default function Chat({ route, navigation }) {
             maxHeight={120}
             onContentSizeChange={() => scrollToBottom()}
             returnKeyType="done" // Prevents new lines
+            placeholderTextColor="#888888"
           />
           <TouchableOpacity onPress={sendMessage} style={styles.sendButton}>
             <Ionicons name="send" size={24} color={Colors.black} />
@@ -482,7 +485,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     position: "absolute", // Corrected typo here
-    right: 10, // Adjust right positioning as needed
+    right: 25, // Adjust right positioning as needed
   },
   likeCount: {
     marginLeft: 5,
@@ -492,7 +495,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between', // Spread out the items evenly
     alignItems: 'center',
     paddingHorizontal: 15,
-    paddingVertical: 20,
+    paddingTop: 10,
+    paddingBottom: 20,
     borderTopWidth: 1,
     borderTopColor: '#EEEEEE',
     backgroundColor: 'white',
@@ -505,10 +509,12 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     marginLeft: 10,
     backgroundColor: "#EEEEEE",
-    paddingHorizontal: 20, // Adjust this as needed
-    height: '60%',
+    paddingHorizontal: 20,
+    height: '75%',
     width: '65%',
     textAlign: 'left',
+    // Adjust lineHeight for cursor height. Increase this value to make the cursor taller.
+    lineHeight: 20, 
   },
   sendButton: {
     padding: 10,
@@ -524,7 +530,7 @@ const styles = StyleSheet.create({
   avatar: {
     width: 40,
     height: 40,
-    borderRadius: 10,
+    borderRadius: 40,
     marginRight: 10,
   },
   messageTime: {
@@ -532,8 +538,8 @@ const styles = StyleSheet.create({
     color: 'gray',
   },
   messageImage: {
-    width: 100,
-    height: 100,
+    width: 200,
+    height: 200,
     resizeMode: 'contain',
     borderRadius: 10,
   },
@@ -589,6 +595,6 @@ const styles = StyleSheet.create({
   },
   dateText: {
     fontSize: 14, 
-    color: 'black',
+    color: 'gray',
   },
 });
