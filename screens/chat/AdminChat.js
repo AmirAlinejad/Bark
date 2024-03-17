@@ -170,36 +170,88 @@ export default function Chat({ route, navigation }) {
   const navigateToSearchPinnedMessages = () => {
     navigation.navigate('PinnedMessagesScreen', { clubName, chatName});
   };
+  const isSameDay = (date1, date2) => {
+    return (
+      date1.getFullYear() === date2.getFullYear() &&
+      date1.getMonth() === date2.getMonth() &&
+      date1.getDate() === date2.getDate()
+    );
+  };
   
-  const renderMessage = ({ item }) => {
+  const formatDate = (date) => {
+    const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+    return date.toLocaleDateString(undefined, options);
+  };
+  const formatTime = (date) => {
+    const hours = date.getHours();
+    const minutes = date.getMinutes();
+    const amOrPm = hours >= 12 ? 'PM' : 'AM';
+    const twelveHourFormatHours = hours % 12 || 12; // Convert 0 to 12 in 12-hour format
+  
+    // Add leading zeros if necessary
+    const formattedHours = twelveHourFormatHours < 10 ? `0${twelveHourFormatHours}` : twelveHourFormatHours;
+    const formattedMinutes = minutes < 10 ? `0${minutes}` : minutes;
+  
+    // Return the formatted time string
+    return `${formattedHours}:${formattedMinutes} ${amOrPm}`;
+  };
+  
+  const renderMessage = ({ item, index }) => {
     const userId = auth.currentUser.uid; // Assuming this is how you identify the current user
     const isLikedByUser = item.likes?.includes(userId);
-    
+  
+    // Check if it's the first message of the day
+    const isFirstMessageOfDay = index === 0 || !isSameDay(messages[index - 1].createdAt, item.createdAt);
+  
+    // Conditional style for pinned messages
+    const messageContainerStyle = [
+      styles.messageContainer,
+      item.pinned && styles.pinnedMessage, // Apply pinnedMessage style if the message is pinned
+    ];
+  
     return (
-      <TouchableOpacity 
-        onLongPress={() => handleLongPress(item)}
-        style={styles.messageContainer}
-      >
-        <View style={styles.messageContent}>
-          <Image source={{ uri: item.user.avatar }} style={styles.avatar} />
-          <View>
-            <Text style={styles.senderName}>{item.user.name}</Text>
-            {item.text && <Text style={styles.messageText}>{item.text}</Text>}
-            {item.image && <TouchableOpacity onPress={() => navigation.navigate('ImageViewerScreen', { imageUri: item.image })}><Image source={{ uri: item.image }} style={styles.messageImage} /></TouchableOpacity>}
+      <>
+        {isFirstMessageOfDay && (
+          <View style={styles.dateContainer}>
+            <View style={styles.dateWrapper}>
+              <Text style={styles.dateText}>{formatDate(item.createdAt)}</Text>
+            </View>
           </View>
-        </View>
-        <TouchableOpacity onPress={() => toggleLike(item)} style={styles.likeButton}>
-        <Ionicons
-          name={isLikedByUser ? "heart" : "heart-outline"}
-          size={24}
-          color={isLikedByUser ? "red" : "black"} // Change to "black" for outline
-        />
-        <Text style={styles.likeCountText}>{item.likeCount || 0}</Text>
-      </TouchableOpacity>
-
-      </TouchableOpacity>
-      );
-    };
+        )}
+        <TouchableOpacity
+          onLongPress={() => handleLongPress(item)}
+          style={messageContainerStyle} // Use the conditional style here
+        >
+          <View style={styles.messageContent}>
+            <Image source={{ uri: item.user.avatar }} style={styles.avatar} />
+            <View>
+              <Text style={styles.senderName}>{item.user.name}</Text>
+              {item.text && <Text style={styles.messageText}>{item.text}</Text>}
+              {item.image && (
+                <TouchableOpacity onPress={() => navigation.navigate('ImageViewerScreen', { imageUri: item.image })}>
+                  <Image source={{ uri: item.image }} style={styles.messageImage} />
+                </TouchableOpacity>
+              )}
+              <Text style={styles.messageTime}>{formatTime(item.createdAt)}</Text>
+            </View>
+          </View>
+          {isLikedByUser && (
+            <TouchableOpacity onPress={() => toggleLike(item)} style={styles.likeButton}>
+              <Ionicons
+                name='heart'
+                size={24}
+                color='red'
+              />
+              <Text style={styles.likeCountText}>{item.likeCount || 0}</Text>
+            </TouchableOpacity>
+          )}
+        </TouchableOpacity>
+      </>
+    );
+  };
+  
+  
+  
     const navigateToInClubView = () => {
       const imageUrls = getImageUrls(); // Get the current image URLs
       navigation.navigate("InClubView", { clubName, imageUrls, chatName }); // Pass them as part of navigation
@@ -302,6 +354,7 @@ export default function Chat({ route, navigation }) {
     <FontAwesome name="search" size={20} color="black" />
   </TouchableOpacity>
 </View>
+<Text style={styles.adminViewText}>Admin View</Text>
 {( pinnedMessageCount > 0 &&
 <TouchableOpacity style={styles.pinnedMessagesContainer} onPress={navigateToSearchPinnedMessages}>
   <View style={styles.blueBar}>
@@ -440,6 +493,14 @@ const styles = StyleSheet.create({
     marginTop: -10,
     width: '100%',
   },
+  adminViewText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: 'black',
+    textAlign: 'center',
+    paddingVertical: 10,
+  },
+  
   input: {
     flex: 1,
     borderColor: 'white',
@@ -467,6 +528,10 @@ const styles = StyleSheet.create({
     height: 40,
     borderRadius: 10,
     marginRight: 10,
+  },
+  messageTime: {
+    fontSize: 12,
+    color: 'gray',
   },
   messageImage: {
     width: 100,
@@ -511,5 +576,23 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     marginRight: 10,
     backgroundColor: 'lightgray', // Placeholder background color
+  },
+  dateContainer: {
+    alignItems: 'center',
+    marginBottom: 10, // Add some space between date and message
+  },
+  dateWrapper: {
+    backgroundColor: '#eee',
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  pinnedMessage: {
+    backgroundColor: '#dbe9f4', // Light gray background color for pinned messages
+  },
+  dateText: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: 'black',
   },
 });

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, FlatList, Text, TouchableOpacity, TextInput, Alert } from 'react-native';
+import { View, StyleSheet, FlatList, Text, TouchableOpacity, TextInput, Alert, Image } from 'react-native';
 import Header from '../../components/Header';
 import { ref, get, remove, update } from 'firebase/database';
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
@@ -143,14 +143,25 @@ const UserList = ({ route, navigation }) => {
   const renderMember = ({ item }) => (
     <View style={styles.memberContainer}>
       <View style={styles.memberInfo}>
-        <Text style={styles.memberName}>{item.userName}</Text>
-        <Text style={styles.memberPrivilege}>{item.privilege}</Text>
+        <View style={styles.avatarContainer}>
+          {/* Use the local asset for the avatar */}
+          <Image 
+            source={require('../../assets/logo.png')} // Reference the local image here
+            style={styles.avatar} 
+          />
+        </View>
+        <View>
+          <Text style={styles.memberName}>{item.userName}</Text>
+          <Text style={styles.memberPrivilege}>{item.privilege}</Text>
+        </View>
       </View>
       <TouchableOpacity onPress={() => actionButtonPressed(item)}>
         <Icon name="dots-vertical" size={24} color="black" />
       </TouchableOpacity>
     </View>
   );
+  
+  
 
   return (
     <View style={styles.container}>
@@ -231,6 +242,21 @@ const styles = StyleSheet.create({
   },
   filterText: {
     fontSize: 16,
+  },
+  memberInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  avatarContainer: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    overflow: 'hidden',
+    marginRight: 10,
+  },
+  avatar: {
+    width: '100%',
+    height: '100%',
   },
 });
 
