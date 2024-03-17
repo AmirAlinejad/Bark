@@ -244,16 +244,14 @@ export default function Chat({ route, navigation }) {
               <Text style={styles.messageTime}>{formatTime(item.createdAt)}</Text>
             </View>
           </View>
-          {isLikedByUser && (
-            <TouchableOpacity onPress={() => toggleLike(item)} style={styles.likeButton}>
-              <Ionicons
-                name='heart'
-                size={24}
-                color='red'
-              />
-              <Text style={styles.likeCountText}>{item.likeCount || 0}</Text>
-            </TouchableOpacity>
-          )}
+          <TouchableOpacity onPress={() => toggleLike(item)} style={styles.likeButton}>
+        <Ionicons
+          name={isLikedByUser ? "heart" : "heart-outline"}
+          size={24}
+          color={isLikedByUser ? "red" : "black"} // Change to "black" for outline
+        />
+        <Text style={styles.likeCountText}>{item.likeCount || 0}</Text>
+      </TouchableOpacity>
         </TouchableOpacity>
       </>
     );
@@ -484,7 +482,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     position: "absolute", // Corrected typo here
-    right: 20, // Adjust right positioning as needed
+    right: 10, // Adjust right positioning as needed
   },
   likeCount: {
     marginLeft: 5,
