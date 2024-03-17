@@ -42,7 +42,7 @@ export default function Chat({ route, navigation }) {
   const [imageUrl, setImageUrl] = useState(null); // Define imageUrl state
   const [pinnedMessageCount, setPinnedMessageCount] = useState(0);
   const [isAtBottom, setIsAtBottom] = useState(true); // Initially assume the user is at the bottom
-
+  const [likedMessages, setLikedMessages] = useState(new Set());
   const chatName = "adminchats";
   const clubName = route?.params?.clubName;
   const flatListRef = useRef(null);
@@ -76,7 +76,25 @@ export default function Chat({ route, navigation }) {
   
     return () => unsubscribeMessages();
   }, [clubName]); // Depend on clubName to re-run the effect when it changes
-  
+
+
+  useEffect(() => {
+    // Function to fetch liked messages and update the local state
+    const fetchLikedMessages = async () => {
+      const userId = auth.currentUser.uid;
+      const messagesRef = collection(firestore, 'adminchats');
+      const q = query(messagesRef, where('likes', 'array-contains', userId));
+
+      const querySnapshot = await getDocs(q);
+      const likedMsgs = new Set();
+      querySnapshot.forEach((doc) => {
+        likedMsgs.add(doc.id);
+      });
+      setLikedMessages(likedMsgs);
+    };
+
+    fetchLikedMessages();
+  }, [messages]); 
 
   const handleCameraPress = async () => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
@@ -207,57 +225,57 @@ export default function Chat({ route, navigation }) {
     return `${formattedHours}:${formattedMinutes} ${amOrPm}`;
 };
 
-  const renderMessage = ({ item, index }) => {
-    const userId = auth.currentUser.uid; // Assuming this is how you identify the current user
-    const isLikedByUser = item.likes?.includes(userId);
-  
-    // Check if it's the first message of the day
-    const isFirstMessageOfDay = index === 0 || !isSameDay(messages[index - 1].createdAt, item.createdAt);
-  
-    // Conditional style for pinned messages
-    const messageContainerStyle = [
-      styles.messageContainer,
-      item.pinned && styles.pinnedMessage, // Apply pinnedMessage style if the message is pinned
-    ];
-  
-    return (
-      <>
-        {isFirstMessageOfDay && (
-          <View style={styles.dateContainer}>
-            <View style={styles.dateWrapper}>
-              <Text style={styles.dateText}>{formatDate(item.createdAt)}</Text>
-            </View>
+const renderMessage = ({ item, index }) => {
+  const isFirstMessageOfDay = index === 0 || !isSameDay(messages[index - 1].createdAt, item.createdAt);
+
+  // Conditional style for pinned messages
+  const messageContainerStyle = [
+    styles.messageContainer,
+    item.pinned && styles.pinnedMessage, // Apply pinnedMessage style if the message is pinned
+  ];
+
+  // Determines if the message is liked by the user
+  const isLikedByUser = likedMessages.has(item._id);
+
+  return (
+    <>
+      {isFirstMessageOfDay && (
+        <View style={styles.dateContainer}>
+          <View style={styles.dateWrapper}>
+            <Text style={styles.dateText}>{formatDate(item.createdAt)}</Text>
           </View>
-        )}
-        <TouchableOpacity
-          onLongPress={() => handleLongPress(item)}
-          style={messageContainerStyle} // Use the conditional style here
-        >
-          <View style={styles.messageContent}>
-            <Image source={{ uri: item.user.avatar }} style={styles.avatar} />
-            <View>
-              <Text style={styles.senderName}>{item.user.name}</Text>
-              {item.text && <Text style={styles.messageText}>{item.text}</Text>}
-              {item.image && (
-                <TouchableOpacity onPress={() => navigation.navigate('ImageViewerScreen', { imageUri: item.image })}>
-                  <Image source={{ uri: item.image }} style={styles.messageImage} />
-                </TouchableOpacity>
-              )}
-              <Text style={styles.messageTime}>{formatTime(item.createdAt)}</Text>
-            </View>
+        </View>
+      )}
+      <TouchableOpacity
+        onLongPress={() => handleLongPress(item)}
+        style={messageContainerStyle}
+      >
+        <View style={styles.messageContent}>
+          <Image source={{ uri: item.user.avatar }} style={styles.avatar} />
+          <View>
+            <Text style={styles.senderName}>{item.user.name}</Text>
+            {item.text && <Text style={styles.messageText}>{item.text}</Text>}
+            {item.image && (
+              <TouchableOpacity onPress={() => navigation.navigate('ImageViewerScreen', { imageUri: item.image })}>
+                <Image source={{ uri: item.image }} style={styles.messageImage} />
+              </TouchableOpacity>
+            )}
+            <Text style={styles.messageTime}>{formatTime(item.createdAt)}</Text>
           </View>
-          <TouchableOpacity onPress={() => toggleLike(item)} style={styles.likeButton}>
-        <Ionicons
-          name={isLikedByUser ? "heart" : "heart-outline"}
-          size={24}
-          color={isLikedByUser ? "red" : "black"} // Change to "black" for outline
-        />
-        <Text style={styles.likeCountText}>{item.likeCount || 0}</Text>
-      </TouchableOpacity>
+        </View>
+        <TouchableOpacity onPress={() => toggleLike(item)} style={styles.likeButton}>
+          <Ionicons
+            name={isLikedByUser ? "heart" : "heart-outline"}
+            size={24}
+            color={isLikedByUser ? "red" : "black"} 
+          />
+          <Text style={styles.likeCountText}>{item.likeCount || 0}</Text>
         </TouchableOpacity>
-      </>
-    );
-  };
+      </TouchableOpacity>
+    </>
+  );
+};
+
   
   
   
@@ -272,35 +290,43 @@ export default function Chat({ route, navigation }) {
     };
     
     const toggleLike = async (message) => {
-      const userId = auth.currentUser.uid; // Ensure this is how you get the current user ID
+      const userId = auth.currentUser.uid;
       const messageRef = doc(firestore, 'adminchats', message._id);
-    
-      // Fetch the current message document
+  
       const messageDoc = await getDoc(messageRef);
       if (!messageDoc.exists()) {
         console.error("Document does not exist!");
         return;
       }
-    
+  
       const data = messageDoc.data();
-      // Ensure likes is an array. If undefined, initialize as an empty array.
       const likesArray = data.likes || [];
       const isLikedByUser = likesArray.includes(userId);
-    
-      // Determine the new likes array and like count
+  
       const newLikesArray = isLikedByUser 
         ? likesArray.filter(id => id !== userId) 
         : [...likesArray, userId];
       const newLikeCount = isLikedByUser 
         ? (data.likeCount || 0) - 1 
         : (data.likeCount || 0) + 1;
-    
-      // Update Firestore document
+  
       await updateDoc(messageRef, {
         likes: newLikesArray,
         likeCount: newLikeCount
       });
+  
+      // Update the local likedMessages state
+      if (isLikedByUser) {
+        const newLikedMessages = new Set(likedMessages);
+        newLikedMessages.delete(message._id);
+        setLikedMessages(newLikedMessages);
+      } else {
+        const newLikedMessages = new Set(likedMessages);
+        newLikedMessages.add(message._id);
+        setLikedMessages(newLikedMessages);
+      }
     };
+  
     
   const scrollToBottom = () => {
     if (flatListRef.current) {
@@ -363,8 +389,6 @@ export default function Chat({ route, navigation }) {
     <FontAwesome name="search" size={20} color="black" />
   </TouchableOpacity>
 </View>
-<Text style={styles.adminViewText}>Admin View</Text>
-
 {( pinnedMessageCount > 0 &&
 <TouchableOpacity style={styles.pinnedMessagesContainer} onPress={navigateToSearchPinnedMessages}>
   <View style={styles.blueBar}>
@@ -505,15 +529,6 @@ const styles = StyleSheet.create({
     marginTop: -10,
     width: '100%',
   },
-  adminViewText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: 'black',
-    textAlign: 'center',
-    paddingVertical: 10,
-  },
-  
-
   input: {
     flex: 1,
     borderColor: 'white',
