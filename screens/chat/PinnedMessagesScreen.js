@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, StyleSheet, TextInput, Image, Alert, TouchableOpacity } from 'react-native';
+import { View, Text, FlatList, StyleSheet, TextInput, Alert, TouchableOpacity } from 'react-native';
 import { query, collection, where, onSnapshot } from 'firebase/firestore';
 import { firestore } from '../../backend/FirebaseConfig'; // Make sure this path matches your project structure
 import { MaterialIcons } from '@expo/vector-icons';
 import Header from '../../components/Header'; // Adjust this import to match your project structure
 import { Colors } from '../../styles/Colors'; // Adjust this import to match your project structure
+import { Image } from 'expo-image';
 
 const PinnedMessagesScreen = ({ route, navigation }) => {
   const { clubName, chatName } = route.params;

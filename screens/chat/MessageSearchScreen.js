@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, StyleSheet, TextInput, Image, Alert, TouchableOpacity } from 'react-native';
+import { View, Text, FlatList, StyleSheet, TextInput, Alert, TouchableOpacity } from 'react-native';
 import { query, collection, where, onSnapshot } from 'firebase/firestore';
 import { firestore } from '../../backend/FirebaseConfig'; // Update this path according to your project structure
 import Header from '../../components/Header'; // Update this import based on your project structure
 import {Colors} from '../../styles/Colors'
+import { Image } from 'expo-image';
+
 const MessageSearchScreen = ({ route, navigation }) => {
   const { clubName, chatName } = route.params;
   const [searchQuery, setSearchQuery] = useState('');

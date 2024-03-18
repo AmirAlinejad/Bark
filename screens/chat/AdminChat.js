@@ -389,6 +389,9 @@ const renderMessage = ({ item, index }) => {
     <FontAwesome name="search" size={20} color="black" />
   </TouchableOpacity>
 </View>
+<Text style={styles.adminViewText}>Admin View</Text>
+
+
 {( pinnedMessageCount > 0 &&
 <TouchableOpacity style={styles.pinnedMessagesContainer} onPress={navigateToSearchPinnedMessages}>
   <View style={styles.blueBar}>
@@ -568,6 +571,13 @@ const styles = StyleSheet.create({
     height: 200,
     resizeMode: 'contain',
     borderRadius: 10,
+  },
+  adminViewText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: 'black',
+    textAlign: 'center',
+    paddingVertical: 10,
   },
   pinnedMessagesContainer: {
     flexDirection: 'row',

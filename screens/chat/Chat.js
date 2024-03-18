@@ -1,7 +1,7 @@
 // Chat.js
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { TouchableOpacity, View, Text, Image, TextInput,FlatList,Button, StyleSheet } from 'react-native';
+import { TouchableOpacity, View, Text, TextInput,FlatList,Button, StyleSheet } from 'react-native';
 import { GiftedChat, Send, Bubble, Message,Time, Avatar } from 'react-native-gifted-chat';
 import {
   collection,
@@ -34,6 +34,8 @@ import { FontAwesome } from '@expo/vector-icons';
 import { TouchableWithoutFeedback, Keyboard } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import Entypo from 'react-native-vector-icons/Entypo';
+import { Image } from 'expo-image';
+import Filter from 'bad-words';
 
 
 export default function Chat({ route, navigation }) {
@@ -275,10 +277,6 @@ const renderMessage = ({ item, index }) => {
     </>
   );
 };
-
-  
-  
-  
     const navigateToInClubView = () => {
       const imageUrls = getImageUrls(); // Get the current image URLs
       navigation.navigate("InClubView", { clubName, imageUrls, chatName }); // Pass them as part of navigation
@@ -339,39 +337,42 @@ const renderMessage = ({ item, index }) => {
       contentSize.height - paddingToBottom;
   };
   
-  const sendMessage = useCallback(async () => {
-    if (messageText.trim() || imageUrl) { // Check if there's either text or an image URL
-      try {
-        const message = {
-          id:  Date.now().toString(),
-          createdAt: new Date(),
-          text: messageText.trim(),
-          user: {
-            _id: auth.currentUser.uid,
-            name: "Username", 
-            avatar: 'https://i.pravatar.cc/300',
-          },
-          likeCount: 0, // Initialize likes to 0
-          image: imageUrl, // Include the image URL
-          likes: []
-        };
+  const filter = new Filter();
+
+const sendMessage = useCallback(async () => {
+  setMessageText('');
   
-        // Add the message to Firestore
-        await addDoc(collection(firestore, 'chats'), {
-          ...message,
-          clubName, // Ensure you include clubName in the message document
-        });
-  
-        // Clear the message input field and image URL
-        setMessageText('');
-        setImageUrl(null);
-  
-      } catch (error) {
-        console.error('Error sending message:', error);
-      }
+  const cleanMessageText = filter.clean(messageText.trim()); // Filter profanity from the message text
+
+  if (cleanMessageText || imageUrl) { // Check if there's either (cleaned) text or an image URL
+    try {
+      const message = {
+        id: Date.now().toString(),
+        createdAt: new Date(),
+        text: cleanMessageText, // Use the cleaned message text
+        user: {
+          _id: auth.currentUser.uid,
+          name: "Username",
+          avatar: 'https://i.pravatar.cc/300',
+        },
+        likeCount: 0,
+        image: imageUrl,
+        likes: []
+      };
+
+      // Add the message to Firestore
+      await addDoc(collection(firestore, 'chats'), {
+        ...message,
+        clubName,
+      });
+
+      setImageUrl(null); // Clear the image URL
+
+    } catch (error) {
+      console.error('Error sending message:', error);
     }
-  }, [messageText, imageUrl]); // Add imageUrl as a dependency
-  
+  }
+}, [messageText, imageUrl]); // Dependencies
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
     <View style={styles.container}>
@@ -392,7 +393,7 @@ const renderMessage = ({ item, index }) => {
 {( pinnedMessageCount > 0 &&
 <TouchableOpacity style={styles.pinnedMessagesContainer} onPress={navigateToSearchPinnedMessages}>
   <View style={styles.blueBar}>
-    <MaterialCommunityIcons name="pin" size={24} color="black" />
+    <MaterialCommunityIcons name="pin" size={15} color="black" />
   </View>
   <Text style={styles.pinnedMessagesText}>Pinned Messages: {pinnedMessageCount}</Text>
 </TouchableOpacity>
@@ -428,30 +429,48 @@ const renderMessage = ({ item, index }) => {
         data={messages}
       />  
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"}>
-        <View style={styles.toolbar}>
-        <TouchableOpacity style={styles.toolbarButton} onPress={handleImageUploadAndSend}>
-          <Entypo name='plus' size={30} color="black" />
-        </TouchableOpacity>
-          <TextInput
-            style={styles.input}
-            value={messageText}
-            onChangeText={setMessageText}
-            placeholder={imageUrl ? "add a message or send." : "Type a message..."}
-            multiline={true}
-            maxHeight={120}
-            onContentSizeChange={() => scrollToBottom()}
-            returnKeyType="done" // Prevents new lines
-            placeholderTextColor="#888888"
-          />
-          <TouchableOpacity onPress={sendMessage} style={styles.sendButton}>
-            <Ionicons name="send" size={24} color={Colors.black} />
+  <View style={styles.toolbar}>
+
+    {/* Button to add image */}
+    <TouchableOpacity style={styles.toolbarButton} onPress={handleImageUploadAndSend}>
+      <Entypo name='plus' size={30} color="black" />
+    </TouchableOpacity>
+
+    {/* Container for TextInput and Image Preview */}
+    <View style={styles.inputWithPreview}>
+      {imageUrl && (
+        <View style={styles.imagePreviewContainer}>
+          <Image source={{ uri: imageUrl }} style={styles.imagePreview} />
+          <TouchableOpacity onPress={() => setImageUrl(null)} style={styles.removeImageButton}>
+            <Ionicons name="close-circle" size={20} color="gray" />
           </TouchableOpacity>
-        <TouchableOpacity onPress={handleCameraPress} style={styles.toolbarButton}>
+        </View>
+      )}
+      <TextInput
+        style={styles.input}
+        value={messageText}
+        onChangeText={setMessageText}
+        placeholder={imageUrl ? "Add a message or send." : "Type a message..."}
+        multiline={true}
+        maxHeight={120}
+        onContentSizeChange={() => scrollToBottom()}
+        returnKeyType="done" // Prevents new lines
+        placeholderTextColor="#888888"
+      />
+    </View>
+
+    {/* Send Button */}
+    <TouchableOpacity onPress={sendMessage} style={styles.sendButton}>
+      <Ionicons name="send" size={24} color={Colors.black} />
+    </TouchableOpacity>
+
+    {/* Button to open camera */}
+    <TouchableOpacity onPress={handleCameraPress} style={styles.toolbarButton}>
       <MaterialCommunityIcons name='camera' size={30} color="black" />
     </TouchableOpacity>
 
-        </View>
-      </KeyboardAvoidingView>
+  </View>
+</KeyboardAvoidingView>
     </View>
     </TouchableWithoutFeedback>
   );
@@ -486,7 +505,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: 10,
-    paddingBottom: 20,
+    paddingBottom: 10,
     
   },
   messageContent: {
@@ -496,16 +515,18 @@ const styles = StyleSheet.create({
     
   },
   messageText: {
-    marginLeft: 5,
+    marginLeft: 0,
     maxWidth: '100%',
+    paddingBottom: 5,
   },
   toolbarButton: {
     paddingLeft:5,
     backgroundColor: 'transparent',
   },
   senderName: {
-    fontWeight: 'bold',
+    fontSize: 12,
     marginRight: 5,
+    color: '#3b3b3b'
   },
   likeButton: {
     flexDirection: 'row',
@@ -518,29 +539,43 @@ const styles = StyleSheet.create({
   },
   toolbar: {
     flexDirection: 'row',
-    justifyContent: 'space-between', // Spread out the items evenly
+    justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 15,
-    paddingTop: 10,
-    paddingBottom: 20,
+    paddingHorizontal: 10,
+    paddingTop: 25,
+    paddingBottom: 25,
     borderTopWidth: 1,
     borderTopColor: '#EEEEEE',
     backgroundColor: 'white',
-    marginTop: -10,
-    width: '100%',
+  },
+  imagePreviewContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 5,
+  },
+  inputWithPreview: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    marginLeft: 10,
+    backgroundColor: "#EEEEEE",
+    borderRadius: 10,
   },
   input: {
     flex: 1,
     borderColor: 'white',
     borderRadius: 10,
-    marginLeft: 10,
+    marginLeft: 0,
+    marginTop:5,
     backgroundColor: "#EEEEEE",
     paddingHorizontal: 20,
-    height: '75%',
+    height: '80%',
     width: '65%',
     textAlign: 'left',
     // Adjust lineHeight for cursor height. Increase this value to make the cursor taller.
     lineHeight: 20, 
+    paddingBottom: 10,
+    fontSize: 16,
   },
   sendButton: {
     padding: 10,
@@ -552,6 +587,20 @@ const styles = StyleSheet.create({
   },
   sendButtonText: {
     color: 'white',
+  },
+  imagePreview: {
+    width: 50, // Adjust size as needed
+    height: 50, // Adjust size as needed
+    borderRadius: 5,
+  },
+  removeImageButton: {
+    position: 'absolute',
+    right: 5,
+    top: 5,
+  },
+  removeImageText: {
+    color: 'white',
+    fontSize: 12,
   },
   avatar: {
     width: 40,
@@ -566,7 +615,7 @@ const styles = StyleSheet.create({
   messageImage: {
     width: 200,
     height: 200,
-    resizeMode: 'contain',
+    contentFit: 'contain',
     borderRadius: 10,
   },
   pinnedMessagesContainer: {
@@ -577,7 +626,8 @@ const styles = StyleSheet.create({
   },
   pinnedMessagesText: {
     color: 'gray',
-    fontSize: 16,
+    marginTop: 0,
+    fontSize: 12,
     textAlign: 'left',
     fontStyle: 'italic',
   },

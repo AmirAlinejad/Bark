@@ -1,7 +1,7 @@
-import { Image, TouchableOpacity, StyleSheet, FlatList, View, Dimensions } from 'react-native';
+import { TouchableOpacity, StyleSheet, FlatList, View, Dimensions } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import Header from '../../components/Header'; // Adjust the import path as per your project structure
-import React, { useState, useEffect, useCallback } from 'react';
+import { Image } from 'expo-image';
 
 const windowWidth = Dimensions.get('window').width;
 
@@ -42,7 +42,7 @@ const styles = StyleSheet.create({
   },
   imageContainer: {
     width: windowWidth / Math.floor(windowWidth / 100), // Adjust based on your desired layout
-    height: 100,
+    height: 130,
   },
   image: {
     flex: 1,
