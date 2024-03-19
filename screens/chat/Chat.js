@@ -45,10 +45,11 @@ export default function Chat({ route, navigation }) {
   const [pinnedMessageCount, setPinnedMessageCount] = useState(0);
   const [isAtBottom, setIsAtBottom] = useState(true); // Initially assume the user is at the bottom
   const [likedMessages, setLikedMessages] = useState(new Set());
- 
+  const [gifUrl, setGifUrl] = useState(null); 
 
   const chatName = "chats";
   const clubName = route?.params?.clubName;
+  console.log(clubName);
   const flatListRef = useRef(null);
 
   useEffect(() => {
@@ -66,6 +67,7 @@ export default function Chat({ route, navigation }) {
         image: doc.data().image,
         likeCount: doc.data().likeCount || 0,
         pinned: doc.data().pinned || false,
+        gifUrl: doc.data().gifUrl,
       }));
   
       // Since we fetch messages in descending order, we set them directly.
@@ -81,7 +83,16 @@ export default function Chat({ route, navigation }) {
     return () => unsubscribe();
   }, [clubName]);
   
-
+  useEffect(() => {
+    const { selectedGifUrl } = route.params;
+    if (selectedGifUrl) {
+      setGifUrl(selectedGifUrl); // Set the selected GIF URL for sending
+      // Clear the selectedGifUrl from params after setting
+      navigation.setParams({ selectedGifUrl: undefined });
+    }
+  }, [route.params]);
+  
+  
   useEffect(() => {
     // Function to fetch liked messages and update the local state
     const fetchLikedMessages = async () => {
@@ -119,6 +130,7 @@ export default function Chat({ route, navigation }) {
       sendMessage(); // Send the message
     }
   };
+
 
 
 
@@ -230,16 +242,11 @@ export default function Chat({ route, navigation }) {
 };
 
 const renderMessage = ({ item, index }) => {
-  // Since the list is inverted, this checks if the message is the last of its day.
-  // It compares the current message to the next one (chronologically previous) in the list.
   const isLastMessageOfTheDay = index === messages.length - 1 || !isSameDay(item.createdAt, messages[index + 1]?.createdAt);
-
-  // Check if the current message is liked by the user
   const isLikedByUser = likedMessages.has(item._id);
-
+console.log(item.gifUrl);
   return (
     <View>
-      {/* Show date label for the last message of the day */}
       {isLastMessageOfTheDay && (
         <View style={styles.dateContainer}>
           <View style={styles.dateWrapper}>
@@ -247,38 +254,39 @@ const renderMessage = ({ item, index }) => {
           </View>
         </View>
       )}
-      {/* Message content rendering */}
       <TouchableOpacity onLongPress={() => handleLongPress(item)} style={[styles.messageContainer, item.pinned && styles.pinnedMessage]}>
         <View style={styles.messageContent}>
-          {item.user.avatar && (
-            <Image source={{ uri: item.user.avatar }} style={styles.avatar} />
-          )}
+          {item.user.avatar && <Image source={{ uri: item.user.avatar }} style={styles.avatar} />}
           <View style={{ flex: 1 }}>
             <Text style={styles.senderName}>{item.user.name}</Text>
             {item.text && <Text style={styles.messageText}>{item.text}</Text>}
+            
+            {/* Render an image if it exists */}
             {item.image && (
               <TouchableOpacity onPress={() => navigation.navigate('ImageViewerScreen', { imageUri: item.image })}>
-              <Image source={{ uri: item.image }} style={styles.messageImage} />
-                </TouchableOpacity>
-                
-                )}
+                <Image source={{ uri: item.image }} style={styles.messageImage} />
+              </TouchableOpacity>
+            )}
+
+            {/* Render a GIF if it exists */}
+            {item.gifUrl && (
+              <TouchableOpacity onPress={() => navigation.navigate('ImageViewerScreen', { imageUri: item.gifUrl })}>
+                <Image source={{ uri: item.gifUrl }} style={styles.messageImage} />
+              </TouchableOpacity>
+            )}
 
             <Text style={styles.messageTime}>{formatTime(item.createdAt)}</Text>
           </View>
         </View>
         <TouchableOpacity onPress={() => toggleLike(item)} style={styles.likeButton}>
-          <Ionicons
-            name={likedMessages.has(item._id) ? "heart" : "heart-outline"}
-            size={24}
-            color={likedMessages.has(item._id) ? "red" : "black"} 
-          />
+          <Ionicons name={isLikedByUser ? "heart" : "heart-outline"} size={24} color={isLikedByUser ? "red" : "black"} />
           <Text style={styles.likeCountText}>{item.likeCount || 0}</Text>
         </TouchableOpacity>
+      </TouchableOpacity>
+    </View>
+  );
+};
 
-          </TouchableOpacity>
-        </View>
-      );
-    };
     const isCloseToTop = ({ layoutMeasurement, contentOffset, contentSize }) => {
       const paddingTop = 20; // Distance from the top to consider "at the top"
       return contentOffset.y <= paddingTop;
@@ -353,42 +361,48 @@ const renderMessage = ({ item, index }) => {
       }
     };
     
-  
+    const handleGifSend = () => {
+      // Example: Navigate to a new screen for selecting a GIF
+      navigation.navigate('GifSelectionScreen', {clubName});
+    };
+    
 
-  const sendMessage = useCallback(async () => {
-    setMessageText('');
-    if (messageText.trim() || imageUrl) { // Check if there's either text or an image URL
-      try {
-        const message = {
-          id:  Date.now().toString(),
-          createdAt: new Date(),
-          text: messageText.trim(),
-          user: {
-            _id: auth.currentUser.uid,
-            name: "Username", 
-            avatar: 'https://i.pravatar.cc/300',
-          },
-          likeCount: 0, // Initialize likes to 0
-          image: imageUrl, // Include the image URL
-          likes: []
-        };
+    const sendMessage = useCallback(async () => {
+      setMessageText('');
+      // Check if there's either text, an image URL, or a gifUrl
+      if (messageText.trim() || imageUrl || gifUrl) {
+        try {
+          const message = {
+            id: Date.now().toString(),
+            createdAt: new Date(),
+            text: messageText.trim(),
+            user: {
+              _id: auth.currentUser.uid,
+              name: "Username",
+              avatar: 'https://i.pravatar.cc/300',
+            },
+            likeCount: 0,
+            image: imageUrl,
+            gifUrl: gifUrl, // Add the gifUrl to the message
+            likes: [],
+          };
   
-        // Add the message to Firestore
-        await addDoc(collection(firestore, 'chats'), {
-          ...message,
-          clubName, // Ensure you include clubName in the message document
-        });
+          // Add the message to Firestore
+          await addDoc(collection(firestore, 'chats'), {
+            ...message,
+            clubName,
+          });
   
-        // Clear the message input field and image URL
-        
-        setImageUrl(null);
+          // Clear the message input field, image URL, and gifUrl
+          setImageUrl(null);
+          setGifUrl(null); // Reset the gifUrl after sending the message
   
-      } catch (error) {
-        console.error('Error sending message:', error);
+        } catch (error) {
+          console.error('Error sending message:', error);
+        }
       }
-    }
-  }, [messageText, imageUrl]); // Add imageUrl as a dependency
-
+  }, [messageText, imageUrl, gifUrl]); // Include gifUrl in the dependency array
+  
   
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
@@ -464,6 +478,15 @@ const renderMessage = ({ item, index }) => {
           </TouchableOpacity>
         </View>
       )}
+
+    {gifUrl && (
+      <View style={styles.imagePreviewContainer}>
+        <Image source={{ uri: gifUrl }} style={styles.imagePreview} />
+        <TouchableOpacity onPress={() => setGifUrl(null)} style={styles.removeImageButton}>
+          <Ionicons name="close-circle" size={20} color="gray" />
+        </TouchableOpacity>
+      </View>
+    )}
       <TextInput
         style={styles.input}
         value={messageText}
@@ -480,6 +503,10 @@ const renderMessage = ({ item, index }) => {
     {/* Send Button */}
     <TouchableOpacity onPress={sendMessage} style={styles.sendButton}>
       <Ionicons name="send" size={24} color={Colors.black} />
+    </TouchableOpacity>
+ 
+    <TouchableOpacity onPress={handleGifSend} style={styles.toolbarButton}>
+      <MaterialCommunityIcons name="camera" size={30} color="black" />
     </TouchableOpacity>
 
     {/* Button to open camera */}
@@ -591,9 +618,9 @@ const styles = StyleSheet.create({
     width: '65%',
     textAlign: 'left',
     // Adjust lineHeight for cursor height. Increase this value to make the cursor taller.
-    lineHeight: 20, 
+    lineHeight: 14, 
     paddingBottom: 10,
-    fontSize: 16,
+    fontSize: 14,
   },
   sendButton: {
     padding: 10,
