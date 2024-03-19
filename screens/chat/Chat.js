@@ -35,7 +35,7 @@ import { TouchableWithoutFeedback, Keyboard } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import Entypo from 'react-native-vector-icons/Entypo';
 import { Image } from 'expo-image';
-import Filter from 'bad-words';
+
 
 
 export default function Chat({ route, navigation }) {
@@ -45,6 +45,8 @@ export default function Chat({ route, navigation }) {
   const [pinnedMessageCount, setPinnedMessageCount] = useState(0);
   const [isAtBottom, setIsAtBottom] = useState(true); // Initially assume the user is at the bottom
   const [likedMessages, setLikedMessages] = useState(new Set());
+ 
+
   const chatName = "chats";
   const clubName = route?.params?.clubName;
   const flatListRef = useRef(null);
@@ -131,7 +133,7 @@ export default function Chat({ route, navigation }) {
       const snapshot = await get(userRef);
       if (snapshot.exists()) {
         const currentUserPrivilege = snapshot.val().privilege;
-        console.log(`Current user privilege: ${currentUserPrivilege}`);
+        
   
         let options = [
           { text: 'Cancel', style: 'cancel' },
@@ -255,19 +257,24 @@ const renderMessage = ({ item, index }) => {
             <Text style={styles.senderName}>{item.user.name}</Text>
             {item.text && <Text style={styles.messageText}>{item.text}</Text>}
             {item.image && (
-              <Image source={{ uri: item.image }} style={styles.messageImage} resizeMode="cover" />
-            )}
+              <TouchableOpacity onPress={() => navigation.navigate('ImageViewerScreen', { imageUri: item.image })}>
+              <Image source={{ uri: item.image }} style={styles.messageImage} />
+                </TouchableOpacity>
+                
+                )}
+
             <Text style={styles.messageTime}>{formatTime(item.createdAt)}</Text>
           </View>
         </View>
-            <TouchableOpacity onPress={() => toggleLike(item)} style={styles.likeButton}>
-              <Ionicons
-                name={isLikedByUser ? "heart" : "heart-outline"}
-                size={24}
-                color={isLikedByUser ? "red" : "black"} 
-              />
-              <Text style={styles.likeCountText}>{item.likeCount || 0}</Text>
-            </TouchableOpacity>
+        <TouchableOpacity onPress={() => toggleLike(item)} style={styles.likeButton}>
+          <Ionicons
+            name={likedMessages.has(item._id) ? "heart" : "heart-outline"}
+            size={24}
+            color={likedMessages.has(item._id) ? "red" : "black"} 
+          />
+          <Text style={styles.likeCountText}>{item.likeCount || 0}</Text>
+        </TouchableOpacity>
+
           </TouchableOpacity>
         </View>
       );
@@ -291,40 +298,46 @@ const renderMessage = ({ item, index }) => {
     const toggleLike = async (message) => {
       const userId = auth.currentUser.uid;
       const messageRef = doc(firestore, 'chats', message._id);
-  
-      const messageDoc = await getDoc(messageRef);
-      if (!messageDoc.exists()) {
-        console.error("Document does not exist!");
-        return;
-      }
-  
-      const data = messageDoc.data();
-      const likesArray = data.likes || [];
-      const isLikedByUser = likesArray.includes(userId);
-  
-      const newLikesArray = isLikedByUser 
-        ? likesArray.filter(id => id !== userId) 
-        : [...likesArray, userId];
-      const newLikeCount = isLikedByUser 
-        ? (data.likeCount || 0) - 1 
-        : (data.likeCount || 0) + 1;
-  
-      await updateDoc(messageRef, {
-        likes: newLikesArray,
-        likeCount: newLikeCount
-      });
-  
-      // Update the local likedMessages state
-      if (isLikedByUser) {
-        const newLikedMessages = new Set(likedMessages);
+    
+      // Optimistically update the UI
+      let newLikedMessages = new Set(likedMessages);
+      const isCurrentlyLiked = likedMessages.has(message._id);
+      if (isCurrentlyLiked) {
         newLikedMessages.delete(message._id);
-        setLikedMessages(newLikedMessages);
       } else {
-        const newLikedMessages = new Set(likedMessages);
         newLikedMessages.add(message._id);
-        setLikedMessages(newLikedMessages);
+      }
+      setLikedMessages(newLikedMessages);
+    
+      try {
+        const messageDoc = await getDoc(messageRef);
+        if (!messageDoc.exists()) {
+          console.error("Document does not exist!");
+          throw new Error("Document does not exist!");
+        }
+    
+        const data = messageDoc.data();
+        const likesArray = data.likes || [];
+        const isLikedByUser = likesArray.includes(userId);
+    
+        const newLikesArray = isLikedByUser
+          ? likesArray.filter(id => id !== userId)
+          : [...likesArray, userId];
+        const newLikeCount = isLikedByUser
+          ? (data.likeCount || 0) - 1
+          : (data.likeCount || 0) + 1;
+    
+        await updateDoc(messageRef, {
+          likes: newLikesArray,
+          likeCount: newLikeCount
+        });
+      } catch (error) {
+        console.error('Error updating like:', error);
+        // If error, revert the optimistic update
+        setLikedMessages(likedMessages); // revert to previous state
       }
     };
+    
   
     
     const scrollToTop = () => {
@@ -340,43 +353,42 @@ const renderMessage = ({ item, index }) => {
       }
     };
     
-  const filter = new Filter();
+  
 
   const sendMessage = useCallback(async () => {
-    // Assuming you handle messageText and imageUrl state updates elsewhere
-    const cleanMessageText = filter.clean(messageText.trim());
     setMessageText('');
-    if (cleanMessageText || imageUrl) {
+    if (messageText.trim() || imageUrl) { // Check if there's either text or an image URL
       try {
-        const newMessage = {
-          id: Date.now().toString(),
+        const message = {
+          id:  Date.now().toString(),
           createdAt: new Date(),
-          text: cleanMessageText,
+          text: messageText.trim(),
           user: {
             _id: auth.currentUser.uid,
-            name: "Username",
+            name: "Username", 
             avatar: 'https://i.pravatar.cc/300',
           },
-          likeCount: 0,
-          image: imageUrl,
+          likeCount: 0, // Initialize likes to 0
+          image: imageUrl, // Include the image URL
           likes: []
         };
   
+        // Add the message to Firestore
         await addDoc(collection(firestore, 'chats'), {
-          ...newMessage,
-          clubName,
+          ...message,
+          clubName, // Ensure you include clubName in the message document
         });
   
-       
-        // Clear state as needed
-        setImageUrl(null);
+        // Clear the message input field and image URL
         
-        scrollToTop();
+        setImageUrl(null);
+  
       } catch (error) {
         console.error('Error sending message:', error);
       }
     }
-  }, [messageText, imageUrl, clubName]);
+  }, [messageText, imageUrl]); // Add imageUrl as a dependency
+
   
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
@@ -408,7 +420,7 @@ const renderMessage = ({ item, index }) => {
       style={{
         position: 'absolute', // Ensures it's positioned relative to the container.
         right: 20, // Adjust this value to ensure it's comfortably reachable.
-        bottom: 90, // Adjust this so it's above your keyboard avoiding view or other lower components.
+        bottom: 100, // Adjust this so it's above your keyboard avoiding view or other lower components.
         backgroundColor: 'rgba(255,255,255,0.9)',
         borderRadius: 25,
         padding: 10, // Increasing padding can help with touchability.

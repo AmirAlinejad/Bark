@@ -1,7 +1,7 @@
 // Chat.js
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { TouchableOpacity, View, Text, Image, TextInput,FlatList,Button, StyleSheet } from 'react-native';
+import React, { useState, useEffect, useCallback, useRef,useLayoutEffect } from 'react';
+import { TouchableOpacity, View, Text, TextInput,FlatList,Button, StyleSheet } from 'react-native';
 import { GiftedChat, Send, Bubble, Message,Time, Avatar } from 'react-native-gifted-chat';
 import {
   collection,
@@ -16,9 +16,7 @@ import {
   updateDoc,
   deleteDoc,
   doc,
-  arrayUnion,
-  arrayRemove,
-  runTransaction
+ 
 } from 'firebase/firestore';
 import { getDatabase, ref, get } from 'firebase/database';
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
@@ -34,6 +32,8 @@ import { FontAwesome } from '@expo/vector-icons';
 import { TouchableWithoutFeedback, Keyboard } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import Entypo from 'react-native-vector-icons/Entypo';
+import { Image } from 'expo-image';
+import Filter from 'bad-words';
 
 
 export default function Chat({ route, navigation }) {
@@ -43,40 +43,41 @@ export default function Chat({ route, navigation }) {
   const [pinnedMessageCount, setPinnedMessageCount] = useState(0);
   const [isAtBottom, setIsAtBottom] = useState(true); // Initially assume the user is at the bottom
   const [likedMessages, setLikedMessages] = useState(new Set());
+
   const chatName = "adminchats";
   const clubName = route?.params?.clubName;
   const flatListRef = useRef(null);
 
   useEffect(() => {
-    // Ensure there is a clubName before setting up the subscription
     if (!clubName) return;
   
-    const unsubscribeMessages = onSnapshot(
-      query(collection(firestore, 'adminchats'), where('clubName', '==', clubName), orderBy('createdAt', 'asc')),
-      (querySnapshot) => {
-        const fetchedMessages = querySnapshot.docs.map((doc) => ({
-          _id: doc.id,
-          createdAt: doc.data().createdAt.toDate(),
-          text: doc.data().text,
-          user: doc.data().user,
-          image: doc.data().image,
-          likeCount: doc.data().likeCount || 0,
-          pinned: doc.data().pinned || false, // Ensure pinned property is present, default to false if not available
-        }));
-        setMessages(fetchedMessages);
-        
-        // Calculate pinned message count
-        const pinnedMessageCount = fetchedMessages.filter(message => message.pinned).length;
-        setPinnedMessageCount(pinnedMessageCount);
-      },
-      (error) => {
-        console.error("Error fetching messages: ", error);
-      }
-    );
+    // Fetching messages in descending order to suit the inverted list.
+    const messagesQuery = query(collection(firestore, 'adminchats'), where('clubName', '==', clubName), orderBy('createdAt', 'desc'));
   
-    return () => unsubscribeMessages();
-  }, [clubName]); // Depend on clubName to re-run the effect when it changes
-
+    const unsubscribe = onSnapshot(messagesQuery, querySnapshot => {
+      const fetchedMessages = querySnapshot.docs.map(doc => ({
+        _id: doc.id,
+        createdAt: doc.data().createdAt.toDate(),
+        text: doc.data().text,
+        user: doc.data().user,
+        image: doc.data().image,
+        likeCount: doc.data().likeCount || 0,
+        pinned: doc.data().pinned || false,
+      }));
+  
+      // Since we fetch messages in descending order, we set them directly.
+      setMessages(fetchedMessages);
+  
+      // Calculate and update the count of pinned messages.
+      setPinnedMessageCount(fetchedMessages.filter(message => message.pinned).length);
+    }, error => {
+      console.error("Error fetching messages: ", error);
+    });
+  
+    // Cleanup subscription on component unmount
+    return () => unsubscribe();
+  }, [clubName]);
+  
 
   useEffect(() => {
     // Function to fetch liked messages and update the local state
@@ -129,7 +130,7 @@ export default function Chat({ route, navigation }) {
       const snapshot = await get(userRef);
       if (snapshot.exists()) {
         const currentUserPrivilege = snapshot.val().privilege;
-        console.log(`Current user privilege: ${currentUserPrivilege}`);
+        
   
         let options = [
           { text: 'Cancel', style: 'cancel' },
@@ -198,11 +199,11 @@ export default function Chat({ route, navigation }) {
     navigation.navigate('PinnedMessagesScreen', { clubName, chatName});
   };
   const isSameDay = (date1, date2) => {
-    return (
-      date1.getFullYear() === date2.getFullYear() &&
-      date1.getMonth() === date2.getMonth() &&
-      date1.getDate() === date2.getDate()
-    );
+    const d1 = new Date(date1);
+    const d2 = new Date(date2);
+    return d1.getFullYear() === d2.getFullYear() &&
+           d1.getMonth() === d2.getMonth() &&
+           d1.getDate() === d2.getDate();
   };
   
   const formatDate = (date) => {
@@ -226,59 +227,61 @@ export default function Chat({ route, navigation }) {
 };
 
 const renderMessage = ({ item, index }) => {
-  const isFirstMessageOfDay = index === 0 || !isSameDay(messages[index - 1].createdAt, item.createdAt);
+  // Since the list is inverted, this checks if the message is the last of its day.
+  // It compares the current message to the next one (chronologically previous) in the list.
+  const isLastMessageOfTheDay = index === messages.length - 1 || !isSameDay(item.createdAt, messages[index + 1]?.createdAt);
 
-  // Conditional style for pinned messages
-  const messageContainerStyle = [
-    styles.messageContainer,
-    item.pinned && styles.pinnedMessage, // Apply pinnedMessage style if the message is pinned
-  ];
-
-  // Determines if the message is liked by the user
+  // Check if the current message is liked by the user
   const isLikedByUser = likedMessages.has(item._id);
 
   return (
-    <>
-      {isFirstMessageOfDay && (
+    <View>
+      {/* Show date label for the last message of the day */}
+      {isLastMessageOfTheDay && (
         <View style={styles.dateContainer}>
           <View style={styles.dateWrapper}>
             <Text style={styles.dateText}>{formatDate(item.createdAt)}</Text>
           </View>
         </View>
       )}
-      <TouchableOpacity
-        onLongPress={() => handleLongPress(item)}
-        style={messageContainerStyle}
-      >
+      {/* Message content rendering */}
+      <TouchableOpacity onLongPress={() => handleLongPress(item)} style={[styles.messageContainer, item.pinned && styles.pinnedMessage]}>
         <View style={styles.messageContent}>
-          <Image source={{ uri: item.user.avatar }} style={styles.avatar} />
-          <View>
+          {item.user.avatar && (
+            <Image source={{ uri: item.user.avatar }} style={styles.avatar} />
+          )}
+          <View style={{ flex: 1 }}>
             <Text style={styles.senderName}>{item.user.name}</Text>
             {item.text && <Text style={styles.messageText}>{item.text}</Text>}
             {item.image && (
               <TouchableOpacity onPress={() => navigation.navigate('ImageViewerScreen', { imageUri: item.image })}>
-                <Image source={{ uri: item.image }} style={styles.messageImage} />
-              </TouchableOpacity>
-            )}
+              <Image source={{ uri: item.image }} style={styles.messageImage} />
+                </TouchableOpacity>
+                
+                )}
+
             <Text style={styles.messageTime}>{formatTime(item.createdAt)}</Text>
           </View>
         </View>
         <TouchableOpacity onPress={() => toggleLike(item)} style={styles.likeButton}>
           <Ionicons
-            name={isLikedByUser ? "heart" : "heart-outline"}
+            name={likedMessages.has(item._id) ? "heart" : "heart-outline"}
             size={24}
-            color={isLikedByUser ? "red" : "black"} 
+            color={likedMessages.has(item._id) ? "red" : "black"} 
           />
           <Text style={styles.likeCountText}>{item.likeCount || 0}</Text>
         </TouchableOpacity>
-      </TouchableOpacity>
-    </>
-  );
-};
 
-  
-  
-  
+          </TouchableOpacity>
+        </View>
+      );
+    };
+    const isCloseToTop = ({ layoutMeasurement, contentOffset, contentSize }) => {
+      const paddingTop = 20; // Distance from the top to consider "at the top"
+      return contentOffset.y <= paddingTop;
+    };
+    
+
     const navigateToInClubView = () => {
       const imageUrls = getImageUrls(); // Get the current image URLs
       navigation.navigate("InClubView", { clubName, imageUrls, chatName }); // Pass them as part of navigation
@@ -292,54 +295,65 @@ const renderMessage = ({ item, index }) => {
     const toggleLike = async (message) => {
       const userId = auth.currentUser.uid;
       const messageRef = doc(firestore, 'adminchats', message._id);
-  
-      const messageDoc = await getDoc(messageRef);
-      if (!messageDoc.exists()) {
-        console.error("Document does not exist!");
-        return;
-      }
-  
-      const data = messageDoc.data();
-      const likesArray = data.likes || [];
-      const isLikedByUser = likesArray.includes(userId);
-  
-      const newLikesArray = isLikedByUser 
-        ? likesArray.filter(id => id !== userId) 
-        : [...likesArray, userId];
-      const newLikeCount = isLikedByUser 
-        ? (data.likeCount || 0) - 1 
-        : (data.likeCount || 0) + 1;
-  
-      await updateDoc(messageRef, {
-        likes: newLikesArray,
-        likeCount: newLikeCount
-      });
-  
-      // Update the local likedMessages state
-      if (isLikedByUser) {
-        const newLikedMessages = new Set(likedMessages);
+    
+      // Optimistically update the UI
+      let newLikedMessages = new Set(likedMessages);
+      const isCurrentlyLiked = likedMessages.has(message._id);
+      if (isCurrentlyLiked) {
         newLikedMessages.delete(message._id);
-        setLikedMessages(newLikedMessages);
       } else {
-        const newLikedMessages = new Set(likedMessages);
         newLikedMessages.add(message._id);
-        setLikedMessages(newLikedMessages);
+      }
+      setLikedMessages(newLikedMessages);
+    
+      try {
+        const messageDoc = await getDoc(messageRef);
+        if (!messageDoc.exists()) {
+          console.error("Document does not exist!");
+          throw new Error("Document does not exist!");
+        }
+    
+        const data = messageDoc.data();
+        const likesArray = data.likes || [];
+        const isLikedByUser = likesArray.includes(userId);
+    
+        const newLikesArray = isLikedByUser
+          ? likesArray.filter(id => id !== userId)
+          : [...likesArray, userId];
+        const newLikeCount = isLikedByUser
+          ? (data.likeCount || 0) - 1
+          : (data.likeCount || 0) + 1;
+    
+        await updateDoc(messageRef, {
+          likes: newLikesArray,
+          likeCount: newLikeCount
+        });
+      } catch (error) {
+        console.error('Error updating like:', error);
+        // If error, revert the optimistic update
+        setLikedMessages(likedMessages); // revert to previous state
       }
     };
+    
   
     
-  const scrollToBottom = () => {
-    if (flatListRef.current) {
-      flatListRef.current.scrollToEnd({ animated: true });
-    }
-  };
-  const isCloseToBottom = ({ layoutMeasurement, contentOffset, contentSize }) => {
-    const paddingToBottom = 20; // distance from the bottom to consider "at the bottom"
-    return layoutMeasurement.height + contentOffset.y >=
-      contentSize.height - paddingToBottom;
-  };
+    const scrollToTop = () => {
+      if (flatListRef.current) {
+        flatListRef.current.scrollToOffset({ offset: 0, animated: true });
+      }
+    };
+    
   
+    const handleTextInputFocus = () => {
+      if (flatListRef.current) {
+        scrollToTop();
+      }
+    };
+    
+  
+
   const sendMessage = useCallback(async () => {
+    setMessageText('');
     if (messageText.trim() || imageUrl) { // Check if there's either text or an image URL
       try {
         const message = {
@@ -363,7 +377,7 @@ const renderMessage = ({ item, index }) => {
         });
   
         // Clear the message input field and image URL
-        setMessageText('');
+        
         setImageUrl(null);
   
       } catch (error) {
@@ -371,6 +385,7 @@ const renderMessage = ({ item, index }) => {
       }
     }
   }, [messageText, imageUrl]); // Add imageUrl as a dependency
+
   
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
@@ -389,13 +404,11 @@ const renderMessage = ({ item, index }) => {
     <FontAwesome name="search" size={20} color="black" />
   </TouchableOpacity>
 </View>
-<Text style={styles.adminViewText}>Admin View</Text>
-
-
+<Text style={styles.adminViewText}>Admin View</Text>    
 {( pinnedMessageCount > 0 &&
 <TouchableOpacity style={styles.pinnedMessagesContainer} onPress={navigateToSearchPinnedMessages}>
   <View style={styles.blueBar}>
-    <MaterialCommunityIcons name="pin" size={24} color="black" />
+    <MaterialCommunityIcons name="pin" size={15} color="black" />
   </View>
   <Text style={styles.pinnedMessagesText}>Pinned Messages: {pinnedMessageCount}</Text>
 </TouchableOpacity>
@@ -405,13 +418,13 @@ const renderMessage = ({ item, index }) => {
       style={{
         position: 'absolute', // Ensures it's positioned relative to the container.
         right: 20, // Adjust this value to ensure it's comfortably reachable.
-        bottom: 90, // Adjust this so it's above your keyboard avoiding view or other lower components.
+        bottom: 100, // Adjust this so it's above your keyboard avoiding view or other lower components.
         backgroundColor: 'rgba(255,255,255,0.9)',
         borderRadius: 25,
         padding: 10, // Increasing padding can help with touchability.
         zIndex: 1, // Only if necessary, to ensure it's above other components.
       }}
-      onPress={scrollToBottom}
+      onPress={scrollToTop}
     >
       <Ionicons name="arrow-down" size={24} color="black" />
     </TouchableOpacity>
@@ -421,40 +434,59 @@ const renderMessage = ({ item, index }) => {
         ref={flatListRef}
         renderItem={renderMessage}
         keyExtractor={(item) => item._id}
-        onContentSizeChange={() => scrollToBottom()}
+        inverted
+        //onContentSizeChange={() => scrollToTop()}
+       // Adjust as needed for performance
+        contentContainerStyle={{ paddingBottom: 50 }} 
+        data={messages} 
         onScroll={({nativeEvent}) => {
-          const isAtBottom = isCloseToBottom(nativeEvent);
+          const isAtBottom = isCloseToTop(nativeEvent);
           setIsAtBottom(isAtBottom);
         }}
-        scrollEventThrottle={400} // Adjust as needed for performance
-        contentContainerStyle={{ paddingBottom: 50 }} 
-        data={messages}
       />  
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"}>
-        <View style={styles.toolbar}>
-        <TouchableOpacity style={styles.toolbarButton} onPress={handleImageUploadAndSend}>
-          <Entypo name='plus' size={30} color="black" />
-        </TouchableOpacity>
-          <TextInput
-            style={styles.input}
-            value={messageText}
-            onChangeText={setMessageText}
-            placeholder={imageUrl ? "add a message or send." : "Type a message..."}
-            multiline={true}
-            maxHeight={120}
-            onContentSizeChange={() => scrollToBottom()}
-            returnKeyType="done" // Prevents new lines
-            placeholderTextColor="#888888"
-          />
-          <TouchableOpacity onPress={sendMessage} style={styles.sendButton}>
-            <Ionicons name="send" size={24} color={Colors.black} />
+  <View style={styles.toolbar}>
+
+    {/* Button to add image */}
+    <TouchableOpacity style={styles.toolbarButton} onPress={handleImageUploadAndSend}>
+      <Entypo name='plus' size={30} color="black" />
+    </TouchableOpacity>
+
+    {/* Container for TextInput and Image Preview */}
+    <View style={styles.inputWithPreview}>
+      {imageUrl && (
+        <View style={styles.imagePreviewContainer}>
+          <Image source={{ uri: imageUrl }} style={styles.imagePreview} />
+          <TouchableOpacity onPress={() => setImageUrl(null)} style={styles.removeImageButton}>
+            <Ionicons name="close-circle" size={20} color="gray" />
           </TouchableOpacity>
-        <TouchableOpacity onPress={handleCameraPress} style={styles.toolbarButton}>
+        </View>
+      )}
+      <TextInput
+        style={styles.input}
+        value={messageText}
+        onChangeText={setMessageText}
+        placeholder={imageUrl ? "Add a message or send." : "Type a message..."}
+        multiline={true}
+        maxHeight={120}
+        onFocus={handleTextInputFocus} // Add this line
+        returnKeyType="done" // Prevents new lines
+        placeholderTextColor="#888888"
+      />
+    </View>
+
+    {/* Send Button */}
+    <TouchableOpacity onPress={sendMessage} style={styles.sendButton}>
+      <Ionicons name="send" size={24} color={Colors.black} />
+    </TouchableOpacity>
+
+    {/* Button to open camera */}
+    <TouchableOpacity onPress={handleCameraPress} style={styles.toolbarButton}>
       <MaterialCommunityIcons name='camera' size={30} color="black" />
     </TouchableOpacity>
 
-        </View>
-      </KeyboardAvoidingView>
+  </View>
+</KeyboardAvoidingView>
     </View>
     </TouchableWithoutFeedback>
   );
@@ -489,7 +521,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: 10,
-    paddingBottom: 20,
+    paddingBottom: 10,
     
   },
   messageContent: {
@@ -499,16 +531,18 @@ const styles = StyleSheet.create({
     
   },
   messageText: {
-    marginLeft: 5,
+    marginLeft: 0,
     maxWidth: '100%',
+    paddingBottom: 5,
   },
   toolbarButton: {
     paddingLeft:5,
     backgroundColor: 'transparent',
   },
   senderName: {
-    fontWeight: 'bold',
+    fontSize: 12,
     marginRight: 5,
+    color: '#3b3b3b'
   },
   likeButton: {
     flexDirection: 'row',
@@ -521,29 +555,43 @@ const styles = StyleSheet.create({
   },
   toolbar: {
     flexDirection: 'row',
-    justifyContent: 'space-between', // Spread out the items evenly
+    justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 15,
-    paddingTop: 10,
-    paddingBottom: 20,
+    paddingHorizontal: 10,
+    paddingTop: 25,
+    paddingBottom: 25,
     borderTopWidth: 1,
     borderTopColor: '#EEEEEE',
     backgroundColor: 'white',
-    marginTop: -10,
-    width: '100%',
+  },
+  imagePreviewContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 5,
+  },
+  inputWithPreview: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    marginLeft: 10,
+    backgroundColor: "#EEEEEE",
+    borderRadius: 10,
   },
   input: {
     flex: 1,
     borderColor: 'white',
     borderRadius: 10,
-    marginLeft: 10,
+    marginLeft: 0,
+    marginTop:5,
     backgroundColor: "#EEEEEE",
     paddingHorizontal: 20,
-    height: '75%',
+    height: '80%',
     width: '65%',
     textAlign: 'left',
     // Adjust lineHeight for cursor height. Increase this value to make the cursor taller.
     lineHeight: 20, 
+    paddingBottom: 10,
+    fontSize: 16,
   },
   sendButton: {
     padding: 10,
@@ -555,6 +603,20 @@ const styles = StyleSheet.create({
   },
   sendButtonText: {
     color: 'white',
+  },
+  imagePreview: {
+    width: 50, // Adjust size as needed
+    height: 50, // Adjust size as needed
+    borderRadius: 5,
+  },
+  removeImageButton: {
+    position: 'absolute',
+    right: 5,
+    top: 5,
+  },
+  removeImageText: {
+    color: 'white',
+    fontSize: 12,
   },
   avatar: {
     width: 40,
@@ -569,15 +631,8 @@ const styles = StyleSheet.create({
   messageImage: {
     width: 200,
     height: 200,
-    resizeMode: 'contain',
+    contentFit: 'contain',
     borderRadius: 10,
-  },
-  adminViewText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: 'black',
-    textAlign: 'center',
-    paddingVertical: 10,
   },
   pinnedMessagesContainer: {
     flexDirection: 'row',
@@ -587,7 +642,8 @@ const styles = StyleSheet.create({
   },
   pinnedMessagesText: {
     color: 'gray',
-    fontSize: 16,
+    marginTop: 0,
+    fontSize: 12,
     textAlign: 'left',
     fontStyle: 'italic',
   },
@@ -632,5 +688,12 @@ const styles = StyleSheet.create({
   dateText: {
     fontSize: 14, 
     color: 'gray',
+  },
+  adminViewText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: 'black',
+    textAlign: 'center',
+    paddingVertical: 10,
   },
 });

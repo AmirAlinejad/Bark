@@ -129,17 +129,6 @@ const InClubView = ({ navigation, route }) => {
             style={[styles.button, styles.buttonLast]}>
             <Text style={styles.buttonText}>Image Gallery</Text>
           </TouchableOpacity>
-          
-
-          <TouchableOpacity
-            onPress={() =>
-              navigation.navigate('QRCodeScreen', {
-                clubName,
-                
-              })}
-            style={styles.button}>
-            <Text style={styles.buttonText}>QR Code</Text>
-          </TouchableOpacity>
           {
           (currentUserPrivilege === 'admin' || currentUserPrivilege === 'owner') && (
             <TouchableOpacity
