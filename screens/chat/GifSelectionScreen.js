@@ -5,7 +5,8 @@ import Header from '../../components/Header';
 const GifSelectionScreen = ({ navigation, route }) => {
   const [gifs, setGifs] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const clubName = route?.params?.clubName;
+  
+  const { clubName, screenName } = route.params;
   console.log(clubName);
   const fetchGifs = async () => {
     // Example API call (replace with actual API call to Giphy or Tenor)
@@ -19,8 +20,13 @@ const GifSelectionScreen = ({ navigation, route }) => {
   }, [searchTerm]);
 
   const handleSelectGif = (gifUrl) => {
-    // Pass the selected GIF URL back to the Chat screen
-    navigation.navigate('Chat', { selectedGifUrl: gifUrl, clubName });
+    if (screenName == "AdminChat") {
+      // Pass the selected GIF URL back to the Chat screen
+      navigation.navigate("AdminChat",{ selectedGifUrl: gifUrl, clubName });
+    } else {
+      navigation.navigate("Chat",{ selectedGifUrl: gifUrl, clubName });
+
+    }
   };
 
   return (
@@ -49,26 +55,27 @@ const GifSelectionScreen = ({ navigation, route }) => {
 };
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        marginTop: 20,
-      },
-      searchInput: {
-        height: 40,
-        margin: 12,
-        borderWidth: 1,
-        padding: 10,
-      },
-      gif: {
-        width: '33%', // Each GIF should take up roughly one-third of the available space
-        height: 100, // Adjust height as needed
-        margin: 1, // Keep some margin to separate the GIFs
-        aspectRatio: 1, // Optional: Force the items to be square (remove if GIFs have varied aspect ratios)
-      },
-      row: {
-        flex: 1,
-        justifyContent: 'space-around',
-      },
+  container: {
+    flex: 1,
+    backgroundColor: "#FAFAFA"
+  },
+  searchInput: {
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderRadius: 10,
+    marginBottom: 10,
+    fontSize: 16,
+  },
+  gif: {
+    width: '33%', // Each GIF should take up roughly one-third of the available space
+    height: 135, // Adjust height as needed
+    margin: 0, // Keep some margin to separate the GIFs
+    aspectRatio: 1, // Optional: Force the items to be square (remove if GIFs have varied aspect ratios)
+  },
+  row: {
+    flex: 1,
+  },
 });
 
 export default GifSelectionScreen;

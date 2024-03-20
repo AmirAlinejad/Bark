@@ -52,10 +52,18 @@ const MessageSearchScreen = ({ route, navigation }) => {
             <Text style={styles.viewImageText}></Text>
           </TouchableOpacity>
         )}
+        {/* Display GIF with option to view larger */}
+        {item.gifUrl && (
+          <TouchableOpacity onPress={() => navigation.navigate('ImageViewerScreen', { imageUri: item.gifUrl })}>
+            <Image source={{ uri: item.gifUrl }} style={styles.messageImage} />
+            <Text style={styles.viewImageText}></Text>
+          </TouchableOpacity>
+        )}
         <Text style={styles.dateTime}>{formatDateTime(item.createdAt)}</Text>
       </View>
     </View>
   );
+  
   
 
   const formatDateTime = (dateTime) => {

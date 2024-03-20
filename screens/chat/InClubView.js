@@ -1,15 +1,16 @@
-// InClubView.js
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import Header from '../../components/Header';
 import { db } from '../../backend/FirebaseConfig';
-import { ref, get } from 'firebase/database'; // Import ref and get from Firebase
+import { ref, get } from 'firebase/database';
 import { getAuth } from 'firebase/auth';
 import { useFocusEffect } from '@react-navigation/native';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 
 const InClubView = ({ navigation, route }) => {
   const [memberCount, setMemberCount] = useState(0);
   const [currentUserPrivilege, setCurrentUserPrivilege] = useState('');
+  const [clubDescription, setClubDescription] = useState('');
   const { clubName, imageUrls, chatName } = route.params;
   console.log('Image URLs:', imageUrls);
 
@@ -18,13 +19,13 @@ const InClubView = ({ navigation, route }) => {
       const updateState = async () => {
         await fetchMemberCount(clubName);
         await fetchCurrentUserPrivilege();
+        await fetchClubDescription(clubName);
       };
   
       updateState().then(() => {
         console.log("States refreshed. Current privilege:", currentUserPrivilege);
       });
-  
-    }, [clubName]) // If clubName is stable, consider adding currentUserPrivilege to the dependency array
+    }, [clubName])
   );
 
   const fetchMemberCount = async (clubName) => {
@@ -38,15 +39,12 @@ const InClubView = ({ navigation, route }) => {
         });
         setMemberCount(memberCount);
       } else {
-        // Handle case where no members exist
         setMemberCount(0);
       }
     } catch (error) {
       console.error('Error fetching member count:', error);
     }
   };
-
-  
 
   const fetchCurrentUserPrivilege = async () => {
     const auth = getAuth();
@@ -67,6 +65,21 @@ const InClubView = ({ navigation, route }) => {
     }
   };
 
+  const fetchClubDescription = async (clubName) => {
+    try {
+      const clubRef = ref(db, `clubs/${clubName}`);
+      const snapshot = await get(clubRef);
+      if (snapshot.exists()) {
+        const description = snapshot.val().clubDescription;
+        setClubDescription(description);
+      } else {
+        console.log("Club not found.");
+      }
+    } catch (error) {
+      console.error('Error fetching club description:', error);
+    }
+  };
+
   return (
     <View style={styles.container}>
       <View style={styles.headerContainer}>
@@ -78,69 +91,75 @@ const InClubView = ({ navigation, route }) => {
           <View style={styles.grayImage} />
           <Text style={styles.clubNameText}>{clubName}</Text>
           <Text style={styles.memberCountText}>{`(${memberCount} members)`}</Text>
-          {(chatName =="adminchats") && (
+          {(chatName === "adminchats") && (
             <Text style={styles.memberCountText}>Admin chat view</Text>
-
           )}
+          <Text style={styles.clubDescriptionText}>{clubDescription}</Text>
         </View>
 
-        {/* Navigation buttons */}
         <View style={styles.buttonsContainer}>
-          <TouchableOpacity
-            onPress={() =>
-              navigation.navigate('UserList', {
-                clubName: clubName,
-                chatName
-                // Pass groupChats to UserList screen
-              })}
-            style={[styles.button, styles.buttonFirst]}>
-            <Text style={styles.buttonText}>Search Members</Text>
-          </TouchableOpacity>
+  <TouchableOpacity
+    onPress={() =>
+      navigation.navigate('UserList', {
+        clubName: clubName,
+        chatName
+      })}
+    style={[styles.button, styles.buttonFirst]}>
+    <MaterialIcons name="people" size={24} color="black" style={styles.iconStyle} />
+    <Text style={styles.buttonText}>Search Members</Text>
+    <MaterialIcons name="keyboard-arrow-right" size={24} color="black" style={styles.arrowIcon} />
+  </TouchableOpacity>
 
-          <TouchableOpacity
-            onPress={() =>
-              navigation.navigate('MessageSearchScreen', {
-                clubName,
-                chatName
-               // Pass groupChats to MessageSearchScreen
-              })}
-            style={styles.button}>
-            <Text style={styles.buttonText}>Search Messages</Text>
-          </TouchableOpacity>
+  <TouchableOpacity
+    onPress={() =>
+      navigation.navigate('MessageSearchScreen', {
+        clubName,
+        chatName
+      })}
+    style={styles.button}>
+    <MaterialIcons name="search" size={24} color="black" style={styles.iconStyle} />
+    <Text style={styles.buttonText}>Search Messages</Text>
+    <MaterialIcons name="keyboard-arrow-right" size={24} color="black" style={styles.arrowIcon} />
+  </TouchableOpacity>
 
-          <TouchableOpacity
-            onPress={() =>
-              navigation.navigate('PinnedMessagesScreen', {
-                clubName,
-                chatName,
-                // Pass groupChats to PinnedMessagesScreen
-              })}
-            style={[styles.button, styles.buttonLast]}>
-            <Text style={styles.buttonText}>Pinned Messages</Text>
-          </TouchableOpacity>
+  <TouchableOpacity
+    onPress={() =>
+      navigation.navigate('PinnedMessagesScreen', {
+        clubName,
+        chatName
+      })}
+    style={styles.button}>
+    <MaterialIcons name="push-pin" size={24} color="black" style={styles.iconStyle} />
+    <Text style={styles.buttonText}>Pinned Messages</Text>
+    <MaterialIcons name="keyboard-arrow-right" size={24} color="black" style={styles.arrowIcon} />
+  </TouchableOpacity>
 
-          <TouchableOpacity
-            onPress={() =>
-              navigation.navigate('ImageGalleryScreen', {
-                clubName,
-                imageUrls,
-                chatName
-              })}
-            style={[styles.button, styles.buttonLast]}>
-            <Text style={styles.buttonText}>Image Gallery</Text>
-          </TouchableOpacity>
-          {
-          (currentUserPrivilege === 'admin' || currentUserPrivilege === 'owner') && (
-            <TouchableOpacity
-              onPress={() => navigation.navigate('AdminChat', {clubName})}
-              style={[styles.button, styles.buttonLast]}>
-              <Text style={styles.buttonText}>Admin Chat</Text>
-            </TouchableOpacity>
-          )
-        }
-        </View>
+  <TouchableOpacity
+    onPress={() =>
+      navigation.navigate('ImageGalleryScreen', {
+        clubName,
+        imageUrls,
+        chatName
+      })}
+    style={styles.button}>
+    <MaterialIcons name="photo-library" size={24} color="black" style={styles.iconStyle} />
+    <Text style={styles.buttonText}>Image Gallery</Text>
+    <MaterialIcons name="keyboard-arrow-right" size={24} color="black" style={styles.arrowIcon} />
+  </TouchableOpacity>
+  {
+    (currentUserPrivilege === 'admin' || currentUserPrivilege === 'owner') && (
+      <TouchableOpacity
+        onPress={() => navigation.navigate('AdminChat', {clubName})}
+        style={styles.button}>
+        <MaterialIcons name="admin-panel-settings" size={24} color="black" style={styles.iconStyle} />
+        <Text style={styles.buttonText}>Admin Chat</Text>
+        <MaterialIcons name="keyboard-arrow-right" size={24} color="black" style={styles.arrowIcon} />
+      </TouchableOpacity>
+    )
+  }
+</View>
+
       </View>
-
       <Text style={styles.footerText}></Text>
     </View>
   );
@@ -149,26 +168,23 @@ const InClubView = ({ navigation, route }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FAFAFA', // Background color applied here
+    backgroundColor: '#FAFAFA',
   },
   headerContainer: {
-    width: '100%', // Ensure the header spans across the whole width
+    width: '100%',
   },
   contentContainer: {
-    flex: 1, // Fill remaining space
-    // Ensure content is spaced evenly
-    // Ensure footer doesn't overlap content
+    flex: 1,
   },
   imageContainer: {
     alignItems: 'center',
     paddingTop: 20,
     paddingBottom: 20,
-  
   },
   grayImage: {
     width: 200,
     height: 200,
-    backgroundColor: '#ccc', // Gray background color
+    backgroundColor: '#ccc',
     borderRadius: 30,
   },
   clubNameText: {
@@ -180,24 +196,39 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
     marginTop: 5,
   },
+  clubDescriptionText: {
+    marginTop: 10,
+    textAlign: 'center',
+  },
   buttonsContainer: {
     width: '100%',
     marginBottom: 20,
-    paddingTop: -100, // Reduce or remove padding at the top
     alignItems: 'left',
+    marginRight: 50,
   },
-  
   button: {
-    marginBottom: 5, 
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 5,
     backgroundColor: '#FAFAFA',
-    paddingVertical: 15, 
-    paddingHorizontal: 20, 
-    alignItems: 'left', 
-    width: '90%', 
-    borderRadius: 5, 
-    alignSelf: 'left', 
+    paddingVertical: 15,
+    paddingHorizontal: 20,
+    width: '100%',
+    borderRadius: 5,
   },
-  
+  buttonText: {
+    flex: 1,
+    textAlign: 'left',
+    color: 'black',
+    fontSize: 16,
+  },
+  iconStyle: {
+    marginRight: 10,
+  },
+  arrowIcon: {
+    marginLeft: 60,
+  },
   buttonFirst: {
     borderTopLeftRadius: 5,
     borderTopRightRadius: 5,
@@ -206,16 +237,12 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: 5,
     borderBottomRightRadius: 5,
   },
-  buttonText: {
-    color: 'black',
-    fontSize: 16,
-  },
   footerText: {
-    backgroundColor: '#FAFAFA', // Same background color as container
     paddingVertical: 10,
-    width: '100%', // Ensure full width
+    width: '100%',
     position: 'absolute',
     bottom: 0,
+    backgroundColor: '#FAFAFA',
   },
 });
 

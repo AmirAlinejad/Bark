@@ -47,12 +47,19 @@ const PinnedMessagesScreen = ({ route, navigation }) => {
       </View>
       <View style={styles.messageContent}>
         <Text style={styles.senderName}>{item.user.name}</Text>
-        {/* Text message */}
+        {/* Display text message */}
         {item.text && <Text style={styles.messageText}>{item.text}</Text>}
-        {/* Image message */}
+        {/* Display image with option to view larger */}
         {item.image && (
           <TouchableOpacity onPress={() => navigation.navigate('ImageViewerScreen', { imageUri: item.image })}>
             <Image source={{ uri: item.image }} style={styles.messageImage} />
+            <Text style={styles.viewImageText}></Text>
+          </TouchableOpacity>
+        )}
+        {/* Display GIF with option to view larger */}
+        {item.gifUrl && (
+          <TouchableOpacity onPress={() => navigation.navigate('ImageViewerScreen', { imageUri: item.gifUrl })}>
+            <Image source={{ uri: item.gifUrl }} style={styles.messageImage} />
             <Text style={styles.viewImageText}></Text>
           </TouchableOpacity>
         )}

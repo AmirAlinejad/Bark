@@ -35,8 +35,7 @@ import { TouchableWithoutFeedback, Keyboard } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import Entypo from 'react-native-vector-icons/Entypo';
 import { Image } from 'expo-image';
-
-
+import BottomSheetModal from '../../components/BottomSheetModal';
 
 export default function Chat({ route, navigation }) {
   const [messageText, setMessageText] = useState('');
@@ -48,10 +47,21 @@ export default function Chat({ route, navigation }) {
   const [gifUrl, setGifUrl] = useState(null); 
 
   const chatName = "chats";
+  const screenName = "Chat";
   const clubName = route?.params?.clubName;
   console.log(clubName);
   const flatListRef = useRef(null);
+  const [isModalVisible, setIsModalVisible] = useState(false);
 
+  // Define functions to handle modal open and close
+  const openModal = () => {
+    setIsModalVisible(true);
+  };
+  
+  const closeModal = () => {
+    setIsModalVisible(false);
+  };
+  
   useEffect(() => {
     if (!clubName) return;
   
@@ -112,11 +122,13 @@ export default function Chat({ route, navigation }) {
   }, [messages]); 
 
   const handleCameraPress = async () => {
+     
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== 'granted') {
       alert('Permission to access camera was denied');
       return;
     }
+
 
     const result = await ImagePicker.launchCameraAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
@@ -124,10 +136,11 @@ export default function Chat({ route, navigation }) {
       aspect: [4, 3],
       quality: 1,
     });
-
+    closeModal();
     if (!result.cancelled) {
       setImageUrl(result.uri); // Set the image URL
       sendMessage(); // Send the message
+      
     }
   };
 
@@ -182,6 +195,7 @@ export default function Chat({ route, navigation }) {
   };
   
   const handleImageUploadAndSend = () => {
+    closeModal(); 
     uploadImage((imageUri) => {
       setImageUrl(imageUri); // Set the image URL
       const message = {
@@ -197,6 +211,7 @@ export default function Chat({ route, navigation }) {
       };
   
       sendMessage([message]); // Call sendMessage with the message containing the image
+      
     });
   };
   
@@ -244,7 +259,7 @@ export default function Chat({ route, navigation }) {
 const renderMessage = ({ item, index }) => {
   const isLastMessageOfTheDay = index === messages.length - 1 || !isSameDay(item.createdAt, messages[index + 1]?.createdAt);
   const isLikedByUser = likedMessages.has(item._id);
-console.log(item.gifUrl);
+
   return (
     <View>
       {isLastMessageOfTheDay && (
@@ -363,7 +378,8 @@ console.log(item.gifUrl);
     
     const handleGifSend = () => {
       // Example: Navigate to a new screen for selecting a GIF
-      navigation.navigate('GifSelectionScreen', {clubName});
+      navigation.navigate('GifSelectionScreen', {clubName, screenName});
+      closeModal();
     };
     
 
@@ -424,7 +440,7 @@ console.log(item.gifUrl);
 {( pinnedMessageCount > 0 &&
 <TouchableOpacity style={styles.pinnedMessagesContainer} onPress={navigateToSearchPinnedMessages}>
   <View style={styles.blueBar}>
-    <MaterialCommunityIcons name="pin" size={15} color="black" />
+    <MaterialCommunityIcons name="pin" size={20} color="black" />
   </View>
   <Text style={styles.pinnedMessagesText}>Pinned Messages: {pinnedMessageCount}</Text>
 </TouchableOpacity>
@@ -463,11 +479,16 @@ console.log(item.gifUrl);
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"}>
   <View style={styles.toolbar}>
 
-    {/* Button to add image */}
-    <TouchableOpacity style={styles.toolbarButton} onPress={handleImageUploadAndSend}>
-      <Entypo name='plus' size={30} color="black" />
-    </TouchableOpacity>
-
+    <TouchableOpacity style={styles.toolbarButton} onPress={openModal}>
+        <Entypo name='plus' size={30} color="black" />
+      </TouchableOpacity>
+      <BottomSheetModal
+        isVisible={isModalVisible}
+        onClose={closeModal}
+        onUploadImage={handleImageUploadAndSend}
+        onUploadGif={handleGifSend}
+        onOpenCamera={handleCameraPress}
+      />
     {/* Container for TextInput and Image Preview */}
     <View style={styles.inputWithPreview}>
       {imageUrl && (
@@ -505,15 +526,6 @@ console.log(item.gifUrl);
       <Ionicons name="send" size={24} color={Colors.black} />
     </TouchableOpacity>
  
-    <TouchableOpacity onPress={handleGifSend} style={styles.toolbarButton}>
-      <MaterialCommunityIcons name="camera" size={30} color="black" />
-    </TouchableOpacity>
-
-    {/* Button to open camera */}
-    <TouchableOpacity onPress={handleCameraPress} style={styles.toolbarButton}>
-      <MaterialCommunityIcons name='camera' size={30} color="black" />
-    </TouchableOpacity>
-
   </View>
 </KeyboardAvoidingView>
     </View>
@@ -551,21 +563,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 10,
     paddingBottom: 10,
-    
   },
   messageContent: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start', // Adjusted alignment
     maxWidth: '70%'
-    
   },
   messageText: {
-    marginLeft: 0,
     maxWidth: '100%',
     paddingBottom: 5,
   },
   toolbarButton: {
-    paddingLeft:5,
+    paddingLeft: 5,
     backgroundColor: 'transparent',
   },
   senderName: {
@@ -611,7 +620,7 @@ const styles = StyleSheet.create({
     borderColor: 'white',
     borderRadius: 10,
     marginLeft: 0,
-    marginTop:5,
+    marginTop: 5,
     backgroundColor: "#EEEEEE",
     paddingHorizontal: 20,
     height: '80%',
@@ -626,9 +635,8 @@ const styles = StyleSheet.create({
     padding: 10,
     backgroundColor: 'white',
     borderRadius: 10,
-    paddingRight:15,
+    paddingRight: 15,
     marginLeft: 10,
-    
   },
   sendButtonText: {
     color: 'white',
@@ -665,16 +673,17 @@ const styles = StyleSheet.create({
   },
   pinnedMessagesContainer: {
     flexDirection: 'row',
-    marginTop:10,
+    marginTop: 10,
     borderBottomWidth: 1,
     borderBottomColor: '#EEEEEE',
   },
   pinnedMessagesText: {
     color: 'gray',
     marginTop: 0,
-    fontSize: 12,
+    fontSize: 16,
     textAlign: 'left',
     fontStyle: 'italic',
+    paddingBottom: 10,
   },
   clubNameButton: {
     padding: 10,
