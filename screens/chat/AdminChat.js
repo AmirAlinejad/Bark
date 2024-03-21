@@ -385,6 +385,12 @@ const renderMessage = ({ item, index }) => {
 
     const sendMessage = useCallback(async () => {
       setMessageText('');
+      const userId = auth.currentUser.uid;
+      // Adjust the reference path to include `userName` at the end
+      const userNameRef = ref(db, `users/${userId}/userName`);
+      const userNameSnapshot = await get(userNameRef);
+      // Since you're now directly accessing the userName, you can directly use `.val()` to get the userName value
+      const userName = userNameSnapshot.val();
       // Check if there's either text, an image URL, or a gifUrl
       if (messageText.trim() || imageUrl || gifUrl) {
         try {
@@ -394,7 +400,7 @@ const renderMessage = ({ item, index }) => {
             text: messageText.trim(),
             user: {
               _id: auth.currentUser.uid,
-              name: "Username",
+              name: userName,
               avatar: 'https://i.pravatar.cc/300',
             },
             likeCount: 0,

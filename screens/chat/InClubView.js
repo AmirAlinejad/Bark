@@ -6,7 +6,7 @@ import { ref, get } from 'firebase/database';
 import { getAuth } from 'firebase/auth';
 import { useFocusEffect } from '@react-navigation/native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
-
+import { Image } from 'expo-image';
 const InClubView = ({ navigation, route }) => {
   const [memberCount, setMemberCount] = useState(0);
   const [currentUserPrivilege, setCurrentUserPrivilege] = useState('');
@@ -88,7 +88,12 @@ const InClubView = ({ navigation, route }) => {
 
       <View style={styles.contentContainer}>
         <View style={styles.imageContainer}>
-          <View style={styles.grayImage} />
+        <View style={styles.grayImage}>
+      <Image
+        source={require('../../assets/logo.png')}
+        style={{ width: '100%', height: '100%', resizeMode: 'contain' }}
+      />
+    </View>
           <Text style={styles.clubNameText}>{clubName}</Text>
           <Text style={styles.memberCountText}>{`(${memberCount} members)`}</Text>
           {(chatName === "adminchats") && (

@@ -36,6 +36,7 @@ import * as ImagePicker from 'expo-image-picker';
 import Entypo from 'react-native-vector-icons/Entypo';
 import { Image } from 'expo-image';
 import BottomSheetModal from '../../components/BottomSheetModal';
+import LikesBottomModal from '../../components/LikesBottomModal';
 
 export default function Chat({ route, navigation }) {
   const [messageText, setMessageText] = useState('');
@@ -45,6 +46,8 @@ export default function Chat({ route, navigation }) {
   const [isAtBottom, setIsAtBottom] = useState(true); // Initially assume the user is at the bottom
   const [likedMessages, setLikedMessages] = useState(new Set());
   const [gifUrl, setGifUrl] = useState(null); 
+  const [isLikesModalVisible, setIsLikesModalVisible] = useState(false);
+  const [likedUsernames, setLikedUsernames] = useState([]);
 
   const chatName = "chats";
   const screenName = "Chat";
@@ -78,6 +81,7 @@ export default function Chat({ route, navigation }) {
         likeCount: doc.data().likeCount || 0,
         pinned: doc.data().pinned || false,
         gifUrl: doc.data().gifUrl,
+        likes: doc.data().likes || [],
       }));
   
       // Since we fetch messages in descending order, we set them directly.
@@ -193,6 +197,26 @@ export default function Chat({ route, navigation }) {
       console.error("Error fetching user privilege:", error);
     }
   };
+
+
+  const handlePressMessage = async (message) => {
+    if (!message.likes || message.likes.length === 0) {
+      setLikedUsernames([]);
+      setIsLikesModalVisible(true);
+      return;
+    }
+  
+    const usernamesPromises = message.likes.map(async (userID) => {
+      const userNameRef = ref(db, `users/${userID}/userName`);
+      const userNameSnapshot = await get(userNameRef);
+      return userNameSnapshot.val() || "Unknown User";
+    });
+  
+    const usernames = await Promise.all(usernamesPromises);
+    setLikedUsernames(usernames);
+    setIsLikesModalVisible(true);
+  };
+  
   
   const handleImageUploadAndSend = () => {
     closeModal(); 
@@ -269,27 +293,26 @@ const renderMessage = ({ item, index }) => {
           </View>
         </View>
       )}
-      <TouchableOpacity onLongPress={() => handleLongPress(item)} style={[styles.messageContainer, item.pinned && styles.pinnedMessage]}>
+      <TouchableOpacity 
+        onLongPress={() => handleLongPress(item)} 
+        onPress={() => handlePressMessage(item)} // Attach the tap handler here
+        style={[styles.messageContainer, item.pinned && styles.pinnedMessage]}
+      >
         <View style={styles.messageContent}>
           {item.user.avatar && <Image source={{ uri: item.user.avatar }} style={styles.avatar} />}
           <View style={{ flex: 1 }}>
             <Text style={styles.senderName}>{item.user.name}</Text>
             {item.text && <Text style={styles.messageText}>{item.text}</Text>}
-            
-            {/* Render an image if it exists */}
             {item.image && (
               <TouchableOpacity onPress={() => navigation.navigate('ImageViewerScreen', { imageUri: item.image })}>
                 <Image source={{ uri: item.image }} style={styles.messageImage} />
               </TouchableOpacity>
             )}
-
-            {/* Render a GIF if it exists */}
             {item.gifUrl && (
               <TouchableOpacity onPress={() => navigation.navigate('ImageViewerScreen', { imageUri: item.gifUrl })}>
                 <Image source={{ uri: item.gifUrl }} style={styles.messageImage} />
               </TouchableOpacity>
             )}
-
             <Text style={styles.messageTime}>{formatTime(item.createdAt)}</Text>
           </View>
         </View>
@@ -301,6 +324,7 @@ const renderMessage = ({ item, index }) => {
     </View>
   );
 };
+
 
     const isCloseToTop = ({ layoutMeasurement, contentOffset, contentSize }) => {
       const paddingTop = 20; // Distance from the top to consider "at the top"
@@ -385,6 +409,12 @@ const renderMessage = ({ item, index }) => {
 
     const sendMessage = useCallback(async () => {
       setMessageText('');
+      const userId = auth.currentUser.uid;
+      // Adjust the reference path to include `userName` at the end
+      const userNameRef = ref(db, `users/${userId}/userName`);
+      const userNameSnapshot = await get(userNameRef);
+      // Since you're now directly accessing the userName, you can directly use `.val()` to get the userName value
+      const userName = userNameSnapshot.val();
       // Check if there's either text, an image URL, or a gifUrl
       if (messageText.trim() || imageUrl || gifUrl) {
         try {
@@ -394,7 +424,7 @@ const renderMessage = ({ item, index }) => {
             text: messageText.trim(),
             user: {
               _id: auth.currentUser.uid,
-              name: "Username",
+              name: userName,
               avatar: 'https://i.pravatar.cc/300',
             },
             likeCount: 0,
@@ -429,7 +459,8 @@ const renderMessage = ({ item, index }) => {
   </TouchableOpacity>
   <TouchableOpacity style={styles.clubNameContainer} onPress={navigateToInClubView}>
     <View style={styles.imageContainer}>
-      {/* Placeholder image */}
+    <Image source={require('../../assets/logo.png')} style={{width: '100%', height: '100%'}} />
+
     </View>
     <Text style={styles.clubNameText}>{clubName}</Text>
   </TouchableOpacity>
@@ -476,6 +507,12 @@ const renderMessage = ({ item, index }) => {
           setIsAtBottom(isAtBottom);
         }}
       />  
+      <LikesBottomModal
+        isVisible={isLikesModalVisible}
+        onClose={() => setIsLikesModalVisible(false)}
+        userIDs={likedUsernames} // This prop now contains usernames instead of userIDs
+      />
+
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"}>
   <View style={styles.toolbar}>
 
