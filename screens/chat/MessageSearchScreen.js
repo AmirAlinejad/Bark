@@ -5,6 +5,7 @@ import { firestore } from '../../backend/FirebaseConfig'; // Update this path ac
 import Header from '../../components/Header'; // Update this import based on your project structure
 import {Colors} from '../../styles/Colors'
 import { Image } from 'expo-image';
+import { MaterialIcons } from '@expo/vector-icons';
 
 const MessageSearchScreen = ({ route, navigation }) => {
   const { clubName, chatName } = route.params;
@@ -73,13 +74,16 @@ const MessageSearchScreen = ({ route, navigation }) => {
 
   return (
     <View style={styles.container}>
-      <Header navigation={navigation} text="Search Messages" back={true} />
+      <Header navigation={navigation} text="Pinned Messages" back={true} />
+      <View style={styles.searchContainer}>
+      <MaterialIcons name="search" size={24} color={Colors.gray} />
       <TextInput
         style={styles.searchInput}
         placeholder="Search messages..."
         value={searchQuery}
         onChangeText={setSearchQuery}
       />
+      </View>
       <FlatList
         data={filteredMessages}
         renderItem={renderMessage}
@@ -94,14 +98,18 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#FAFAFA",
-    paddingHorizontal: 10,
+    padding: 10,
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.lightGray,
+    paddingBottom: 10,
   },
   searchInput: {
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    borderRadius: 5,
-    marginBottom: 10,
+    flex: 1,
+    marginLeft: 10,
     fontSize: 16,
   },
   messageList: {

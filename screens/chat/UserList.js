@@ -5,6 +5,8 @@ import { ref, get, remove, update } from 'firebase/database';
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import { db } from '../../backend/FirebaseConfig';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons'; // Ensure react-native-vector-icons is installed
+import { Colors } from '../../styles/Colors';
+import { MaterialIcons } from '@expo/vector-icons';
 
 const UserList = ({ route, navigation }) => {
   const [clubMembers, setClubMembers] = useState([]);
@@ -165,13 +167,17 @@ const UserList = ({ route, navigation }) => {
 
   return (
     <View style={styles.container}>
-      <Header navigation={navigation} text="User List" back={true} />
+  <Header navigation={navigation} text="User List" back={true} />
+      <View style={styles.searchContainer}>
+        <MaterialIcons name="search" size={24} color={Colors.gray} />
+    
       <TextInput
         style={styles.searchBar}
         placeholder="Search for a user..."
         value={searchQuery}
         onChangeText={setSearchQuery}
       />
+      </View>
       <View style={styles.filterContainer}>
         {['all', 'member', 'admin', 'owner'].map((privilege) => (
           <TouchableOpacity key={privilege} onPress={() => setSelectedPrivilege(privilege)} style={styles.filterButton}>
@@ -216,16 +222,17 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: 'grey',
   },
-  searchBar: {
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: 30,
-    paddingVertical: 8,
-    borderRadius: 10,
-    marginBottom: 10,
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.lightGray,
+    paddingBottom: 10,
+  },
+  searchInput: {
+    flex: 1,
+    marginLeft: 10,
     fontSize: 16,
-    width: '90%',
-    marginLeft: 20,
-
   },
   filterContainer: {
     flexDirection: 'row',
