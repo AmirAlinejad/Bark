@@ -80,14 +80,6 @@ export default function Chat({ route, navigation }) {
       const fetchedMessages = querySnapshot.docs.map(doc => {
         const docData = doc.data();
       
-        // Adjust the replyTo field to handle both text and images
-        const replyTo = docData.replyTo ? {
-          _id: docData.replyTo._id,
-          text: docData.replyTo.text,
-          userName: docData.replyTo.userName,
-          image: docData.replyTo.image || null, // Include the image URL if present
-        } : null;
-    
         return {
           _id: doc.id,
           createdAt: docData.createdAt.toDate(),
@@ -98,11 +90,10 @@ export default function Chat({ route, navigation }) {
           pinned: docData.pinned || false,
           gifUrl: docData.gifUrl,
           likes: docData.likes || [],
-          replyTo: replyTo, // Use the adjusted replyTo object
+          replyTo: docData.replyTo || null, // This structure is already suitable
         };
       });
     
-  
       // Since we fetch messages in descending order, we set them directly.
       setMessages(fetchedMessages);
   
@@ -251,9 +242,9 @@ export default function Chat({ route, navigation }) {
         text: '', // Ensure text is always defined
         replyTo: replyingToMessage ? {
           _id: replyingToMessage._id,
-          text: replyingToMessage.text, // This remains for text replies.
-          userName: replyingToMessage.user.name, // The name of the user you're replying to.
-          image: replyingToMessage.image || null, // Include the image URL if the original message was an image.
+          text: replyingToMessage.text ? replyingToMessage.text.substring(0, 100) + (replyingToMessage.text.length > 100 ? "..." : "") : null,
+          userName: replyingToMessage.user.name, // Assuming you have access to the user name here
+          image: replyingToMessage.image || null, // Include image URL if available
         } : null,
         
       };
@@ -339,18 +330,23 @@ const renderMessage = ({ item, index }) => {
             )}
             {item.replyTo && (
             <View style={styles.replyContextContainer}>
+              <Text style={styles.replyContextLabel}>
+                Replying to {item.replyTo.userName}:
+              </Text>
+              {item.replyTo.image ? (
+                <TouchableOpacity onPress={() => navigation.navigate('ImageViewerScreen', { imageUri: item.replyTo.image })} style={styles.replyContent}>
+                  <Image source={{ uri: item.replyTo.image }} style={styles.replyImageContext} />
+                </TouchableOpacity>
+              ) : item.replyTo.text ? (
                 <Text style={styles.replyContextText}>
-                  Replying to {item.replyTo.userName}:
+                  "{item.replyTo.text.length > 20 ? `${item.replyTo.text.substring(0, 20)}...` : item.replyTo.text}"
                 </Text>
-                {item.replyTo.image ? (
-                  <TouchableOpacity onPress={() => navigation.navigate('ImageViewerScreen', { imageUri: item.replyTo.image })}>
-                    <Image source={{ uri: item.replyTo.image }} style={styles.replyImageContext} />
-                  </TouchableOpacity>
-                ) : (
-                  <Text style={styles.replyContextText}>"{item.replyTo.text}"</Text>
-                )}
-              </View>
-           )}
+              ) : null}
+            </View>
+          )}
+
+
+
 
             <Text style={styles.messageTime}>{formatTime(item.createdAt)}</Text>
             
@@ -562,23 +558,30 @@ const renderMessage = ({ item, index }) => {
 
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"}>
       {replyingToMessage && (
-        <View style={styles.replyPreview}>
-          <Text style={styles.replyPreviewText}>
-            Replying to: {replyingToMessage.user.name}:
-          </Text>
-          {replyingToMessage.image ? (
-            <Image
-              source={{ uri: replyingToMessage.image }}
-              style={{ width: 100, height: 100 }} // Adjust size as needed
-            />
-          ) : (
-            <Text style={styles.replyPreviewText}> "{replyingToMessage.text}"</Text>
-          )}
-          <TouchableOpacity onPress={() => setReplyingToMessage(null)}>
-            <Ionicons name="close-circle" size={20} color="gray" />
-          </TouchableOpacity>
-        </View>
-      )}
+  <View style={styles.replyPreview}>
+    <Text style={styles.replyPreviewText}>
+      Replying to: {replyingToMessage.user.name}:
+    </Text>
+    {replyingToMessage.image ? (
+      <Image
+        source={{ uri: replyingToMessage.image }}
+        style={{ width: 100, height: 100 }} // Adjust size as needed
+      />
+    ) : (
+      <Text style={styles.replyPreviewText}>
+        "{
+          replyingToMessage.text.length > 20
+            ? `${replyingToMessage.text.substring(0, 17)}...`
+            : replyingToMessage.text
+        }"
+      </Text>
+    )}
+    <TouchableOpacity onPress={() => setReplyingToMessage(null)}>
+      <Ionicons name="close-circle" size={20} color="gray" />
+    </TouchableOpacity>
+  </View>
+)}
+
 
 
     <View style={styles.toolbar}>
@@ -854,10 +857,15 @@ const styles = StyleSheet.create({
     color: '#606060',
   },
   replyContextContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: 'column',
+    alignItems: 'left',
     marginTop: 5,
     marginBottom: 5,
+  },
+  replyContextLabel: {
+    fontStyle: 'italic',
+    color: 'gray', // This makes the "Replying to ____" text gray and italicized
+   
   },
   replyContextText: {
     fontStyle: 'italic',
@@ -866,8 +874,7 @@ const styles = StyleSheet.create({
   replyImageContext: {
     width: 100, // Adjust based on your design
     height: 100, // Adjust based on your design
-    marginLeft: 5,
-    borderRadius: 5,
+    resizeMode: 'cover',
   },
   
 });
