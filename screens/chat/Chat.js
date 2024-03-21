@@ -48,6 +48,11 @@ export default function Chat({ route, navigation }) {
   const [gifUrl, setGifUrl] = useState(null); 
   const [isLikesModalVisible, setIsLikesModalVisible] = useState(false);
   const [likedUsernames, setLikedUsernames] = useState([]);
+  // To hold user IDs
+  const [likedUserIDs, setLikedUserIDs] = useState([]);
+  const [replyingToMessage, setReplyingToMessage] = useState(null);
+  // To hold detailed user information
+  const [likedUserDetails, setLikedUserDetails] = useState([]);
 
   const chatName = "chats";
   const screenName = "Chat";
@@ -72,17 +77,31 @@ export default function Chat({ route, navigation }) {
     const messagesQuery = query(collection(firestore, 'chats'), where('clubName', '==', clubName), orderBy('createdAt', 'desc'));
   
     const unsubscribe = onSnapshot(messagesQuery, querySnapshot => {
-      const fetchedMessages = querySnapshot.docs.map(doc => ({
-        _id: doc.id,
-        createdAt: doc.data().createdAt.toDate(),
-        text: doc.data().text,
-        user: doc.data().user,
-        image: doc.data().image,
-        likeCount: doc.data().likeCount || 0,
-        pinned: doc.data().pinned || false,
-        gifUrl: doc.data().gifUrl,
-        likes: doc.data().likes || [],
-      }));
+      const fetchedMessages = querySnapshot.docs.map(doc => {
+        const docData = doc.data();
+      
+        // Adjust the replyTo field to handle both text and images
+        const replyTo = docData.replyTo ? {
+          _id: docData.replyTo._id,
+          text: docData.replyTo.text,
+          userName: docData.replyTo.userName,
+          image: docData.replyTo.image || null, // Include the image URL if present
+        } : null;
+    
+        return {
+          _id: doc.id,
+          createdAt: docData.createdAt.toDate(),
+          text: docData.text,
+          user: docData.user,
+          image: docData.image,
+          likeCount: docData.likeCount || 0,
+          pinned: docData.pinned || false,
+          gifUrl: docData.gifUrl,
+          likes: docData.likes || [],
+          replyTo: replyTo, // Use the adjusted replyTo object
+        };
+      });
+    
   
       // Since we fetch messages in descending order, we set them directly.
       setMessages(fetchedMessages);
@@ -175,6 +194,10 @@ export default function Chat({ route, navigation }) {
               // Update local state as necessary
             },
           },
+          {
+            text: 'Reply',
+            onPress: () => setReplyingToMessage(message),
+          },
         ];
   
         // Add the delete option based on the fetched privilege
@@ -199,23 +222,17 @@ export default function Chat({ route, navigation }) {
   };
 
 
-  const handlePressMessage = async (message) => {
+  const handlePressMessage = (message) => {
     if (!message.likes || message.likes.length === 0) {
-      setLikedUsernames([]);
+      setLikedUserIDs([]); // Corrected to use setLikedUserIDs
       setIsLikesModalVisible(true);
       return;
     }
   
-    const usernamesPromises = message.likes.map(async (userID) => {
-      const userNameRef = ref(db, `users/${userID}/userName`);
-      const userNameSnapshot = await get(userNameRef);
-      return userNameSnapshot.val() || "Unknown User";
-    });
-  
-    const usernames = await Promise.all(usernamesPromises);
-    setLikedUsernames(usernames);
+    setLikedUserIDs(message.likes);
     setIsLikesModalVisible(true);
   };
+  
   
   
   const handleImageUploadAndSend = () => {
@@ -232,6 +249,13 @@ export default function Chat({ route, navigation }) {
         },
         image: imageUri,
         text: '', // Ensure text is always defined
+        replyTo: replyingToMessage ? {
+          _id: replyingToMessage._id,
+          text: replyingToMessage.text, // This remains for text replies.
+          userName: replyingToMessage.user.name, // The name of the user you're replying to.
+          image: replyingToMessage.image || null, // Include the image URL if the original message was an image.
+        } : null,
+        
       };
   
       sendMessage([message]); // Call sendMessage with the message containing the image
@@ -313,7 +337,23 @@ const renderMessage = ({ item, index }) => {
                 <Image source={{ uri: item.gifUrl }} style={styles.messageImage} />
               </TouchableOpacity>
             )}
+            {item.replyTo && (
+            <View style={styles.replyContextContainer}>
+                <Text style={styles.replyContextText}>
+                  Replying to {item.replyTo.userName}:
+                </Text>
+                {item.replyTo.image ? (
+                  <TouchableOpacity onPress={() => navigation.navigate('ImageViewerScreen', { imageUri: item.replyTo.image })}>
+                    <Image source={{ uri: item.replyTo.image }} style={styles.replyImageContext} />
+                  </TouchableOpacity>
+                ) : (
+                  <Text style={styles.replyContextText}>"{item.replyTo.text}"</Text>
+                )}
+              </View>
+           )}
+
             <Text style={styles.messageTime}>{formatTime(item.createdAt)}</Text>
+            
           </View>
         </View>
         <TouchableOpacity onPress={() => toggleLike(item)} style={styles.likeButton}>
@@ -431,6 +471,13 @@ const renderMessage = ({ item, index }) => {
             image: imageUrl,
             gifUrl: gifUrl, // Add the gifUrl to the message
             likes: [],
+            replyTo: replyingToMessage ? {
+              _id: replyingToMessage._id,
+              text: replyingToMessage.text, // This remains for text replies.
+              userName: replyingToMessage.user.name, // The name of the user you're replying to.
+              image: replyingToMessage.image || null, // Include the image URL if the original message was an image.
+            } : null,
+            
           };
   
           // Add the message to Firestore
@@ -442,12 +489,12 @@ const renderMessage = ({ item, index }) => {
           // Clear the message input field, image URL, and gifUrl
           setImageUrl(null);
           setGifUrl(null); // Reset the gifUrl after sending the message
-  
+          setReplyingToMessage(null);
         } catch (error) {
           console.error('Error sending message:', error);
         }
       }
-  }, [messageText, imageUrl, gifUrl]); // Include gifUrl in the dependency array
+  }, [messageText, imageUrl, gifUrl, replyingToMessage]); // Include gifUrl in the dependency array
   
   
   return (
@@ -510,11 +557,31 @@ const renderMessage = ({ item, index }) => {
       <LikesBottomModal
         isVisible={isLikesModalVisible}
         onClose={() => setIsLikesModalVisible(false)}
-        userIDs={likedUsernames} // This prop now contains usernames instead of userIDs
+        userIDs={likedUserIDs} // This prop now contains usernames instead of userIDs
       />
 
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"}>
-  <View style={styles.toolbar}>
+      {replyingToMessage && (
+        <View style={styles.replyPreview}>
+          <Text style={styles.replyPreviewText}>
+            Replying to: {replyingToMessage.user.name}:
+          </Text>
+          {replyingToMessage.image ? (
+            <Image
+              source={{ uri: replyingToMessage.image }}
+              style={{ width: 100, height: 100 }} // Adjust size as needed
+            />
+          ) : (
+            <Text style={styles.replyPreviewText}> "{replyingToMessage.text}"</Text>
+          )}
+          <TouchableOpacity onPress={() => setReplyingToMessage(null)}>
+            <Ionicons name="close-circle" size={20} color="gray" />
+          </TouchableOpacity>
+        </View>
+      )}
+
+
+    <View style={styles.toolbar}>
 
     <TouchableOpacity style={styles.toolbarButton} onPress={openModal}>
         <Entypo name='plus' size={30} color="black" />
@@ -526,6 +593,7 @@ const renderMessage = ({ item, index }) => {
         onUploadGif={handleGifSend}
         onOpenCamera={handleCameraPress}
       />
+      
     {/* Container for TextInput and Image Preview */}
     <View style={styles.inputWithPreview}>
       {imageUrl && (
@@ -545,6 +613,7 @@ const renderMessage = ({ item, index }) => {
         </TouchableOpacity>
       </View>
     )}
+    
       <TextInput
         style={styles.input}
         value={messageText}
@@ -558,11 +627,10 @@ const renderMessage = ({ item, index }) => {
       />
     </View>
 
-    {/* Send Button */}
     <TouchableOpacity onPress={sendMessage} style={styles.sendButton}>
-      <Ionicons name="send" size={24} color={Colors.black} />
+      <Ionicons name="send" size={24} color={messageText.trim() ? '#007AFF' : Colors.black} />
     </TouchableOpacity>
- 
+
   </View>
 </KeyboardAvoidingView>
     </View>
@@ -764,4 +832,42 @@ const styles = StyleSheet.create({
     fontSize: 14, 
     color: 'gray',
   },
+  replyPreview: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 10,
+    backgroundColor: '#f0f0f0',
+  },
+  replyImagePreview: {
+    width: 100, // Adjust the width as needed
+    height: 100, // Adjust the height as needed
+    borderRadius: 10, // Optional: for rounded corners
+    margin: 5, // Optional: for spacing
+  },
+  
+  replyPreviewText: {
+    fontStyle: 'italic',
+  },
+  replyContext: {
+    fontStyle: 'italic',
+    color: '#606060',
+  },
+  replyContextContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 5,
+    marginBottom: 5,
+  },
+  replyContextText: {
+    fontStyle: 'italic',
+    color: '#606060',
+  },
+  replyImageContext: {
+    width: 100, // Adjust based on your design
+    height: 100, // Adjust based on your design
+    marginLeft: 5,
+    borderRadius: 5,
+  },
+  
 });
