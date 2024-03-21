@@ -329,23 +329,27 @@ const renderMessage = ({ item, index }) => {
               </TouchableOpacity>
             )}
             {item.replyTo && (
-            <View style={styles.replyContextContainer}>
-              <Text style={styles.replyContextLabel}>
-                Replying to {item.replyTo.userName}:
-              </Text>
-              {item.replyTo.image ? (
-                <TouchableOpacity onPress={() => navigation.navigate('ImageViewerScreen', { imageUri: item.replyTo.image })} style={styles.replyContent}>
-                  <Image source={{ uri: item.replyTo.image }} style={styles.replyImageContext} />
-                </TouchableOpacity>
-              ) : item.replyTo.text ? (
-                <Text style={styles.replyContextText}>
-                  "{item.replyTo.text.length > 20 ? `${item.replyTo.text.substring(0, 20)}...` : item.replyTo.text}"
+              <View style={styles.replyContextContainer}>
+                <Text style={styles.replyContextLabel}>
+                  Replying to {item.replyTo.userName}:
                 </Text>
-              ) : null}
-            </View>
-          )}
-
-
+                {item.replyTo.image && (
+                  <TouchableOpacity onPress={() => navigation.navigate('ImageViewerScreen', { imageUri: item.replyTo.image })} style={styles.replyContent}>
+                    <Image source={{ uri: item.replyTo.image }} style={styles.replyImageContext} />
+                  </TouchableOpacity>
+                )}
+                {item.replyTo.gifUrl && (
+                  <TouchableOpacity onPress={() => navigation.navigate('ImageViewerScreen', { imageUri: item.replyTo.gifUrl })} style={styles.replyContent}>
+                    <Image source={{ uri: item.replyTo.gifUrl }} style={styles.replyImageContext} />
+                  </TouchableOpacity>
+                )}
+                {item.replyTo.text && (
+                  <Text style={styles.replyContextText}>
+                    "{item.replyTo.text.length > 20 ? `${item.replyTo.text.substring(0, 20)}...` : item.replyTo.text}"
+                  </Text>
+                )}
+              </View>
+            )}
 
 
             <Text style={styles.messageTime}>{formatTime(item.createdAt)}</Text>
@@ -472,6 +476,7 @@ const renderMessage = ({ item, index }) => {
               text: replyingToMessage.text, // This remains for text replies.
               userName: replyingToMessage.user.name, // The name of the user you're replying to.
               image: replyingToMessage.image || null, // Include the image URL if the original message was an image.
+              gifUrl: replyingToMessage.gifUrl || null,
             } : null,
             
           };
@@ -524,7 +529,7 @@ const renderMessage = ({ item, index }) => {
       style={{
         position: 'absolute', // Ensures it's positioned relative to the container.
         right: 20, // Adjust this value to ensure it's comfortably reachable.
-        bottom: 100, // Adjust this so it's above your keyboard avoiding view or other lower components.
+        bottom: 125, // Adjust this so it's above your keyboard avoiding view or other lower components.
         backgroundColor: 'rgba(255,255,255,0.9)',
         borderRadius: 25,
         padding: 10, // Increasing padding can help with touchability.
@@ -562,18 +567,41 @@ const renderMessage = ({ item, index }) => {
     <Text style={styles.replyPreviewText}>
       Replying to: {replyingToMessage.user.name}:
     </Text>
-    {replyingToMessage.image ? (
-      <Image
-        source={{ uri: replyingToMessage.image }}
-        style={{ width: 100, height: 100 }} // Adjust size as needed
-      />
-    ) : (
+    {replyingToMessage.image && (
+      <View>
+        <Image
+          source={{ uri: replyingToMessage.image }}
+          style={styles.replyImagePreview}
+        />
+        {replyingToMessage.text && (
+          <Text style={styles.replyImageText}>
+            "{replyingToMessage.text.length > 20
+              ? `${replyingToMessage.text.substring(0, 17)}...`
+              : replyingToMessage.text}"
+          </Text>
+        )}
+      </View>
+    )}
+    {replyingToMessage.gifUrl && (
+      <View>
+        <Image
+          source={{ uri: replyingToMessage.gifUrl }}
+          style={styles.replyImagePreview}
+        />
+        {replyingToMessage.text && (
+          <Text style={styles.replyImageText}>
+            "{replyingToMessage.text.length > 20
+              ? `${replyingToMessage.text.substring(0, 17)}...`
+              : replyingToMessage.text}"
+          </Text>
+        )}
+      </View>
+    )}
+    {!replyingToMessage.image && !replyingToMessage.gifUrl && (
       <Text style={styles.replyPreviewText}>
-        "{
-          replyingToMessage.text.length > 20
-            ? `${replyingToMessage.text.substring(0, 17)}...`
-            : replyingToMessage.text
-        }"
+        "{replyingToMessage.text.length > 20
+          ? `${replyingToMessage.text.substring(0, 17)}...`
+          : replyingToMessage.text}"
       </Text>
     )}
     <TouchableOpacity onPress={() => setReplyingToMessage(null)}>
@@ -581,6 +609,9 @@ const renderMessage = ({ item, index }) => {
     </TouchableOpacity>
   </View>
 )}
+
+
+
 
 
 
