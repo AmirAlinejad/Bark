@@ -2,12 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { View, TextInput, FlatList, TouchableOpacity, StyleSheet } from 'react-native';
 import { Image } from 'expo-image';
 import Header from '../../components/Header';
+import { MaterialIcons } from '@expo/vector-icons'; // Add this import
+import {Colors} from '../../styles/Colors'
+
 const GifSelectionScreen = ({ navigation, route }) => {
   const [gifs, setGifs] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   
   const { clubName, screenName } = route.params;
-  console.log(clubName);
+
   const fetchGifs = async () => {
     // Example API call (replace with actual API call to Giphy or Tenor)
     const response = await fetch(`https://api.giphy.com/v1/gifs/search?api_key=mCWWr1G26e4ZDcNz1bHjKDsbk9142AOC&q=${searchTerm}`);
@@ -21,23 +24,25 @@ const GifSelectionScreen = ({ navigation, route }) => {
 
   const handleSelectGif = (gifUrl) => {
     if (screenName == "AdminChat") {
-      // Pass the selected GIF URL back to the Chat screen
       navigation.navigate("AdminChat",{ selectedGifUrl: gifUrl, clubName });
     } else {
       navigation.navigate("Chat",{ selectedGifUrl: gifUrl, clubName });
-
     }
   };
 
   return (
     <View style={styles.container}>
-         <Header navigation={navigation} text="Gifs" back={true} />
-      <TextInput
-        style={styles.searchInput}
-        value={searchTerm}
-        onChangeText={setSearchTerm}
-        placeholder="Search for GIFs"
-      />
+      <Header navigation={navigation} text="Gifs" back={true} />
+      <View style={styles.searchContainer}>
+        <MaterialIcons name="search" size={24} color="gray" style={{marginLeft: 5}} />
+        <TextInput
+          style={styles.searchInput}
+          value={searchTerm}
+          onChangeText={setSearchTerm}
+          placeholder="Search for GIFs"
+          placeholderTextColor="gray" // Add placeholder text color
+        />
+      </View>
       <FlatList
         data={gifs}
         keyExtractor={(item, index) => index.toString()}
@@ -46,9 +51,8 @@ const GifSelectionScreen = ({ navigation, route }) => {
             <Image source={{ uri: item }} style={styles.gif} />
           </TouchableOpacity>
         )}
-        // Adjust the number of columns for the grid here
-        numColumns={3} // Adjust this number based on your desired column count
-        columnWrapperStyle={styles.row} // Style for each row
+        numColumns={3}
+        columnWrapperStyle={styles.row}
       />
     </View>
   );
@@ -59,19 +63,22 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#FAFAFA"
   },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.lightGray,
+    paddingBottom: 10,
+  },
   searchInput: {
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    borderRadius: 10,
-    marginBottom: 10,
+    flex: 1,
+    marginLeft: 10,
     fontSize: 16,
   },
   gif: {
-    width: '33%', // Each GIF should take up roughly one-third of the available space
-    height: 135, // Adjust height as needed
-    margin: 0, // Keep some margin to separate the GIFs
-    aspectRatio: 1, // Optional: Force the items to be square (remove if GIFs have varied aspect ratios)
+    width: '33%',
+    height: 135,
+    aspectRatio: 1,
   },
   row: {
     flex: 1,

@@ -169,7 +169,7 @@ const UserList = ({ route, navigation }) => {
     <View style={styles.container}>
   <Header navigation={navigation} text="User List" back={true} />
       <View style={styles.searchContainer}>
-        <MaterialIcons name="search" size={24} color={Colors.gray} />
+        <MaterialIcons name="search" size={24} color={Colors.gray} style={{marginLeft: 8}}/>
     
       <TextInput
         style={styles.searchBar}
