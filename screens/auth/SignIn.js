@@ -18,6 +18,7 @@ const SignIn = ({ navigation }) => {
   const [password, setPassword] = useState('');
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
   const auth = getAuth();
 
@@ -26,13 +27,28 @@ const SignIn = ({ navigation }) => {
     setPasswordVisible(!passwordVisible);
   };
 
+  // Function to handle Firebase errors
+  const handleFirebaseError = (error) => {
+    switch (error.code) {
+      case 'auth/user-not-found':
+        return 'User not found.';
+      case 'auth/wrong-password':
+        return 'Invalid password.';
+      case 'auth/invalid-email':
+        return 'Invalid email address.';
+      default:
+        return 'Sign-in failed. Please try again.';
+    }
+  };
+
   // sign in
   const onSignInPressed = async () => {
     setLoading(true);
+    setErrorMessage('');
 
     // Validate input
     if (!email || !password) {
-      alert("Please enter both email and password.");
+      setErrorMessage('Please enter both email and password.');
       setLoading(false);
       return;
     }
@@ -54,10 +70,10 @@ const SignIn = ({ navigation }) => {
         console.log('User data not found in the database.');
       }
 
-      navigation.navigate("HomeScreen");
+      navigation.navigate('HomeScreen');
     } catch (error) {
       console.log(error);
-      alert('Sign-in failed: ' + error.message);
+      setErrorMessage(handleFirebaseError(error));
     } finally {
       setLoading(false);
     }
@@ -65,23 +81,18 @@ const SignIn = ({ navigation }) => {
 
   // forgot password
   const onForgotPasswordPressed = () => {
-    navigation.navigate("ForgotPassword");
-    
+    navigation.navigate('ForgotPassword');
   };
 
   // go to sign up
   const onSignUp = () => {
     // Navigate to the sign-up screen
-    navigation.navigate("SignUp");
+    navigation.navigate('SignUp');
   };
 
   return (
     <View style={styles.container}>
-      <Image
-        source={Logo}
-        style={styles.logo}
-        resizeMode="contain"
-      />
+      <Image source={Logo} style={styles.logo} resizeMode="contain" />
 
       <CustomText style={styles.title}>Welcome Back!</CustomText>
 
@@ -100,6 +111,10 @@ const SignIn = ({ navigation }) => {
         onEyeIconPress={togglePasswordVisibility}
       />
 
+      {errorMessage ? (
+        <CustomText style={styles.errorMessage} text={errorMessage} />
+      ) : null}
+
       <CustomButton text="Sign In" onPress={onSignInPressed} type="primary" bgColor={'#FF5349'} />
 
       <CustomButton
@@ -113,7 +128,7 @@ const SignIn = ({ navigation }) => {
       <CustomText style={styles.signupLink} onPress={onSignUp} text="Sign Up" />
     </View>
   );
-}
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -144,6 +159,10 @@ const styles = StyleSheet.create({
   signupLink: {
     color: '#3498db',
     fontWeight: 'bold',
+  },
+  errorMessage: {
+    color: 'red',
+    marginBottom: 10,
   },
 });
 
