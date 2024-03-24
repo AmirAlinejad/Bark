@@ -1,3 +1,41 @@
+<<<<<<< HEAD
+import React from 'react';
+// react native components
+import { View, StyleSheet, TouchableOpacity, Image } from 'react-native';
+// my components
+import CustomText from '../CustomText';
+import ClubImg from './ClubImg';
+
+// fonts
+import { textNormal, title} from '../../styles/FontStyles';
+
+// club card displayed on the club list screen
+const ClubCard = ({ onPress, name, description, img }) => {
+  
+  return (
+    <TouchableOpacity style={styles.clubCard} onPress={onPress} >   
+      <ClubImg clubImg={img} width={100}/>
+      
+      <View> 
+        <CustomText style={styles.textNormal} text={name} numberOfLines={1} font='bold'/>
+      </View>
+    </TouchableOpacity>
+  )
+}
+
+const styles = StyleSheet.create({
+  clubCard: {
+    borderRadius: 10,
+    width: 100,
+    justifyContent: 'flex-start',
+    alignItems: 'flex-start',
+    gap: 10,
+  },
+  title: title,
+  textNormal: textNormal,
+});
+
+=======
 import React from 'react';
 // react native components
 import { View, StyleSheet, Pressable } from 'react-native';
@@ -42,4 +80,5 @@ const styles = StyleSheet.create({
   textNormal: textNormal,
 });
 
+>>>>>>> dfe4a17ddd108df15325f902cdfdaa4361e7c37e
 export default ClubCard;

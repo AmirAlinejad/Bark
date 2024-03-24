@@ -21,4 +21,3 @@ export const uploadImage = async (callback) => {
         callback(selectedImageUri);
     }
 };
-

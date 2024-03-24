@@ -3,10 +3,10 @@ import React from "react";
 import { View, TextInput, StyleSheet, TouchableOpacity } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 
-const CustomInput = ({ value, setValue, placeholder, keyboardType, secureTextEntry, icon, onEyeIconPress, passwordVisible }) => {
+const CustomInput = ({ width, value, setValue, placeholder, keyboardType, secureTextEntry, onEyeIconPress, maxLength, multiline }) => {
   const isPasswordInput = placeholder.toLowerCase().includes("password");
   return (
-    <View style={styles.container}>
+    <View style={width ? [styles.container, {width: width}] : [styles.container, {width: '80%'}]}>
       <TextInput
         placeholder={placeholder}
         value={value}
@@ -14,6 +14,8 @@ const CustomInput = ({ value, setValue, placeholder, keyboardType, secureTextEnt
         keyboardType={keyboardType}
         secureTextEntry={secureTextEntry}
         style={styles.input}
+        maxLength={maxLength}
+        multiline={multiline}
       />
       {isPasswordInput  && (
         <TouchableOpacity onPress={onEyeIconPress} style={styles.eyeIcon}>
@@ -29,17 +31,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     borderColor: '#ccc',
-    borderBottomWidth: 1,
-    borderRadius: 10,
+    borderWidth: 1,
+    borderRadius: 20,
     marginBottom: 10,
     paddingHorizontal: 10,
-    backgroundColor: 'white',
-    width: '60%'
   },
   input: {
     flex: 1,
     height: 50,
     color: '#333',
+    fontFamily: 'Nunito_400Regular',
     backgroundColor: 'transparent',
   },
   eyeIcon: {

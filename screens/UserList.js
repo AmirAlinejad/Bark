@@ -220,4 +220,8 @@ const styles = StyleSheet.create({
   },
 });
 
+<<<<<<< HEAD
 export default UserList;
+=======
+export default UserList;
+>>>>>>> dfe4a17ddd108df15325f902cdfdaa4361e7c37e
