@@ -330,6 +330,7 @@ const renderMessage = ({ item, index }) => {
             )}
             {item.replyTo && (
               <View style={styles.replyContextContainer}>
+                <Ionicons name="ios-arrow-down" size={24} color="gray" style={styles.arrowIcon} />
                 <Text style={styles.replyContextLabel}>
                   Replying to {item.replyTo.userName}:
                 </Text>
@@ -491,6 +492,7 @@ const renderMessage = ({ item, index }) => {
           setImageUrl(null);
           setGifUrl(null); // Reset the gifUrl after sending the message
           setReplyingToMessage(null);
+          scrollToTop();
         } catch (error) {
           console.error('Error sending message:', error);
         }
@@ -907,5 +909,7 @@ const styles = StyleSheet.create({
     height: 100, // Adjust based on your design
     resizeMode: 'cover',
   },
-  
+  arrowIcon: {
+    marginRight: 10, // Adjust the spacing as needed
+  },
 });
