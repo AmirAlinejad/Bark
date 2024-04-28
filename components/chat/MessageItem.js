@@ -1,0 +1,163 @@
+import React, { useState, useEffect } from "react";
+import { View, StyleSheet, TouchableOpacity } from "react-native";
+// functions
+import { updateProfileData } from "../../functions/backendFunctions";
+import { getAuth } from "firebase/auth";
+// my components
+import ProfileImg from "../display/ProfileImg";
+import CustomText from "../display/CustomText";
+// styles
+import { Colors } from "../../styles/Colors";
+// icons
+import { MaterialCommunityIcons } from "@expo/vector-icons";
+// image
+import { Image } from "expo-image";
+
+const MessageItem = ({ item, navigation, setOverlayVisible, setOverlayUserData }) => {
+    // states
+    const [userId, setUserId] = useState(null);
+
+    formatDateTime = (date) => {
+        const options = { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' };
+        return new Date(date).toLocaleDateString(undefined, options);
+    }
+
+    // use effect
+    useEffect(() => {
+        const auth = getAuth();
+        setUserId(auth.currentUser.uid);
+    }, []);
+
+    return (
+        <View style={styles.messageItem}>
+            <TouchableOpacity style={styles.avatarContainer} onPress={() => {
+                setOverlayVisible(true);
+                updateProfileData(item.user._id, setOverlayUserData);
+            }}>
+                <ProfileImg profileImg={item.user.avatar} width={40} />
+            </TouchableOpacity>
+            <View style={styles.messageContent}>
+                {item.user._id != userId && (
+                    <CustomText style={styles.senderName} text={item.user.first + ' ' + item.user.last} font="bold"/>
+                )}
+                {/* Display text message */}
+                {item.text && <CustomText style={styles.messageText} text={item.text} />}
+                {/* Display image with option to view larger */}
+                {item.image && (
+                <TouchableOpacity onPress={() => navigation.navigate('ImageViewerScreen', { imageUri: item.image })}>
+                    <Image source={{ uri: item.image }} style={styles.messageImage} />
+                </TouchableOpacity>
+                )}
+                {/* Display GIF with option to view larger */}
+                {item.gifUrl && (
+                <TouchableOpacity onPress={() => navigation.navigate('ImageViewerScreen', { imageUri: item.gifUrl })}>
+                    <Image source={{ uri: item.gifUrl }} style={styles.messageImage} />
+                </TouchableOpacity>
+                )}
+                {item.replyTo && (
+                <View style={styles.replyContextContainer}>
+                    <View style={styles.arrowIcon}>
+                        <MaterialCommunityIcons name="arrow-left-top" size={24} color={Colors.darkGray} />
+                    </View>
+          
+                    <CustomText style={styles.replyContextLabel} text={`${item.replyTo.user.first} ${item.replyTo.user.last}`} font="bold"/>
+                    {item.replyTo.image && (
+                    <TouchableOpacity onPress={() => navigation.navigate('ImageViewerScreen', { imageUri: item.replyTo.image })} style={styles.replyContent}>
+                        <Image source={{ uri: item.replyTo.image }} style={styles.replyImageContext} />
+                    </TouchableOpacity>
+                    )}
+                    {item.replyTo.gifUrl && (
+                    <TouchableOpacity onPress={() => navigation.navigate('ImageViewerScreen', { imageUri: item.replyTo.gifUrl })} style={styles.replyContent}>
+                        <Image source={{ uri: item.replyTo.gifUrl }} style={styles.replyImageContext} />
+                    </TouchableOpacity>
+                    )}
+                    {item.replyTo.text && (
+                    <CustomText style={styles.replyContextText} text={
+                        item.replyTo.text.length > 20 ? `${item.replyTo.text.substring(0, 20)}...` : item.replyTo.text
+                    } />
+                    )}
+                </View>
+                )}
+                <CustomText style={styles.dateTime} text={formatDateTime(item.createdAt).split(" ")[4]} font="light"/>
+            </View>
+        </View>
+    )
+}
+
+const styles = StyleSheet.create({
+    messageItem: {
+        flexDirection: 'row',
+        padding: 10,
+        borderRadius: 5,
+        marginBottom: 0,
+    },
+    avatarContainer: {
+        marginRight: 10,
+    },
+    senderName: {
+        fontSize: 16,
+    },
+    dateTime: {
+        color: Colors.darkGray,
+    },
+    messageImage: {
+        width: 140, // Adjust the size as needed
+        height: 140, // Adjust the size as needed
+        resizeMode: 'cover',
+        borderRadius: 15, // Optional: if you want rounded corners
+        marginTop: 5, // Spacing above and below the image
+        marginBottom: 5,
+    },
+    messageText: {
+        marginTop: 0,
+        marginRight: 110,
+    },
+
+    // View image text styles
+    viewImageText: {
+        color: Colors.primary,
+        textAlign: 'center',
+        marginTop: 5,
+    },
+    viewImageText: {
+        fontSize: 14,
+        color: Colors.primary, // Use a color that indicates it's clickable
+        textDecorationLine: 'underline',
+        textAlign: 'center', // Center the text below the image
+    },
+
+    // Reply context styles
+    replyContextContainer: {
+        backgroundColor: 'rgba(0, 0, 0, 0.1)',
+        padding: 10,
+        borderRadius: 15,
+        marginVertical: 5,
+        marginRight: 60,
+        marginLeft: 28,
+    },
+    arrowIcon: {
+        position: 'absolute',
+        top: 0,
+        left: -30,
+        transform: [{ rotate: '180deg' }], // Rotate the arrow icon
+    },
+    replyContextLabel: {
+        color: Colors.black,
+        marginBottom: 5,
+    },
+    replyContent: {
+        marginTop: 5,
+    },
+    replyImageContext: {
+        width: 50, // Adjust the size as needed
+        height: 50, // Adjust the size as needed
+        resizeMode: 'cover',
+        borderRadius: 15, // Optional: if you want rounded corners
+    },
+    replyContextText: {
+        marginTop: 0,
+        color: Colors.darkGray,
+    },
+});
+
+export default MessageItem;

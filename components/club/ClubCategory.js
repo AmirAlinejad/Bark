@@ -1,40 +1,32 @@
-<<<<<<< HEAD
 import React from 'react';
 // react-native components
-import { View, StyleSheet, ScrollView } from 'react-native';
+import { View, StyleSheet, ScrollView, FlatList } from 'react-native';
 // my components
 import ClubCard from './ClubCard';
-import CustomText from '../CustomText';
-// fonts
-import { title } from '../../styles/FontStyles';
+import CustomText from '../display/CustomText';
+// colors
+import { Colors } from '../../styles/Colors';
+// functions
+import { goToClubScreen } from '../../functions/navigationFunctions';
 
 const ClubCategory = ({name, data, navigation}) => {
     return (
         <View style={styles.clubCategory}>
-            <CustomText style={[styles.title, {marginLeft: 1}]} font="bold" text={name} />
-            <ScrollView contentContainerStyle={{ gap: 10, width: '100%' }} horizontal>
-            {
-                // map through the club data and display each club
-                data.map((item, index) => {
-                    const onPress = () => {
-                        // Navigate to the sign-up screen
-                        navigation.navigate("ClubScreen", {
-                            name: item.clubName,
-                            id: item.clubId,
-                            description: item.clubDescription,
-                            categories: item.clubCategories,
-                            img: item.clubImg,
-                            events: item.events,
-                            members: item.clubMembers,
-                        });
-                    }
-
-                    return (
-                        <ClubCard key={index} onPress={onPress} name={item.clubName} description={item.clubDescription} img={item.clubImg} />
-                    )
-                })
-            }
-            </ScrollView>
+            <CustomText style={styles.title} font="bold" text={name} />
+            <FlatList
+                data={data}
+                renderItem={({item}) => (
+                    <ClubCard  
+                        onPress={() => goToClubScreen(item, navigation)} 
+                        name={item.clubName} 
+                        description={item.clubDescription} 
+                        img={item.clubImg} 
+                    />
+                )}
+                ItemSeparatorComponent={() => <View style={{width: 12}} />}
+                keyExtractor={item => item.clubId}
+                horizontal={true}
+            />
         </View>
     )
 }
@@ -50,59 +42,11 @@ const styles = StyleSheet.create({
         bottom: 0,
         right: 0,
         margin: 30,
-      },
-    title: title,
-});
-
-=======
-import React from 'react';
-// react-native components
-import { View, StyleSheet, ScrollView } from 'react-native';
-// my components
-import ClubCard from './ClubCard';
-import CustomText from '../CustomText';
-// fonts
-import { title } from '../../styles/FontStyles';
-
-const ClubCategory = ({name, data, navigation}) => {
-    return (
-        <View style={styles.clubCategory}>
-            <CustomText style={[styles.title, {marginLeft: 20}]} text={name} />
-            <ScrollView horizontal={true}>
-            {
-                // map through the club data and display each club
-                data.map((item, index) => {
-                const onPress = () => {
-                    // Navigate to the sign-up screen
-                    navigation.navigate("ClubScreen", {
-                        name: item.clubName,
-                        description: item.clubDescription,
-                        categories: item.clubCategories,
-                        img: item.clubImg,
-                        events: item.events,
-                    });
-                }
-
-                return (
-                    <View key={index}>
-                        <ClubCard onPress={onPress} name={item.clubName} description={item.clubDescription} img={item.clubImg} />
-                    </View>
-                )   
-                })
-            }
-            </ScrollView>
-        </View>
-    )
-}
-
-const styles = StyleSheet.create({
-    clubCategory: {
-      flex: 1,
-      justifyContent: 'flex-start',
-      alignItems: 'left',
     },
-    title: title,
+    title: {
+        fontSize: 20,
+        marginBottom: 10,
+    }
 });
 
->>>>>>> dfe4a17ddd108df15325f902cdfdaa4361e7c37e
 export default ClubCategory;

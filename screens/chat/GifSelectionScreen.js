@@ -1,19 +1,26 @@
 import React, { useState, useEffect } from 'react';
 import { View, TextInput, FlatList, TouchableOpacity, StyleSheet } from 'react-native';
+// image
 import { Image } from 'expo-image';
-import Header from '../../components/Header';
+// giphy image
+import Giphy from '../../assets/PoweredBy_200px-White_HorizText.png';
+// my components
+import Header from '../../components/display/Header';
+// icons
 import { MaterialIcons } from '@expo/vector-icons'; // Add this import
-import {Colors} from '../../styles/Colors'
+// styles
+import { Colors } from '../../styles/Colors'
 
-const GifSelectionScreen = ({ navigation, route }) => {
+const GifSelectionScreen = ({ navigation, route }) => { 
+  // create states for gifs
   const [gifs, setGifs] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
-  
-  const { clubName, screenName } = route.params;
+  // get club name from previous screen
+  const { clubName, screenName, clubId } = route.params;
 
   const fetchGifs = async () => {
     // Example API call (replace with actual API call to Giphy or Tenor)
-    const response = await fetch(`https://api.giphy.com/v1/gifs/search?api_key=mCWWr1G26e4ZDcNz1bHjKDsbk9142AOC&q=${searchTerm}`);
+    const response = await fetch(`https://api.giphy.com/v1/gifs/search?api_key=mCWWr1G26e4ZDcNz1bHjKDsbk9142AOC&q=${searchTerm ? searchTerm : 'trending'}&limit=30&offset=0&rating=g&lang=en`);
     const { data } = await response.json();
     setGifs(data.map(item => item.images.fixed_height.url));
   };
@@ -24,17 +31,18 @@ const GifSelectionScreen = ({ navigation, route }) => {
 
   const handleSelectGif = (gifUrl) => {
     if (screenName == "AdminChat") {
-      navigation.navigate("AdminChat",{ selectedGifUrl: gifUrl, clubName });
+      navigation.navigate("AdminChat", { selectedGifUrl: gifUrl, name: clubName, id : clubId });
     } else {
-      navigation.navigate("Chat",{ selectedGifUrl: gifUrl, clubName });
+      navigation.navigate("Chat", { selectedGifUrl: gifUrl, name: clubName, id: clubId });
     }
   };
 
   return (
     <View style={styles.container}>
-      <Header navigation={navigation} text="Gifs" back={true} />
+      <Header navigation={navigation} text="" back />
       <View style={styles.searchContainer}>
-        <MaterialIcons name="search" size={24} color="gray" style={{marginLeft: 5}} />
+
+        <MaterialIcons name="search" size={24} color={Colors.gray} style={{marginLeft: 5}} />
         <TextInput
           style={styles.searchInput}
           value={searchTerm}
@@ -43,6 +51,10 @@ const GifSelectionScreen = ({ navigation, route }) => {
           placeholderTextColor="gray" // Add placeholder text color
         />
       </View>
+
+      {/*Giphy attribution mark*/}
+      <Image source={Giphy} style={{height: 30, resizeMode: 'center'}} />
+
       <FlatList
         data={gifs}
         keyExtractor={(item, index) => index.toString()}
@@ -54,6 +66,8 @@ const GifSelectionScreen = ({ navigation, route }) => {
         numColumns={3}
         columnWrapperStyle={styles.row}
       />
+
+      <Image source={{ uri: '..\..\assets\PoweredBy_200px-White_HorizText.png' }} />
     </View>
   );
 };
@@ -61,14 +75,15 @@ const GifSelectionScreen = ({ navigation, route }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#FAFAFA"
+    backgroundColor: Colors.white,
   },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     borderBottomWidth: 1,
     borderBottomColor: Colors.lightGray,
-    paddingBottom: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 15,
   },
   searchInput: {
     flex: 1,

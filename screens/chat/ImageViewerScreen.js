@@ -1,7 +1,11 @@
 import React, { useState } from 'react';
-import { View, Image, Modal, StyleSheet, TouchableOpacity } from 'react-native';
+import { Image, Modal, StyleSheet, TouchableOpacity } from 'react-native';
+// navigation
 import { useNavigation } from '@react-navigation/native'; // Make sure to import useNavigation
+// icons
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons'; // Import MaterialIcons
+// styles
+import { Colors } from '../../styles/Colors';
 
 export default function ImageViewerScreen({ route }) {
   const { imageUri } = route.params;
@@ -24,7 +28,7 @@ export default function ImageViewerScreen({ route }) {
       <TouchableOpacity style={styles.container} onPress={closeModalAndGoBack}>
         <Image source={{ uri: imageUri }} style={styles.image} />
         <TouchableOpacity style={styles.closeButton} onPress={closeModalAndGoBack}>
-          <MaterialIcons name="close" size={30} color="white" />
+          <MaterialIcons name="close" size={30} color={Colors.white} />
         </TouchableOpacity>
       </TouchableOpacity>
     </Modal>
@@ -39,8 +43,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   image: {
-    width: '90%', // Adjust based on preference
-    height: '80%', // Adjust based on preference
+    width: '90%', // Adjust
+    height: '80%', // Adjust
     resizeMode: 'contain',
   },
   closeButton: {

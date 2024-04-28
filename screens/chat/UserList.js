@@ -1,93 +1,112 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, FlatList, Text, TouchableOpacity, TextInput, Alert, Image } from 'react-native';
-import Header from '../../components/Header';
+import { View, StyleSheet, FlatList, Text, TouchableOpacity, Alert, ScrollView } from 'react-native';
+// my components
+import Header from '../../components/display/Header';
+import SearchBar from '../../components/input/SearchBar';
+import ProfileImg from '../../components/display/ProfileImg';
+import CustomText from '../../components/display/CustomText';
+import ToggleButton from '../../components/buttons/ToggleButton';
+import ProfileOverlay from '../../components/overlays/ProfileOverlay';
+// Firebase
 import { ref, get, remove, update } from 'firebase/database';
-import { getAuth, onAuthStateChanged } from 'firebase/auth';
+import { getAuth } from 'firebase/auth';
 import { db } from '../../backend/FirebaseConfig';
+// icons
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons'; // Ensure react-native-vector-icons is installed
+// functions
+import { emailSplit, checkMembership, updateProfileData } from '../../functions/backendFunctions';
+// styles
 import { Colors } from '../../styles/Colors';
-import { MaterialIcons } from '@expo/vector-icons';
 
 const UserList = ({ route, navigation }) => {
+  const { clubId } = route.params;
+  // states
   const [clubMembers, setClubMembers] = useState([]);
-  const [filteredMembers, setFilteredMembers] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedPrivilege, setSelectedPrivilege] = useState('all');
   const [currentUserId, setCurrentUserId] = useState(null);
   const [currentUserPrivilege, setCurrentUserPrivilege] = useState('');
-  const clubName = route?.params?.clubName;
-
+  // overlay
+  const [overlayVisible, setOverlayVisible] = useState(false);
+  const [overlayUserData, setOverlayUserData] = useState({});
+  // loading
+  const [loading, setLoading] = useState(true);
+  
   useEffect(() => {
-    const auth = getAuth();
-    onAuthStateChanged(auth, (user) => {
-      if (user) {
-        setCurrentUserId(user.uid);
-        fetchCurrentUserPrivilege(user.uid);
-      } else {
-        setCurrentUserId(null);
-        setCurrentUserPrivilege('');
-      }
-    });
+
+    fetchClubMembers();
+
+    const asyncFunc = async () => {
+      const auth = getAuth();
+      const user = auth.currentUser;
+      setCurrentUserId(user.uid);
+      checkMembership(clubId, setCurrentUserPrivilege);
+      setLoading(false);
+    } 
+
+    asyncFunc();
+    
   }, []);
 
-  useEffect(() => {
-    if (clubName) {
-      fetchClubMembers();
+  const filterMembers = (member) => {
+    
+    // filter members by privilege
+    if (selectedPrivilege !== 'all' && member.privilege !== selectedPrivilege) {
+      return false;
     }
-  }, [clubName]);
+  
+    const fullName = `${member.firstName} ${member.lastName}`;
+    // filter members by search query
+    if (!member.userName.toLowerCase().includes(searchQuery.toLowerCase()) 
+    && !member.firstName.toLowerCase().includes(searchQuery.toLowerCase()) 
+    && !member.lastName.toLowerCase().includes(searchQuery.toLowerCase())
+    && !fullName.toLowerCase().includes(searchQuery.toLowerCase())) {
+      return false;
+    }
 
-  useEffect(() => {
-    filterMembers(searchQuery);
-  }, [clubMembers, searchQuery, selectedPrivilege]);
+    // true otherwise
+    return true;
+  };
 
+  const filteredMembers = clubMembers.filter(filterMembers);
+
+  // fetch club members
   const fetchClubMembers = async () => {
-    const clubRef = ref(db, `clubs/${clubName}/clubMembers`);
-    const snapshot = await get(clubRef);
-    if (snapshot.exists()) {
-      const membersData = snapshot.val();
-      const membersArray = Object.entries(membersData).map(([key, value]) => ({
-        id: key,
-        userName: value.userName,
-        privilege: value.privilege,
-      }));
-      setClubMembers(membersArray);
-      filterMembers(searchQuery);
-    } else {
-      Alert.alert("No members found for club", clubName);
+    // have to do this because club members changes during user promotion/demotion/deletion
+    const user = getAuth().currentUser;
+    
+    if (user) {
+      const clubMembersRef = ref(db, `${emailSplit()}/clubs/${clubId}/clubMembers`);
+      const snapshot = await get(clubMembersRef);
+      if (snapshot.exists()) {
+        const members = snapshot.val();
+        setClubMembers(Object.keys(members).map((member) => {
+          return {
+            ...members[member],
+            id: member,
+          };
+        }));
+      } else {
+        console.log("No members found.");
+      }
     }
   };
 
-  const fetchCurrentUserPrivilege = async (userId) => {
-    const userRef = ref(db, `clubs/${clubName}/clubMembers/${userId}`);
-    const snapshot = await get(userRef);
-    if (snapshot.exists()) {
-      setCurrentUserPrivilege(snapshot.val().privilege);
-    }
-  };
-
-  const filterMembers = (query) => {
-    const filtered = clubMembers.filter(member =>
-      member.userName.toLowerCase().includes(query.toLowerCase()) &&
-      (selectedPrivilege === 'all' || member.privilege === selectedPrivilege)
-    );
-    setFilteredMembers(filtered);
-  };
-
+  // sets buttons for editing members
   const actionButtonPressed = (member) => {
     const buttons = [];
-    // Ensure actions cannot be performed on the owner
-    if (member.privilege !== 'owner') {
-      if (currentUserId !== member.id && (currentUserPrivilege === 'owner' || (currentUserPrivilege === 'admin' && member.privilege === 'member'))) {
+    // Ensure actions cannot be performed on the owner or the current user
+    if (member.privilege !== 'owner' && member.id !== currentUserId) {
+      if (currentUserPrivilege === 'owner' || currentUserPrivilege === 'admin') {
         buttons.push({ text: "Promote", onPress: () => promoteMember(member.id, member.privilege) });
       }
-      if (currentUserId !== member.id && currentUserPrivilege === 'owner' && member.privilege === 'admin') {
+      if (currentUserPrivilege === 'owner' && member.privilege === 'admin') {
         buttons.push({ text: "Demote", onPress: () => demoteMember(member.id, member.privilege) });
       }
-      if (currentUserId !== member.id && (currentUserPrivilege === 'owner' || (currentUserPrivilege === 'admin' && member.privilege !== 'owner'))) {
+      if (currentUserPrivilege === 'owner' || (currentUserPrivilege === 'admin' && member.privilege !== 'owner')) {
         buttons.push({ text: "Remove", onPress: () => removeMemberConfirmed(member.id), style: 'destructive' });
       }
     }
-  
     // Always allow cancel
     buttons.push({ text: "Cancel", style: 'cancel' });
   
@@ -97,12 +116,12 @@ const UserList = ({ route, navigation }) => {
     }
   };
   
-
   const promoteMember = async (memberId, memberPrivilege) => {
+
     // Assuming memberId is the ID of the member being promoted.
     if (memberPrivilege !== 'owner') {
       let newPrivilege = memberPrivilege === 'member' ? 'admin' : 'owner';
-      const memberRef = ref(db, `clubs/${clubName}/clubMembers/${memberId}`);
+      const memberRef = ref(db, `${emailSplit()}/clubs/${clubId}/clubMembers/${memberId}`);
       const snapshot = await get(memberRef);
       
       if (snapshot.exists()) {
@@ -112,7 +131,7 @@ const UserList = ({ route, navigation }) => {
         
         // If promoting to owner, demote the current owner to admin
         if (newPrivilege === 'owner') {
-          await update(ref(db, `clubs/${clubName}/clubMembers/${currentUserId}`), { privilege: 'admin' });
+          await update(ref(db, `${emailSplit()}/clubs/${clubId}/clubMembers/${currentUserId}`), { privilege: 'admin' });
           setCurrentUserPrivilege('admin');
           Alert.alert("Ownership Transferred", `You are now an admin. ${member.userName} is the new owner.`);
         } else {
@@ -127,68 +146,88 @@ const UserList = ({ route, navigation }) => {
     }
   };
   
-  
-
   const demoteMember = async (memberId, memberPrivilege) => {
+
     let newPrivilege = memberPrivilege === 'admin' ? 'member' : 'admin'; // Simplify for this context
-    await update(ref(db, `clubs/${clubName}/clubMembers/${memberId}`), { privilege: newPrivilege });
+    await update(ref(db, `${emailSplit()}/clubs/${clubId}/clubMembers/${memberId}`), { privilege: newPrivilege });
     fetchClubMembers();
     Alert.alert("Demotion Success", `Member has been demoted to ${newPrivilege}.`);
   };
 
   const removeMemberConfirmed = async (memberId) => {
-    await remove(ref(db, `clubs/${clubName}/clubMembers/${memberId}`));
+
+    await remove(ref(db, `${emailSplit()}/clubs/${clubId}/clubMembers/${memberId}`));
     fetchClubMembers();
     Alert.alert("Removal Success", "Member has been successfully removed from the club.");
   };
 
-  const renderMember = ({ item }) => (
-    <View style={styles.memberContainer}>
-      <View style={styles.memberInfo}>
-        <View style={styles.avatarContainer}>
-          {/* Use the local asset for the avatar */}
-          <Image 
-            source={require('../../assets/logo.png')} // Reference the local image here
-            style={styles.avatar} 
-          />
-        </View>
-        <View>
-          <Text style={styles.memberName}>{item.userName}</Text>
-          <Text style={styles.memberPrivilege}>{item.privilege}</Text>
-        </View>
-      </View>
-      <TouchableOpacity onPress={() => actionButtonPressed(item)}>
-        <Icon name="dots-vertical" size={24} color="black" />
-      </TouchableOpacity>
-    </View>
-  );
-  
-  
+  const renderMember = ({ item }) => {
+    return (
+      <View style={styles.memberContainer}>
+      
+        <View style={styles.memberInfo}>
+          <TouchableOpacity onPress={() => {
+            setOverlayVisible(true);
+            updateProfileData(item.id, setOverlayUserData);
+          }} style={styles.avatarContainer}>
+            <ProfileImg profileImg={item.profileImg} width={50} />
+          </TouchableOpacity>
+          <View style={{flexDirection: 'row', justifyContent: 'space-between', width: '75%'}}>
+            <View style={{ flex: 1}}>
+              <CustomText style={styles.memberName} text={`${item.firstName} ${item.lastName}`} font="bold"/>
+              <CustomText style={styles.memberPrivilege} text={`@${item.userName}`} />
+            </View>
 
+            <CustomText style={[styles.memberPrivilege, {marginTop: 12}]} text={item.privilege}/>
+          </View>
+        </View>
+
+        {item.id !== currentUserId &&
+        <TouchableOpacity onPress={() => actionButtonPressed(item)} style={{marginRight: 5}}>
+          <Icon name="dots-vertical" size={24} color="black" />
+        </TouchableOpacity>}
+
+      </View>
+    );
+  };
+  
   return (
     <View style={styles.container}>
-  <Header navigation={navigation} text="User List" back={true} />
-      <View style={styles.searchContainer}>
-        <MaterialIcons name="search" size={24} color={Colors.gray} style={{marginLeft: 8}}/>
-    
-      <TextInput
-        style={styles.searchBar}
-        placeholder="Search for a user..."
-        value={searchQuery}
-        onChangeText={setSearchQuery}
-      />
+      <Header navigation={navigation} text="User List" back={true} />
+
+      <View style={styles.searchBarView}>
+        <SearchBar value={searchQuery} setValue={setSearchQuery} placeholder="Search members" />
       </View>
-      <View style={styles.filterContainer}>
-        {['all', 'member', 'admin', 'owner'].map((privilege) => (
-          <TouchableOpacity key={privilege} onPress={() => setSelectedPrivilege(privilege)} style={styles.filterButton}>
-            <Text style={styles.filterText}>{privilege.charAt(0).toUpperCase() + privilege.slice(1)}</Text>
-          </TouchableOpacity>
-        ))}
+
+      <View style={styles.upperContent}>
+        <View style={styles.filterContainer}>
+          {['all', 'member', 'admin', 'owner'].map((privilege) => (
+            <ToggleButton
+              key={privilege}
+              text={privilege.charAt(0).toUpperCase() + privilege.slice(1)}
+              toggled={selectedPrivilege === privilege}
+              onPress={() => setSelectedPrivilege(privilege)}
+              toggledCol={Colors.red}
+              untoggledCol={Colors.gray}
+            />
+          ))}
+        </View>
       </View>
+
+      <View style={styles.separator} />
+
       <FlatList
         data={filteredMembers}
         renderItem={renderMember}
         keyExtractor={(item) => item.id}
+        style={{paddingHorizontal: 0, backgroundColor: Colors.white}}
+      />
+
+      {/* Overlay */}
+      <ProfileOverlay
+        visible={overlayVisible}
+        setVisible={setOverlayVisible}
+        userData={overlayUserData}
       />
     </View>
   );
@@ -197,58 +236,57 @@ const UserList = ({ route, navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FAFAFA',
-   
-   
+    backgroundColor: Colors.lightGray,
+  },
+  searchBarView: {
+    margin: 15,
+    marginTop: 5,
+    marginBottom: 15,
+  },
+  upperContent: {
+    justifyContent: 'flex-start',
+    backgroundColor: Colors.white,
+    paddingTop: 10,
+    borderTopLeftRadius: 30,
+    borderTopRightRadius: 30,
+  },
+  filterContainer: {
+    flexDirection: 'row',
+    justifyContent: 'flex-start',
+    paddingBottom: 10,
+    paddingHorizontal: 20,
+    gap: 10,
+  },
+  filterText: {
+    fontSize: 16,
+  },
+  separator: {
+    height: 1,
+    width: '95%',
+    marginRight: 20,
+    backgroundColor: Colors.lightGray,
   },
   memberContainer: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#ddd',
   },
   memberInfo: {
     flexDirection: 'column',
     alignItems: 'flex-start',
   },
   memberName: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: 'bold',
-    color: '#333',
+    color: Colors.black,
   },
   memberPrivilege: {
-    fontSize: 14,
-    color: 'grey',
-  },
-  searchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.lightGray,
-    paddingBottom: 10,
-  },
-  searchInput: {
-    flex: 1,
-    marginLeft: 10,
     fontSize: 16,
-  },
-  filterContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    paddingVertical: 10,
-  },
-  filterButton: {
-    marginHorizontal: 10,
-    paddingVertical: 5,
-    paddingHorizontal: 10,
-    borderWidth: 1,
-    borderRadius: 5,
-    borderColor: '#ddd',
-  },
-  filterText: {
-    fontSize: 16,
+    color: Colors.darkGray,
+    marginRight: -5,
+    textTransform: 'capitalize',
   },
   memberInfo: {
     flexDirection: 'row',

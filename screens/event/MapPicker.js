@@ -2,13 +2,15 @@ import React, { useState } from 'react';
 // react native components
 import { View, StyleSheet, TouchableOpacity } from 'react-native';
 // my components
-import CustomButton from '../../components/CustomButton';
+import CustomButton from '../../components/buttons/CustomButton';
 // maps
 import MapView, { Marker } from 'react-native-maps';
 import Geocoder from 'react-native-geocoding';
 import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete';
 // icons
 import { Ionicons } from '@expo/vector-icons';
+// styles
+import { Colors } from '../../styles/Colors';
 // initialize geocoder
 Geocoder.init('AIzaSyAoX4MTi2eAw2b_W3RzA35Cy5yjpwQYV3E');
 
@@ -33,13 +35,13 @@ const MapPicker = ({ route, navigation }) => {
         event: newEvent,
       });
       return;
-
     } else {
       // go back to new event screen
       navigation.navigate('NewEvent', { 
         event: newEvent,
         
         clubId: event.clubId,
+        clubCategories: event.categories,
         fromMap: true,
       });
     }
@@ -70,13 +72,14 @@ const MapPicker = ({ route, navigation }) => {
 
   return (
     <View style={styles.container}>
+      <TouchableOpacity style={styles.backButton} onPress={onSubmitPressed}>
+        <Ionicons name="chevron-back" size={40} color={Colors.black} />
+      </TouchableOpacity>
       <MapView
         style={styles.biggerMapStyle}
         region={myLocation}
       > 
-        <Marker
-          coordinate={myLocation}
-        />
+        <Marker coordinate={myLocation} />
       </MapView>
       <GooglePlacesAutocomplete
         placeholder='Search'
@@ -87,9 +90,6 @@ const MapPicker = ({ route, navigation }) => {
           language: 'en',
         }}
       />
-      <TouchableOpacity style={styles.backButton} onPress={onSubmitPressed}>
-        <Ionicons name="chevron-back" size={40} color="black" />
-      </TouchableOpacity>
       <View style={styles.submitButton}>
         <CustomButton text="Submit" onPress={onSubmitPressed} />
       </View>
@@ -101,7 +101,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: 'center',
-    backgroundColor: '#FAFAFA',
+    backgroundColor: Colors.white,
   },
   biggerMapStyle: {
     flex: 1,

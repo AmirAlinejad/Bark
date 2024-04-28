@@ -1,20 +1,36 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, StyleSheet, TextInput, Alert, TouchableOpacity } from 'react-native';
+import { View, FlatList, StyleSheet, Alert, TouchableOpacity } from 'react-native';
+// Firebase
 import { query, collection, where, onSnapshot } from 'firebase/firestore';
 import { firestore } from '../../backend/FirebaseConfig'; // Update this path according to your project structure
-import Header from '../../components/Header'; // Update this import based on your project structure
-import {Colors} from '../../styles/Colors'
-import { Image } from 'expo-image';
-import { MaterialIcons } from '@expo/vector-icons';
+// icons
+import { Ionicons } from '@expo/vector-icons';
+// my components
+import Header from '../../components/display/Header';
+import MessageItem from '../../components/chat/MessageItem';
+import SearchBar from '../../components/input/SearchBar';
+import ProfileOverlay from '../../components/overlays/ProfileOverlay';
+import CustomText from '../../components/display/CustomText';
+// icons
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+// styles
+import { Colors } from '../../styles/Colors'
 
 const MessageSearchScreen = ({ route, navigation }) => {
-  const { clubName, chatName } = route.params;
+  const { clubId, chatName, pin } = route.params;
+  // states
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchPinned, setSearchPinned] = useState(pin);
   const [messages, setMessages] = useState([]);
+  // overlay
+  const [overlayVisible, setOverlayVisible] = useState(false);
+  const [overlayUserData, setOverlayUserData] = useState({});
+  // loading
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchMessages = () => {
-      const messagesQuery = query(collection(firestore, chatName), where('clubName', '==', clubName));
+      const messagesQuery = query(collection(firestore, chatName), where('clubId', '==', clubId), where('pinned', '==', searchPinned)); // [2
 
       const unsubscribe = onSnapshot(messagesQuery, (querySnapshot) => {
         const fetchedMessages = querySnapshot.docs.map(doc => ({
@@ -27,68 +43,61 @@ const MessageSearchScreen = ({ route, navigation }) => {
         Alert.alert("Error fetching messages", error.message);
       });
 
+      setLoading(false);
+
       return unsubscribe;
     };
-
     return fetchMessages();
-  }, [clubName]);
+  }, [ searchPinned]);
 
   const filteredMessages = messages.filter(message =>
     message.text.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const renderMessage = ({ item }) => (
-    <View style={styles.messageItem}>
-      <View style={styles.avatarContainer}>
-        <Image source={{ uri: item.user.avatar }} style={styles.avatar} />
-      </View>
-      <View style={styles.messageContent}>
-        <Text style={styles.senderName}>{item.user.name}</Text>
-        {/* Display text message */}
-        {item.text && <Text style={styles.messageText}>{item.text}</Text>}
-        {/* Display image with option to view larger */}
-        {item.image && (
-          <TouchableOpacity onPress={() => navigation.navigate('ImageViewerScreen', { imageUri: item.image })}>
-            <Image source={{ uri: item.image }} style={styles.messageImage} />
-            <Text style={styles.viewImageText}></Text>
-          </TouchableOpacity>
-        )}
-        {/* Display GIF with option to view larger */}
-        {item.gifUrl && (
-          <TouchableOpacity onPress={() => navigation.navigate('ImageViewerScreen', { imageUri: item.gifUrl })}>
-            <Image source={{ uri: item.gifUrl }} style={styles.messageImage} />
-            <Text style={styles.viewImageText}></Text>
-          </TouchableOpacity>
-        )}
-        <Text style={styles.dateTime}>{formatDateTime(item.createdAt)}</Text>
-      </View>
-    </View>
+    <MessageItem 
+      item={item} 
+      setOverlayVisible={setOverlayVisible} 
+      setOverlayUserData={setOverlayUserData}
+    />
   );
-  
-  
-
-  const formatDateTime = (dateTime) => {
-    const options = { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true };
-    return dateTime.toLocaleString('en-US', options);
-  };
 
   return (
     <View style={styles.container}>
-      <Header navigation={navigation} text="Pinned Messages" back={true} />
-      <View style={styles.searchContainer}>
-      <MaterialIcons name="search" size={24} color={Colors.gray} />
-      <TextInput
-        style={styles.searchInput}
-        placeholder="Search messages..."
-        value={searchQuery}
-        onChangeText={setSearchQuery}
-      />
+      <Header navigation={navigation} text="Messages" back={true} />
+      <TouchableOpacity style={styles.pinnedButton} onPress={() => setSearchPinned(!searchPinned)}>
+        <MaterialCommunityIcons
+          name={'pin'}
+          size={30}
+          color={searchPinned ? Colors.buttonBlue : Colors.gray}
+          
+        />
+      </TouchableOpacity>
+      
+      <View style={styles.searchBarView}>
+        <SearchBar value={searchQuery} setValue={setSearchQuery} placeholder="Search messages" />
       </View>
+
+      {/* Show if no messages */}
+      {filteredMessages.length === 0 && (
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: 200 }}>
+          <Ionicons name="chatbubbles" size={100} color={Colors.gray} />
+          <CustomText text="No messages to display." font='bold' style={{ fontSize: 20, color: Colors.darkGray }} />
+        </View>
+      )}
+
       <FlatList
         data={filteredMessages}
         renderItem={renderMessage}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.messageList}
+      />
+
+      {/* Overlay */}
+      <ProfileOverlay
+        visible={overlayVisible}
+        setVisible={setOverlayVisible}
+        userData={overlayUserData}
       />
     </View>
   );
@@ -97,66 +106,21 @@ const MessageSearchScreen = ({ route, navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#FAFAFA",
-    padding: 10,
+    backgroundColor: Colors.light,
   },
-  searchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.lightGray,
-    paddingBottom: 10,
-  },
-  searchInput: {
-    flex: 1,
-    marginLeft: 10,
-    fontSize: 16,
+  searchBarView: {
+    margin: 15,
+    marginTop: 5,
+    marginBottom: 10,
   },
   messageList: {
     paddingBottom: 20,
+    paddingHorizontal: 0,
   },
-  messageItem: {
-    flexDirection: 'row',
-    backgroundColor: '#f0f0f0',
-    padding: 10,
-    borderRadius: 5,
-    marginBottom: 10,
-  },
-  avatarContainer: {
-    marginRight: 10,
-  },
-  avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-  },
-  messageContent: {
-    flex: 1,
-  },
-  senderName: {
-    fontWeight: 'bold',
-    marginBottom: 5,
-  },
-  messageText: {
-    fontSize: 16,
-    marginBottom: 5,
-  },
-  dateTime: {
-    color: 'gray',
-    fontSize: 12,
-  },
-  messageImage: {
-    width: 100, // Adjust the size as needed
-    height: 100, // Adjust the size as needed
-    resizeMode: 'cover',
-    borderRadius: 5, // Optional: if you want rounded corners
-    marginVertical: 5, // Spacing above and below the image
-  },
-  viewImageText: {
-    fontSize: 14,
-    color: Colors.primary, // Use a color that indicates it's clickable
-    textDecorationLine: 'underline',
-    textAlign: 'center', // Center the text below the image
+  pinnedButton: {
+    position: 'absolute',
+    right: 30,
+    top: 65,
   },
 });
 

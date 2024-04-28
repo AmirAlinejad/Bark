@@ -1,100 +1,101 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, TouchableOpacity } from 'react-native';
-import { getAuth } from 'firebase/auth';
+import { View, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+// fade
+import Fade from 'react-native-fade';
 // backend
-import { ref, get } from 'firebase/database';
+import { ref, get, set } from 'firebase/database';
 import { db } from '../../backend/FirebaseConfig';
+import { getAuth } from 'firebase/auth';
 // my components
-import Header from '../../components/Header';
-import CustomText from '../../components/CustomText';
+import Header from '../../components/display/Header';
+import CustomText from '../../components/display/CustomText';
 import IconButton from '../../components/buttons/IconButton';
 import CircleButton from '../../components/buttons/CircleButton';
 import ToggleButton from '../../components/buttons/ToggleButton';
-// time functions
-import { timeToString } from '../../functions/timeFunctions';
+// icons
+import { Ionicons } from '@expo/vector-icons';
+// functions
+import { emailSplit, checkMembership } from '../../functions/backendFunctions';
+import { timeToString, reformatDate } from '../../functions/timeFunctions';
+import { goToClubScreen } from '../../functions/navigationFunctions';
 // map
 import MapView, { Marker } from 'react-native-maps';
-// fonts
-import { textNormal } from '../../styles/FontStyles';
 // colors
 import { Colors } from '../../styles/Colors';
 // clipboard
 import * as Clipboard from 'expo-clipboard'; 
 
 const EventScreen = ({ route, navigation }) => {
-  const { event } = route.params;
-  const [isMember, setIsMember] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [isOwner, setIsOwner] = useState(false);
-  const [isLeaveClubModalVisible, setLeaveClubModalVisible] = useState(false);
+  const { event, fromScreen } = route.params;
+  const [currentUserPrivilege, setCurrentUserPrivilege] = useState('none');
   const [RSVPList, setRSVPList] = useState([]); // list of users who RSVP'd
   const [userRSVP, setUserRSVP] = useState(false); // if the user has RSVP'd
-
-  const userId = getAuth().currentUser.uid;
+  const [clubData, setClubData] = useState(null);
+  const [userId, setUserId] = useState(null);
+  const [clubName, setClubName] = useState(null);
+  const [addressCopied, setAddressCopied] = useState(false);
+  const [showText, setShowText] = useState(true);
+  // loading
+  const [loading, setLoading] = useState(true);
 
   // clipboard
   const copyAddressToClipboard = async () => {
     Clipboard.setStringAsync(event.address);
-    alert('Event address copied to clipboard');
+    setAddressCopied(true);
   }
 
   // add rsvp data to state
   useEffect(() => {
-    const rsvpRef = ref(db, `events/${event.eventId}/rsvp`);
-    get(rsvpRef).then((snapshot) => {
-      if (snapshot.exists()) {
-        setRSVPList(snapshot.val());
-      }
-    });
 
-    // check if user has RSVP'd
+    const asyncFunc = async () => {
+      setLoading(true);
+
+      // set user id
+      const auth = getAuth();
+      setUserId(auth.currentUser.uid);
+
+      const rsvpRef = ref(db, `${emailSplit()}/events/${event.id}/rsvp`);
+      get(rsvpRef).then((snapshot) => {
+        if (snapshot.exists()) {
+          setRSVPList(snapshot.val());
+        }
+      });
+
+      // check if user is a member of the club
+      await checkMembership(event.clubId, setCurrentUserPrivilege);
+
+      // get club data
+      const clubRef = ref(db, `${emailSplit()}/clubs/${event.clubId}`);
+      get(clubRef).then((snapshot) => {
+        if (snapshot.exists()) {
+          setClubData(snapshot.val());
+        }
+      });
+
+      setLoading(false);
+    }
+
+    asyncFunc();
+  }, []);
+
+  // set rsvp status once rsvp list is loaded
+  useEffect(() => {
+
     if (RSVPList.includes(userId)) {
       setUserRSVP(true);
     }
 
-  }, []);
+  }, [RSVPList]);
 
-  // club data
-  const [clubData, setClubData] = useState({});
-
-  const checkMembership = async () => {
-    const auth = getAuth();
-    const user = auth.currentUser;
-
-    if (user) {
-      const userId = user.uid;
-      const clubRef = ref(db, `clubs/${event.clubId}/clubMembers`);
-
-      const snapshot = await get(clubRef);
-      if (snapshot.exists()) {
-        const clubMembers = snapshot.val();
-        console.log(clubMembers);
-        if (clubMembers[userId] !== undefined) {
-          setIsMember(true);
-        }
-        if (clubMembers[userId].privilege === 'admin') {
-          setIsAdmin(true);
-        }
-        if (clubMembers[userId].privilege === 'owner') {
-          setIsOwner(true);
-          setIsAdmin(true);
-        }
-      }
-    }
-  };
-
+  // fade out text after 2 seconds
   useEffect(() => {
-    // get club data from db
-    const clubRef = ref(db, `clubs/${event.clubId}`);
-    get(clubRef).then((snapshot) => {
-      if (snapshot.exists()) {
-        setClubData(snapshot.val());
-      }
-    });
-
-    checkMembership();
+    const timer = setTimeout(() => {
+      setShowText(false);
+    }, 2000);
+    return () => clearTimeout(timer);
   }, []);
 
+  // edit event button
   const onEditButtonPress = () => {
     navigation.navigate('EditEvent', {
       event: event,
@@ -109,147 +110,108 @@ const EventScreen = ({ route, navigation }) => {
     return split;
   }
 
-  const reformatDate = (date) => {
-    let split = [];
-    split[0] = date.split(' ')[0];
-    if (split[0] === 'Mon') {
-      split[0] = 'Monday';
-    } else if (split[0] === 'Tue') {
-      split[0] = 'Tuesday';
-    } else if (split[0] === 'Wed') {
-      split[0] = 'Wednesday';
-    } else if (split[0] === 'Thu') {
-      split[0] = 'Thursday';
-    } else if (split[0] === 'Fri') {
-      split[0] = 'Friday';
-    } else if (split[0] === 'Sat') {
-      split[0] = 'Saturday';
-    } else if (split[0] === 'Sun') {
-      split[0] = 'Sunday';
+  // toggle RSVP
+  const toggleRSVP = () => {
+    let newRSVPList = RSVPList;
+
+    if (userRSVP) {
+      // remove user from rsvp list
+      newRSVPList = RSVPList.filter((id) => id != userId);
+      setRSVPList(newRSVPList);
+      setUserRSVP(false);
+    } else {
+      // add user to rsvp list
+      newRSVPList.push(userId);
+      setRSVPList(newRSVPList);
+      setUserRSVP(true);
     }
-    split[1] = date.split(' ')[1];
-    if (split[1] === 'Jan') {
-      split[1] = 'January';
-    } else if (split[1] === 'Feb') {
-      split[1] = 'February';
-    } else if (split[1] === 'Mar') {
-      split[1] = 'March';
-    } else if (split[1] === 'Apr') {
-      split[1] = 'April';
-    } else if (split[1] === 'May') {
-      split[1] = 'May';
-    } else if (split[1] === 'Jun') {
-      split[1] = 'June';
-    } else if (split[1] === 'Jul') {
-      split[1] = 'July';
-    } else if (split[1] === 'Aug') {
-      split[1] = 'August';
-    } else if (split[1] === 'Sep') {
-      split[1] = 'September';
-    } else if (split[1] === 'Oct') {
-      split[1] = 'October';
-    } else if (split[1] === 'Nov') {
-      split[1] = 'November';
-    } else if (split[1] === 'Dec') {
-      split[1] = 'December';
-    }
-    split[2] = date.split(' ')[2];
-    split[3] = date.split(' ')[3];
-    return split[0] + ', ' + split[1] + ' ' + split[2] + ', ' + split[3];
+
+    // update backend
+    const rsvpRef = ref(db, `${emailSplit()}/events/${event.id}/rsvp`);
+    set(rsvpRef, newRSVPList);
+
+    navigation.goBack();
   }
 
   return (
     <View style={styles.container}>
-      <Header text={event.name} back navigation={navigation}></Header>
-      <View style={styles.eventContent}>
+      <Header text={''} back navigation={navigation} />
+      <ScrollView contentContainerStyle={styles.eventContent}>
+
+        <CustomText style={styles.title} text={event.name} font='black' />
+
+        <CustomText style={styles.textNormal} font='bold' text={clubData?.clubName} />
         
-        {/*<CustomText style={styles.title} font='bold' text="Description" />*/}
-        <CustomText style={styles.textNormal} text={event.description} />
+        <CustomText style={styles.textNormal} text={event.description.trim()} />
 
-        {/*<CustomText style={styles.title} font='bold' text="Date" />*/}
-        <CustomText style={styles.textNormal} text={reformatDate(event.date)} />
+        <View>
+          <CustomText style={styles.textNormal} text={reformatDate(event.date)} font="bold"/>
+          <CustomText style={styles.textNormal} text={timeToString(event.time)} />
+        </View>
 
-        {/*<CustomText style={styles.title} font='bold' text="Time" />*/}
-        <CustomText style={styles.textNormal} text={timeToString(event.time)} />
-
-        <CustomText style={styles.title} font='bold' text="Location" />
         <MapView
           style={styles.mapStyle}
           region={event.location}
         >
-          <Marker
-            coordinate={event.location}
-            title={event.name ? event.name : undefined} // doesn't pass if eventName is empty
-          />
+          <Marker coordinate={event.location} />
         </MapView>
+
+        <View style={{marginTop: -10}}>
         {event.address ? (        
           <View style={{flexDirection: 'row'}}>
             <View>
               <CustomText style={styles.textSmall} text={splitAddress(event.address)[0]} />
               <CustomText style={styles.textSmall} text={splitAddress(event.address)[1]} />
             </View>
-            <IconButton icon={'copy-outline'} text="Copy address" onPress={copyAddressToClipboard} />
+            <TouchableOpacity style={{marginLeft: 15, marginTop: 8}} onPress={copyAddressToClipboard} >
+              <Ionicons name={!addressCopied ? 'copy-outline' : 'checkmark'} size={20} color="black"/>
+            </TouchableOpacity>
           </View>
         ) : (
           <CustomText style={styles.textSmall} text="No address provided" />
         )}
-
-        <ToggleButton toggled={userRSVP} icon={userRSVP ? 'checkmark' : 'people'} toggledCol={Colors.red} untoggledCol={Colors.lightRed} text="RSVP" onPress={() => {
-          if (userRSVP) {
-            // remove user from rsvp list
-            const index = RSVPList.indexOf(userId);
-            if (index > -1) {
-              RSVPList.splice(index, 1);
-            }
-            setRSVPList(RSVPList);
-            setUserRSVP(false);
-          } else {
-            // add user to rsvp list
-            RSVPList.push(userId);
-            setRSVPList(RSVPList);
-            setUserRSVP(true);
-          }
-
-          // update backend
-          const rsvpRef = ref(db, `events/${event.eventId}/rsvp`);
-          set(rsvpRef, RSVPList);
-
-          navigation.goBack();
-        }} />
-
-        <View style={styles.button}>
-          <IconButton icon={'arrow-forward-circle-outline'} text="Go to club" onPress={() => {
-            navigation.navigate("ClubScreen", {
-              name: clubData.clubName,
-              id: clubData.clubId,
-              description: clubData.clubDescription,
-              categories: clubData.clubCategories,
-              img: clubData.clubImg,
-              events: clubData.events,
-            });
-          }} />
         </View>
 
-      </View>
+        <ToggleButton 
+          toggled={userRSVP} icon={userRSVP ? 'checkmark' : 'people'} toggledCol={Colors.red} 
+          untoggledCol={Colors.lightRed} text={`RSVP (${RSVPList.length})`} onPress={toggleRSVP} 
+        />
 
-      {isAdmin &&
-        <CircleButton icon="create-outline" onPress={onEditButtonPress} position={{ bottom: 0, right: 0 }} size={80} />
+      </ScrollView>
+
+      {/* go to clubs screen */}
+      {fromScreen != 'ClubScreen' &&
+        <View style={styles.button}>
+          <IconButton icon={'enter-outline'} text="Club" onPress={() => goToClubScreen(clubData, navigation)} color={Colors.buttonBlue}/>
+        </View>
       }
+
+      {(currentUserPrivilege == 'admin' || currentUserPrivilege == 'owner') && (
+        <View>
+          <View style={{position: 'absolute', bottom: 5, right: 75, margin: 30}}>
+            <Fade visible={showText}>
+              <CustomText style={styles.popUpText} text="Edit the Event." font='bold' />
+            </Fade>
+          </View>
+          <CircleButton icon="create-outline" onPress={onEditButtonPress} position={{ bottom: 0, right: 0 }} size={80} />
+        </View>
+      )}
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    justifyContent: 'flex-start',
-    backgroundColor: '#FAFAFA',
     flex: 1,
+    justifyContent: 'flex-start',
+    backgroundColor: Colors.white,
   },
   eventContent: {
-    marginTop: 20,
-    marginHorizontal: 25,
     justifyContent: 'center',
     alignItems: 'flex-start',
+    gap: 20,
+    marginTop: 20,
+    marginHorizontal: 25,
   },
   mapStyle: {
     width: 170,
@@ -265,8 +227,8 @@ const styles = StyleSheet.create({
   },
   button: {
     position: 'absolute',
-    right: 10,
-    top: -60,
+    right: 30,
+    top: 68,
   },
 
   // bottom buttons
@@ -293,16 +255,19 @@ const styles = StyleSheet.create({
 
   // fonts
   title: {
-    ...textNormal,
-    fontSize: 25,
+    fontSize: 20,
   },
   textNormal: {
-    ...textNormal,
     fontSize: 18,
+    color: Colors.black,
   },
   textSmall: {
-    ...textNormal,
     fontSize: 14,
+  },
+  popUpText: {
+    color: Colors.black,
+    fontSize: 25,
+    textAlign: 'right',
   },
 });
 

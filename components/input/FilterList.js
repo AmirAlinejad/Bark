@@ -7,6 +7,8 @@ import { Colors } from '../../styles/Colors';
 // club list screen
 const FilterList = ({ items, setter, selected, text }) => {
 
+  // messy code for the multi-select but only used in one place b/c need to save the selected items
+  // used in calendar filter overlay
   return (
     <MultiSelect
         hideTags
@@ -21,22 +23,22 @@ const FilterList = ({ items, setter, selected, text }) => {
         searchInputPlaceholderText="Search..."
         noItemsText='No items found'
         onChangeInput={ (text)=> console.log(text)}
-        tagRemoveIconColor="#CCC"
-        tagBorderColor="#CCC"
-        tagTextColor="#CCC"
-        selectedItemTextColor="#CCC"
-        selectedItemIconColor="#CCC"
+        tagRemoveIconColor={Colors.inputBorder}
+        tagBorderColor={Colors.inputBorder}
+        tagTextColor={Colors.black}
+        selectedItemTextColor={Colors.black}
+        selectedItemIconColor={Colors.black}
         itemTextColor={Colors.black}
         displayKey="value"
         searchInputStyle={{ color: Colors.black }}
-        styleMainWrapper={{margin: 10, width: 300}}
+        styleMainWrapper={{margin: 0, width: 300}}
         styleDropdownMenu={{height: 50}}
-        styleDropdownMenuSubsection={{borderColor: '#ccc', borderWidth: 1, borderRadius: 20, backgroundColor: 'white'}}
+        styleDropdownMenuSubsection={{borderColor: Colors.inputBorder, borderWidth: 1, borderRadius: 25, backgroundColor: Colors.white}}
         styleTextDropdown={{ paddingLeft: 20, fontSize: 16 }}
         styleTextDropdownSelected={{ paddingLeft: 20, fontSize: 16 }}
-        styleInputGroup={{height: 50, borderColor: '#ccc', borderWidth: 1, borderRadius: 20, paddingRight: 20, paddingLeft: 20,}}
-        styleItemsContainer={{borderColor: '#ccc', borderWidth: 1, borderRadius: 20, marginTop: 10, paddingVertical: 10, backgroundColor: 'white'}}
-        styleRowList={{padding: 3,}}
+        styleInputGroup={{height: 50, borderColor: Colors.inputBorder, borderWidth: 1, borderRadius: 25, paddingRight: 20, paddingLeft: 20,}}
+        styleItemsContainer={{borderColor: Colors.inputBorder, borderWidth: 1, borderRadius: 20, marginTop: 10, paddingVertical: 10, backgroundColor: Colors.white}}
+        styleRowList={{padding: 3}}
     />
   );
 }

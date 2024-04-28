@@ -1,28 +1,30 @@
 import React, { useState, useEffect } from 'react';
 // react native components
-import { View, StyleSheet, ScrollView, TouchableOpacity, FlatList } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, FlatList } from 'react-native';
 // my components
-import CustomText from '../../components/CustomText';
+import CustomText from '../../components/display/CustomText';
 import ProfileImg from '../../components/display/ProfileImg';
 import IconButton from '../../components/buttons/IconButton';
-import Header from '../../components/Header';
+import Header from '../../components/display/Header';
 import IconText from '../../components/display/IconText';
-import ProfileOverlay from '../../components/overlays/ProfileOverlay';
+import CustomButton from '../../components/buttons/CustomButton';
 // functions
-import { getUserData } from '../../functions/getUserData';
+import { getSetUserData, deleteAccount } from '../../functions/backendFunctions';
+// firebase
+import { getAuth, signOut } from 'firebase/auth';
+// modal
+import Modal from 'react-native-modal';
 // colors
 import { Colors } from '../../styles/Colors';
-// fonts
-import { title, textNormal } from '../../styles/FontStyles';
 // linking
 import * as Linking from 'expo-linking';
 
 const Profile = ({ navigation }) => {
-  const [loading, setLoading] = useState(false);
   const [userData, setUserData] = useState(null);
-
-  // state for overlay
-  const [visible, setVisible] = useState(false);
+  const [loading, setLoading] = useState(true);
+  // delete account overlay
+  const [deleteAccountModal, setDeleteAccountModal] = useState(false);
+  const [logoutModal, setLogoutModal] = useState(false);
 
   // data for settings flatlist
   const settingsData = [
@@ -38,21 +40,7 @@ const Profile = ({ navigation }) => {
       }
     },
     {
-      id: '2',
-      icon: 'log-out-outline',
-      text: 'Log Out',
-      onPress: () => console.log('Log Out'),
-    },
-    {
       id: '3',
-      icon: 'help-circle-outline',
-      text: 'Help',
-      onPress: () => {
-        Linking.openURL('mailto:help.bark.mobile@gmail.com?subject=Help%20with%20Bark!&body=Please%20describe%20your%20issue%20here.');
-      },
-    },
-    {
-      id: '4',
       icon: 'phone-portrait-outline',
       text: 'App Settings',
       onPress: () => {
@@ -60,37 +48,62 @@ const Profile = ({ navigation }) => {
       },
     },
     {
-      id: '5',
-      icon: 'megaphone-outline',
-      text: 'Give Feedback',
+      id: '4',
+      icon: 'log-out-outline',
+      text: 'Log Out',
       onPress: () => {
-        navigation.navigate('FeedbackScreen');
+        setLogoutModal(true);
+      }
+    },
+    {
+      id: '5',
+      icon: 'chatbubble-outline',
+      text: 'Contact Us',
+      onPress: () => {
+        navigation.navigate('Feedback', {
+          userData: userData,
+          navigation: navigation,
+        });
       },
+    },
+    {
+      id: '6',
+      icon: 'trash-outline',
+      text: 'Delete Account',
+      onPress: () => {
+        setDeleteAccountModal(true);
+      },
+      color: Colors.red,
     }
   ];
 
   // render settings button
   const renderSettingsButton = ({ item }) => {
     return (
-      <IconButton icon={item.icon} text={item.text} onPress={item.onPress} style={{marginVertical: 10, marginLeft: 20}} />
+      <IconButton 
+        icon={item.icon} 
+        text={item.text} 
+        onPress={() => { // if not loading, then onPress
+          if (!loading) {
+            item.onPress();
+          }
+        }} 
+        style={styles.settingsButton} 
+        color={item.color ? item.color : Colors.black}
+      />
     );
   }
 
   useEffect(() => {
-    // get user data from auth
-    getUserData(setUserData, setLoading);
-  }, []);
 
-  // log out (not yet working)
-  const handleLogout = async () => {
-    /*const auth = getAuth();*/
-    try {
-      await signOut(auth); // make signOut function
-      navigation.navigate('SignIn');
-    } catch (error) {
-      console.error('Error signing out:', error);
+    const asyncFunc = async () => {
+      setLoading(true);
+      await getSetUserData(setUserData);
+      setLoading(false);
     }
-  };
+
+    asyncFunc();
+  }, []);
 
   // navigate to edit profile screen
   const goToEditProfile = () => {
@@ -101,41 +114,84 @@ const Profile = ({ navigation }) => {
     });
   }
 
-  // convert clubs to array of club names
-  const myClubsNames = userData?.clubs ? Object.keys(userData.clubs).map((id) => userData.clubs[id].clubName) : [];
+  // delete account
+  const deleteAccountFunc = () => {
+    deleteAccount();
+    setDeleteAccountModal(false);
+    navigation.navigate('SignIn');
+  }
 
-  const newLocal = '';
+  // log out
+  const logOut = () => {
+     const auth = getAuth();
+     signOut(auth).then(() => {
+       navigation.navigate('SignIn');
+     }).catch((error) => {
+       console.error('Error signing out:', error);
+     });
+  }
+
+  const gradYear = userData?.graduationYear ? userData.graduationYear : 'Add Year';
+  const major = userData?.major ? userData.major : '📚Add Major';
+
   return (
     <View style={styles.container}>
       <Header text='Your Profile' />
-      <View style={styles.profileContainer}>
-        <TouchableOpacity onPress={() => goToEditProfile()}>
-          <ProfileImg profileImg={userData?.profileImg} width={120} />
-        </TouchableOpacity>
-        <CustomText style={styles.name} text={userData?.firstName + " " + userData?.lastName} font='bold'/>
-        <CustomText style={styles.userName} text={'@'+userData?.userName} font='bold'/>
-        <View style={{flexDirection: 'row', alignItems: 'center', gap: 15}}>
-          <CustomText text={'🎓' + userData?.graduationYear} style={{color: Colors.darkGray, fontSize: 16}} font='bold'/>
-          <View style={{width: 10}}/>
-          <CustomText text={userData?.major} style={{color: Colors.darkGray, fontSize: 16}} font='bold'/>
+        <View style={styles.profileContainer}>
+
+          <TouchableOpacity onPress={() => goToEditProfile()}>
+            <ProfileImg profileImg={userData?.profileImg} width={120} />
+          </TouchableOpacity>
+
+          <CustomText style={styles.name} text={userData?.firstName + " " + userData?.lastName} font='bold'/>
+          <CustomText style={styles.userName} text={'@'+userData?.userName} font='bold'/>
+
+          <View style={styles.detailsView}>
+            <TouchableOpacity onPress={() => goToEditProfile()}>
+              <CustomText text={'🎓' + gradYear} style={styles.detailsText} font='bold'/>
+            </TouchableOpacity>
+          <View style={{width: 25}}/>
+          <TouchableOpacity onPress={() => goToEditProfile()}>
+            <CustomText text={major} style={styles.detailsText} font='bold' />
+          </TouchableOpacity>
         </View>
       </View>
-    
+  
       <View style={styles.setttingsContent}>
-        <IconText icon="settings-outline" iconColor={Colors.lightGray} text="Settings" onPress={() => console.log("Settings")} />
+        <IconText icon="settings-outline" iconColor={Colors.lightGray} text="Settings" />
         <FlatList
-          scrollEnabled={false}
           data={settingsData}
           renderItem={renderSettingsButton}
           keyExtractor={item => item.id}
           style={styles.buttonContainerView}
           ItemSeparatorComponent={() => <View style={styles.separator} />}
+          scrollEnabled={false}
         />
       </View>
 
-      <ProfileOverlay visible={visible} setVisible={setVisible} userData={userData} />
+      <Modal isVisible={deleteAccountModal}>
 
-      <IconButton icon="" text="show profile overlay" onPress={() => setVisible(true)} style={{position: 'absolute', bottom: 20, alignSelf: 'center'}} />
+        <View style={styles.modalContainer}>
+          <CustomText style={styles.modalText} text="Are you sure you want to delete your account?" />
+          <View style={styles.modalButtons}>
+            <CustomButton text="Yes" onPress={() => deleteAccountFunc()} color={Colors.red}/>
+            <CustomButton text="No" onPress={() => setDeleteAccountModal(false)} color={Colors.green}/>
+          </View>
+        </View>
+
+      </Modal>
+
+      <Modal isVisible={logoutModal}>
+
+        <View style={styles.modalContainer}>
+          <CustomText style={styles.modalText} text="Are you sure you want to log out of your account?" />
+          <View style={styles.modalButtons}>
+            <CustomButton text="Yes" onPress={() => logOut()} color={Colors.red}/>
+            <CustomButton text="No" onPress={() => setLogoutModal(false)} color={Colors.green}/>
+          </View>
+        </View>
+
+      </Modal>
     </View>
   );
 };
@@ -151,7 +207,16 @@ const styles = StyleSheet.create({
     marginTop: 40,
     flex: 4,
   },
+  detailsView: {
+    flexDirection: 'row',
+    marginTop: 0,
+  },
+  detailsText: {
+    fontSize: 16,
+    color: Colors.darkGray,
+  },
   setttingsContent: {
+    justifyContent: 'flex-start',
     flex: 4,
     paddingTop: 20,
     paddingLeft: 20,
@@ -159,34 +224,54 @@ const styles = StyleSheet.create({
     
     borderTopLeftRadius: 30,
     borderTopRightRadius: 30,
-    justifyContent: 'flex-start',
+  },
+  settingsButton: {
+    marginVertical: 10,
   },
   buttonContainerView: {
     flex: 1,
     marginTop: 10,
-    marginLeft: -20,
+    marginBottom: 20,
   },
   separator: { 
-    borderBottomColor: Colors.lightGray, 
-    borderBottomWidth: 0, 
-    width: '120%',
-    marginLeft: -20,
+    backgroundColor: Colors.lightGray,
+    height: 1,
+    marginRight: 20,
   },
   title: {
-    ...title,
     fontSize: 25,
+    marginVertical: 0,
   },
   name: {
-    ...title,
     marginTop: 10,
     fontSize: 30,
   },
   userName: {
     color: Colors.darkGray,
-    marginTop: -10,
+    marginTop: 0,
     fontSize: 20,
     marginBottom: 30,
-  }
+  },
+
+   // modal styles
+   modalContainer: {
+    backgroundColor: Colors.white,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+    margin: 20,
+    borderRadius: 20,
+  },
+  modalText: {
+    textAlign: 'center',
+    fontSize: 18,
+    marginBottom: 20,
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    gap: 80,
+    justifyContent: 'space-between',
+  },
 });
 
 export default Profile;

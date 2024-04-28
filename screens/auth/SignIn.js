@@ -1,22 +1,26 @@
 import React, { useState } from 'react';
 // react native components
-import { View, Image, StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
+import { Image } from 'expo-image';
 // assets
 import Logo from '../../assets/logo.png';
 // my components
-import CustomText from '../../components/CustomText';
-import CustomInput from '../../components/CustomInput';
-import CustomButton from '../../components/CustomButton';
+import CustomText from '../../components/display/CustomText';
+import CustomInput from '../../components//input/CustomInput';
+import CustomButton from '../../components/buttons/CustomButton';
+// keyboard aware scroll view
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 // backend
 import { signInWithEmailAndPassword, getAuth } from 'firebase/auth';
-import { get, ref } from 'firebase/database';
-import { db } from '../../backend/FirebaseConfig';
+// styling
+import { Colors } from '../../styles/Colors';
 
-const SignIn = ({ navigation }) => {
+const SignIn = ({ route, navigation }) => {
   // state variables
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(route.params?.email || '');
   const [password, setPassword] = useState('');
-  const [passwordVisible, setPasswordVisible] = useState(false);
+  const [passwordVisible, setPasswordVisible] = useState(true);
+  // loading and error handling
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
@@ -41,8 +45,11 @@ const SignIn = ({ navigation }) => {
     }
   };
 
-  // sign in
+  // sign in function
   const onSignInPressed = async () => {
+    // if loading, return
+    if (loading) return;
+
     setLoading(true);
     setErrorMessage('');
 
@@ -57,19 +64,14 @@ const SignIn = ({ navigation }) => {
     try {
       const response = await signInWithEmailAndPassword(auth, email, password);
 
-      // Fetch user data from the database
-      const userRef = ref(db, `users/${response.user.uid}`);
-      const userSnapshot = await get(userRef);
-
-      if (userSnapshot.exists()) {
-        const userData = userSnapshot.val();
-        console.log('User Data:', userData);
-
-        // Now you can use userData in your application
-      } else {
-        console.log('User data not found in the database.');
+      // make sure email is verified
+      if (!response.user.emailVerified) {
+        setErrorMessage('Please verify your email before signing in.');
+        setLoading(false);
+        return;
       }
 
+      // Navigate to the home screen
       navigation.navigate('HomeScreen');
     } catch (error) {
       console.log(error);
@@ -92,40 +94,51 @@ const SignIn = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      <Image source={Logo} style={styles.logo} resizeMode="contain" />
+      <KeyboardAwareScrollView 
+        contentContainerStyle={styles.elementsContainer}
+        extraHeight={-100}
+      >
+        <View style={styles.topElements}>
+          <Image source={Logo} style={styles.logo} />
+        </View>
 
-      <CustomText style={styles.title}>Welcome Back!</CustomText>
+        <View style={styles.signInContainer}>
+          <CustomText style={styles.title} text='Welcome back!' font='bold'/>
 
-      <CustomInput
-        placeholder="Email"
-        value={email}
-        setValue={setEmail}
-        keyboardType="email-address"
-        icon="email"
-      />
-      <CustomInput
-        placeholder="Password"
-        value={password}
-        setValue={setPassword}
-        secureTextEntry={passwordVisible}
-        onEyeIconPress={togglePasswordVisibility}
-      />
+          <CustomInput
+            placeholder="Email"
+            value={email}
+            setValue={setEmail}
+            keyboardType="email-address"
+            icon="email"
+          />
+          <CustomInput
+            placeholder="Password"
+            value={password}
+            setValue={setPassword}
+            secureTextEntry={passwordVisible}
+            onEyeIconPress={togglePasswordVisibility}
+          />
 
-      {errorMessage ? (
-        <CustomText style={styles.errorMessage} text={errorMessage} />
-      ) : null}
+          {errorMessage ? (
+            <CustomText style={styles.errorMessage} text={errorMessage} />
+          ) : null}
+          {errorMessage == 'Please verify your email before signing in.' ? (
+            <CustomText style={styles.signupLink} text="Still waiting on an email?." onPress={() => {
+              navigation.navigate('VerifyEmail');
+            }} />
+          ) : null}
 
-      <CustomButton text="Sign In" onPress={onSignInPressed} type="primary" bgColor={'#FF5349'} />
+          <CustomButton text="Sign In" onPress={onSignInPressed} color={Colors.red} />
 
-      <CustomButton
-        text="Forgot Password?"
-        onPress={onForgotPasswordPressed}
-        type="secondary"
-        bgColor={'orange'}
-      />
+          <CustomText text="Forgot Password?" onPress={onForgotPasswordPressed} style={styles.signupLink} />
+          <CustomText style={styles.signupText} text="Don't have an account?" />
+          <CustomText style={styles.signupLink} onPress={onSignUp} text="Sign Up" />
+        </View>
 
-      <CustomText style={styles.signupText} text="Don't have an account?" />
-      <CustomText style={styles.signupLink} onPress={onSignUp} text="Sign Up" />
+        {/* make sure bottom part is white*/}
+        <View style={{position: "absolute", bottom: -600, left: 0, right: 0, backgroundColor: Colors.white, height: 600}}/>
+      </KeyboardAwareScrollView>
     </View>
   );
 };
@@ -133,10 +146,26 @@ const SignIn = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    justifyContent: 'flex-start',
+    alignItems: 'flex-start',
+    backgroundColor: Colors.lightGray,
+  },
+  elementsContainer: {
+    flex: 1,
+    width: 390,
+  },
+  topElements: {
+    flex: 1,
     justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'white',
-    marginTop: '-30%',
+    marginLeft: 40,
+  },
+  signInContainer: {
+    flex: 2,
+    padding: 20,
+    paddingTop: 30,
+    borderTopLeftRadius: 30,
+    borderTopRightRadius: 30,
+    backgroundColor: Colors.white,
   },
   logo: {
     width: 120,
@@ -145,23 +174,21 @@ const styles = StyleSheet.create({
     marginTop: 100,
   },
   title: {
-    marginTop: 10,
-    fontSize: 28,
-    color: '#361E25',
-    fontWeight: 'bold',
+    fontSize: 24,
     marginBottom: 10,
   },
   signupText: {
-    marginTop: 20,
     fontSize: 16,
     color: 'black',
+    marginTop: 15,
   },
   signupLink: {
-    color: '#3498db',
-    fontWeight: 'bold',
+    marginTop: 5,
+    color: Colors.buttonBlue,
+    fontSize: 16,
   },
   errorMessage: {
-    color: 'red',
+    color: Colors.red,
     marginBottom: 10,
   },
 });

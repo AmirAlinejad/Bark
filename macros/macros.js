@@ -1,489 +1,455 @@
-export const clubCategories = [
+export const CLUBCATEGORIES = [
     {
         key:'1', 
         value:'Academics', 
-        color: '#4228d1',
-        // pastel version of color
-        lightColor: '#a3a1f7',
+        color: '#541388',
+        // pastel version of color above
+        lightColor: '#D9B3FF',
         icon: 'school',
         emoji: '📚',
     },
     {
         key:'2', 
         value:'Art', 
-        color: '#dd0568',
-        lightColor: '#f7a3c7',
+        color: '#D90368',
+        lightColor: '#FFC3D1',
         icon: 'brush',
         emoji: '🎨',
     },
     {
         key:'3', 
         value:'Career', 
-        color: '#fcc122',
-        lightColor: '#f7e3a3',
+        color: '#ECA400',
+        lightColor: '#FFE194',
         icon: 'briefcase',
         emoji: '👔',
     },
     {
         key:'4', 
         value:'Culture', 
-        color: '#73187f',
-        lightColor: '#f7a3f7',
+        color: '#00CECB',
+        lightColor: '#B3F2F1',
         icon: 'earth',
         emoji: '🌍',
     },
     {
         key:'5', 
         value:'Greek Life', 
-        color: '#f93b21',
-        lightColor: '#f7a3a3',
+        color: '#006992',
+        lightColor: '#B3E1E1',
         icon: 'body',
         emoji: '🏛️',
     },
     {
         key:'6', 
         value:'Political',
-        color: '#34dcc2',
-        lightColor: '#a3f7f0',
+        color: '#541388',
+        lightColor: '#D9B3FF',
         icon: 'podium',
         emoji: '🗳️',
     },
     {
         key:'7', 
         value:'Service', 
-        color: '#4228d1',
-        lightColor: '#a3a1f7',
+        color: '#D90368',
+        lightColor: '#FFC3D1',
         icon: 'globe',
         emoji: '🤝',
     },
     {
         key:'8', 
         value:'Sports', 
-        color: '#dd0568',
-        lightColor: '#f7a3c7',
+        color: '#ECA400',
+        lightColor: '#FFE194',
         icon: 'american-football',
         emoji: '🏈',
     },
     {
         key:'9', 
         value:'STEM', 
-        color: '#fcc122',
-        lightColor: '#f7e3a3',
+        color: '#00CECB',
+        lightColor : '#B3F2F1',
         icon: 'planet',
         emoji: '🔬',
     },
     {
         key:'10', 
         value:'Recreational', 
-        color: '#73187f',
-        lightColor: '#f7a3f7',
+        color: '#006992',
+        lightColor: '#B3E1E1',
         icon: 'bicycle',
         emoji: '🚴',
     },
     {
         key:'11',
         value:'Other',
-        color: '#f93b21',
-        lightColor: '#f7a3a3',
+        color: '#541388',
+        lightColor: '#D9B3FF',
         icon: 'help-circle',
         emoji: '❓',
     }
 ];
 
-export const majors = [
+export const MAJORS = [
     {
         key: '1',
-        value:'Accounting',
-        emoji: '💰',
+        value:'💰Accounting',
     },
     {
         key: '2',
-        value:'Aerospace Engineering',
-        emoji: '🚀',
+        value:'🎨Art',
     },
     {
         key: '3',
-        value:'African American Studies',
-        emoji: '📚',
+        value:'🔬Biology',
     },
     {
         key: '4',
-        value:'Agricultural Engineering',
-        emoji: '🌾',
+        value:'🧪Chemistry',
     },
     {
         key: '5',
-        value:'Agricultural Science',
-        emoji: '🌾',
+        value:'📈Economics',
     },
     {
         key: '6',
-        value:'Animal Science',
-        emoji: '🐄',
+        value:'📚English',
     },
     {
         key: '7',
-        value:'Anthropology',
-        emoji: '🌍',
+        value:'📜History',
     },
     {
         key: '8',
-        value:'Applied Mathematics',
-        emoji: '🔢',
+        value:'➗Mathematics',
     },
     {
         key: '9',
-        value:'Applied Physics',
-        emoji: '🔬',
+        value:'⚽Physics',
     },
     {
         key: '10',
-        value:'Architecture',
-        emoji: '🏛️',
+        value:'👔Political Science',
     },
     {
         key: '11',
-        value:'Art',
-        emoji: '🎨',
+        value:'🧠Psychology',
     },
     {
         key: '12',
-        value:'Art History',
-        emoji: '🎨',
+        value:'🧑‍🤝‍🧑Sociology',
     },
     {
         key: '13',
-        value:'Astronomy',
-        emoji: '🔭',
+        value:'📊Statistics',
     },
     {
         key: '14',
-        value:'Biochemistry',
-        emoji: '🧬',
+        value:'🌍Geography',
     },
     {
         key: '15',
-        value:'Biology',
-        emoji: '🧬',
+        value:'🔬Biochemistry',
     },
     {
         key: '16',
-        value:'Biomedical Engineering',
-        emoji: '🏥',
+        value:'🧬Genetics',
     },
     {
         key: '17',
-        value:'Business Administration',
-        emoji: '💼',
+        value:'🧫Microbiology',
     },
     {
         key: '18',
-        value:'Chemical Engineering',
-        emoji: '⚗️',
-    },
-    {
-        key: '19',
-        value:'Chemistry',
-        emoji: '⚗️',
-    },
-    {
-        key: '20',
-        value:'Civil Engineering',
-        emoji: '🏗️',
-    },
-    {
-        key: '22',
-        value:'Communication',
-        emoji: '🗣️',
-    },
-    {
-        key: '23',
-        value:'Computer Engineering',
-        emoji: '💻',
+        value:'🧪Chemical Engineering',
     },
     {
         key: '24',
-        value:'Computer Science',
-        emoji: '💻',
+        value:'🌲Ecology',
     },
     {
         key: '25',
-        value:'Criminal Justice',
-        emoji: '⚖️',
+        value:'🌱Environmental Science',
     },
     {
         key: '26',
-        value:'Dance',
-        emoji: '💃',
-    },
-    {
-        key: '27',
-        value:'Drama',
-        emoji: '🎭',
-    },
-    {
-        key: '28',
-        value:'Economics',
-        emoji: '💵',
-    },
-    {
-        key: '29',
-        value:'Education',
-        emoji: '📚',
-    },
-    {
-        key: '30',
-        value:'Electrical Engineering',
-        emoji: '⚡',
-    },
-    {
-        key: '31',
-        value:'Engineering',
-        emoji: '🔧',
-    },
-    {
-        key: '32',
-        value:'English',
-        emoji: '📚',
-    },
-    {
-        key: '33',
-        value:'Environmental Engineering',
-        emoji: '🌳',
-    },
-    {
-        key: '34',
-        value:'Environmental Science',
-        emoji: '🌳',
-    },
-    {
-        key: '35',
-        value:'Film',
-        emoji: '🎥',
-    },
-    {
-        key: '36',
-        value:'Finance',
-        emoji: '💵',
-    },
-    {
-        key: '37',
-        value:'Food Science',
-        emoji: '🍎',
-    },
-    {
-        key: '38',
-        value:'Forensic Science',
-        emoji: '🔬',
+        value:'🐋Marine Biology',
     },
     {
         key: '39',
-        value:'French',
-        emoji: '🇫🇷',
+        value: '🤖Computer Science',
     },
     {
         key: '40',
-        value:'Geology',
-        emoji: '🌋',
+        value: '🔌Electrical Engineering',
     },
     {
         key: '41',
-        value:'German',
-        emoji: '🇩🇪',
+        value: '🧠Neuroscience',
     },
     {
         key: '42',
-        value:'Graphic Design',
-        emoji: '🎨',
+        value: '🏥Nursing',
     },
     {
         key: '43',
-        value:'Health Science',
-        emoji: '🏥',
+        value: '🦷Dentistry',
     },
     {
         key: '44',
-        value:'History',
-        emoji: '📜',
+        value: '👩‍⚕️Medicine',
     },
     {
         key: '45',
-        value:'Hospitality Management',
-        emoji: '🏨',
+        value: '👨‍⚕️Pharmacy',
     },
     {
         key: '46',
-        value:'Human Resources',
-        emoji: '👥',
+        value: '👩‍🔬Veterinary Medicine',
     },
     {
         key: '47',
-        value:'Industrial Engineering',
-        emoji: '🏭',
+        value: '👩‍🏫Education',
     },
     {
         key: '48',
-        value:'Information Systems',
-        emoji: '💻',
+        value: '👩‍🎓Linguistics',
     },
     {
         key: '49',
-        value:'Information Technology',
-        emoji: '💻',
+        value: '🎭Theatre',
     },
     {
         key: '50',
-        value:'Interior Design',
-        emoji: '🏠',
+        value: '🎼Music',
     },
     {
         key: '51',
-        value:'International Business',
-        emoji: '🌍',
+        value: '🎥Film Studies',
     },
     {
         key: '52',
-        value:'International Relations',
-        emoji: '🌍',
+        value: '🎬Telecommunications',
     },
     {
         key: '53',
-        value:'Journalism',
-        emoji: '📰',
+        value: '📸Photography',
     },
     {
         key: '54',
-        value:'Kinesiology',
-        emoji: '🏋️',
+        value: '🎤Journalism',
     },
     {
         key: '55',
-        value:'Landscape Architecture',
-        emoji: '🌳',
+        value: '📰Mass Media',
     },
     {
         key: '56',
-        value:'Law',
-        emoji: '⚖️',
+        value: '📻Broadcasting',
     },
     {
         key: '57',
-        value:'Linguistics',
-        emoji: '🗣️',
+        value: '📺Television',
     },
     {
         key: '58',
-        value:'Management',
-        emoji: '👥',
-    },
-    {
-        key: '59',
-        value:'Marketing',
-        emoji: '📈',
+        value: '📡Radio',
     },
     {
         key: '60',
-        value:'Mathematics',
-        emoji: '🔢',
-    },
-    {
-        key: '61',
-        value:'Mechanical Engineering',
-        emoji: '⚙️',
-    },
-    {
-        key: '62',
-        value:'Music',
-        emoji: '🎵',
-    },
-    {
-        key: '63',
-        value:'Nursing',
-        emoji: '👩‍⚕️',
+        value: '📖Literature',
     },
     {
         key: '64',
-        value:'Nutrition',
-        emoji: '🍎',
+        value: '📚Philosophy',
     },
     {
         key: '65',
-        value:'Philosophy',
-        emoji: '🤔',
+        value: '📚Religious Studies',
     },
     {
         key: '66',
-        value:'Photography',
-        emoji: '📸',
+        value: '📚Classics',
     },
     {
         key: '67',
-        value:'Physics',
-        emoji: '🔭',
+        value: '📚Comparative Literature',
     },
     {
         key: '68',
-        value:'Political Science',
-        emoji: '🏛️',
+        value: '📚Women\'s Studies',
     },
     {
         key: '69',
-        value:'Psychology',
-        emoji: '🧠',
+        value: '📚African American Studies',
     },
     {
         key: '70',
-        value:'Public Health',
-        emoji: '🏥',
+        value: '📚Asian Studies',
     },
     {
         key: '71',
-        value:'Public Relations',
-        emoji: '📰',
+        value: '📚Latin American Studies',
     },
     {
         key: '72',
-        value:'Social Work',
-        emoji: '👥',
+        value: '📚European Studies',
     },
     {
         key: '73',
-        value:'Sociology',
-        emoji: '👥',
+        value: '📚Middle Eastern Studies',
     },
     {
         key: '74',
-        value:'Spanish',
-        emoji: '🇪🇸',
+        value: '📚International Relations',
     },
     {
         key: '75',
-        value:'Statistics',
-        emoji: '📊',
+        value: '📚Political Science',
     },
     {
         key: '76',
-        value:'Theater',
-        emoji: '🎭',
+        value: '📚Anthropology',
     },
     {
         key: '77',
-        value:'Urban Planning',
-        emoji: '🏗️',
+        value: '📚Sociology',
     },
     {
         key: '78',
-        value:'Web Design',
-        emoji: '💻',
+        value: '📚Criminology',
     },
     {
         key: '79',
-        value:'Women\'s Studies',
-        emoji: '♀️',
+        value: '📚Social Work',
     },
     {
         key: '80',
-        value:'Other',
-        emoji: '❓',
+        value: '💼Business',
+    },
+    {
+        key: '81',
+        value: '💼Marketing',
+    },
+    {
+        key: '82',
+        value: '💼Management',
+    },
+    {
+        key: '83',
+        value: '💼Finance',
+    },
+    {
+        key: '84',
+        value: '💼Entrepreneurship',
+    },
+    {
+        key: '85',
+        value: '💼Supply Chain Management',
+    },
+    {
+        key: '86',
+        value: '💼Real Estate',
+    },
+    {
+        key: '87',
+        value: '⚖️Law',
+    },
+    {
+        key: '88',
+        value: '🔧Engineering',
+    },
+    {
+        key: '89',
+        value: '🔧Mechanical Engineering',
+    },
+    {
+        key: '90',
+        value: '🌉Civil Engineering',
+    },
+    {
+        key: '91',
+        value: '🚀Aerospace Engineering',
+    },
+    {
+        key: '92',
+        value: '🦠Biomedical Engineering',
+    },
+    {
+        key: '93',
+        value: '🏭Industrial Engineering',
+    },
+    {
+        key: '95',
+        value: '🚜Agricultural Engineering',
+    },
+    {
+        key: '96',
+        value: '🖥️Computer Engineering',
+    },
+    {
+        key: '97',
+        value: '⚡Electrical Engineering',
+    },
+    {
+        key: '98',
+        value: '🧪Chemical Engineering',
+    },
+    {
+        key: '99',
+        value: '🔬Biochemical Engineering',
+    },
+    {
+        key: '100',
+        value: '🔭Astronomy'
+    },
+    {
+        key: '101',
+        value: '🚀Astrophysics'
+    },
+    {
+        key: '102',
+        value: '🖥️Management Information Systems'
+    },
+    {
+        key: '103',
+        value: '🏈Sports Management'
+    },
+];
+
+export const SCHOOLS = {
+    "uga" : {
+        name: "The University of Georgia",
+        emoji: "🐶",
+        mascot: "Bulldogs",
+    },
+    "utk" : {
+        name: "The University of Tennessee, Knoxville",
+        emoji: "🍊",
+        mascot: "Volunteers",
+    },
+};
+
+export const DAYSOFTHEWEEK = [
+    {
+        key : 1, value : 'Su'
+    },
+    {
+        key : 2, value : 'M'
+    },
+    {
+        key : 3, value : 'Tu'
+    },
+    {
+        key : 4, value : 'W'
+    },
+    {
+        key : 5, value : 'Th'
+    },
+    {
+        key : 6, value : 'F'
+    },
+    {
+        key : 7, value : 'Sa'
     },
 ];

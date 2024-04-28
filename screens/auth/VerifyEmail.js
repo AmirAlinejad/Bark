@@ -1,30 +1,49 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, Button, StyleSheet, ActivityIndicator } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import { sendEmailVerification } from 'firebase/auth';
+import { View, StyleSheet, ActivityIndicator } from 'react-native';
+// my components
+import CustomText from '../../components/display/CustomText';
+import CustomButton from '../../components/buttons/CustomButton';
+import Header from '../../components/display/Header';
+// icons
+import Ionicons from 'react-native-vector-icons/Ionicons';
+// colors
+import { Colors } from '../../styles/Colors';
+// firebase
 import { FIREBASE_AUTH } from '../../backend/FirebaseConfig';
-import Header from '../../components/Header';
+import { sendEmailVerification } from 'firebase/auth';
 
-const VerifyEmail = () => {
-  const navigation = useNavigation();
+const VerifyEmail = ({ navigation }) => {
   const [isSending, setIsSending] = useState(false); // State to manage resend button loading state
 
+  const goToSignIn = () => {
+    navigation.navigate('SignIn', {
+      email: FIREBASE_AUTH.currentUser?.email,
+    });
+  };
+
   useEffect(() => {
+
+    // Check if the user is verified every 5 seconds
     const intervalId = setInterval(async () => {
       if (FIREBASE_AUTH.currentUser) {
         await FIREBASE_AUTH.currentUser.reload();
         const user = FIREBASE_AUTH.currentUser;
+
         if (user.emailVerified) {
           clearInterval(intervalId);
-          navigation.navigate("SignIn");
+
+          // Navigate to sign in page with email prefilled
+          goToSignIn();
         }
       }
     }, 5000); // Check every 5 seconds
 
     return () => clearInterval(intervalId);
-  }, [navigation]);
+  }, []);
 
   const resendVerificationEmail = async () => {
+
+    // Resend verification email
     if (FIREBASE_AUTH.currentUser && !isSending) {
       setIsSending(true);
       try {
@@ -41,17 +60,19 @@ const VerifyEmail = () => {
 
   return (
     <View style={styles.container}>
-      <Header navigation={navigation} text="Verify Email" back={true} style={styles.header} />
+      <Header navigation={navigation} text="Verify Email" back onBack={() => goToSignIn()} />
       <View style={styles.content}>
-        <Text style={styles.text}>Please verify your email. Check your inbox for a verification link.</Text>
+
+        <CustomText style={styles.text} text='Please verify your email. Check your inbox for a verification link.' />
+
+        <Ionicons name="mail-outline" size={100} color={Colors.darkGray} />
+
+        <CustomText style={styles.text} text='This may take a few minutes.' />
+
         {isSending ? (
           <ActivityIndicator size="small" />
         ) : (
-          <Button
-            title="Resend Email"
-            onPress={resendVerificationEmail}
-            color="#3498db" // You can adjust the color to match your app's theme
-          />
+          <CustomButton text="Resend" onPress={resendVerificationEmail} />
         )}
       </View>
     </View>
@@ -61,30 +82,17 @@ const VerifyEmail = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#FAFAFA',
-    paddingTop: 20,
-    paddingHorizontal: 20,
-  },
-  header: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 1,
-    width:'100%',
-    backgroundColor: '#FAFAFA',
+    backgroundColor: Colors.lightGray,
   },
   content: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    
+    marginBottom: 50,
+    padding: 20
   },
   text: {
-    textAlign: 'center',
-    fontSize: 16,
+    fontSize: 18,
     marginBottom: 20,
   },
 });

@@ -1,11 +1,15 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 // react native components
-import { View, StyleSheet, TouchableOpacity, TextInput, Switch } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, TextInput } from 'react-native';
 // my components
-import CustomInput from '../../components/CustomInput';
-import CustomButton from '../../components/CustomButton';
-import CustomText from '../../components/CustomText';
-import Header from '../../components/Header';
+import CustomInput from '../../components/input/CustomInput';
+import CustomButton from '../../components/buttons/CustomButton';
+import CustomText from '../../components/display/CustomText';
+import Header from '../../components/display/Header';
+import IconOverlay from '../../components/overlays/IconOverlay';
+import PrivacySwitch from '../../components/input/PrivacySwitch';
+// functions
+import { emailSplit } from '../../functions/backendFunctions';
 // backend
 import { db } from '../../backend/FirebaseConfig';
 // date time picker
@@ -16,8 +20,6 @@ import MapView, { Marker } from 'react-native-maps';
 import Geocoder from 'react-native-geocoding';
 // styles
 import { Colors } from '../../styles/Colors';
-// fonts
-import { textNormal } from '../../styles/FontStyles';
 // scroll view
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 // icons
@@ -29,26 +31,30 @@ Geocoder.init('AIzaSyAoX4MTi2eAw2b_W3RzA35Cy5yjpwQYV3E');
 const NewEvent = ({ route, navigation }) => { 
 
   // get club name from previous screen
-  const { clubId, event } = route.params;
+  const { clubId, clubCategories, event } = route.params;
 
   // create states for event info
   const [eventName, setName] = useState(event ? event.name : "");
   const [eventDescription, setDescription] = useState("");
   const [date, setDate] = useState(event ? new Date(event.date) : new Date());
-  const [time, setTime] = useState(event ? new Date(event.time): new Date()); // worry ab later
+  const [time, setTime] = useState(event ? new Date(event.time): new Date());
   const [duration, setDuration] = useState(event ? event.duration : 0); // duration of the event in minutes
+  const [roomNumber, setRoomNumber] = useState(event ? event.roomNumber : ""); // room number of the event
+  const [instructions, setInstructions] = useState(event ? event.instructions : ""); // instructions to get to the event
+  const [publicEvent, setPublicEvent] = useState(true); // whether the event is public or private
+  const [loading, setLoading] = useState(false);
+  // overlay
+  const [overlayVisible, setOverlayVisible] = useState(false);
+
+  // location and address are const
   const location = event ? event.location : {
-    // university of georgia
+    // university of georgia by default
     latitude: 33.9562,
     longitude: -83.3740,
     latitudeDelta: 0.0922,
     longitudeDelta: 0.0421,
   };
   const address = event ? event.address : "";
-  const [roomNumber, setRoomNumber] = useState(event ? event.roomNumber : ""); // room number of the event
-  const [instructions, setInstructions] = useState(event ? event.instructions : ""); // instructions to get to the event
-  const [publicEvent, setPublicEvent] = useState(true); // whether the event is public or private
-  const [loading, setLoading] = useState(false);;
 
   // submit the form
   const onSubmitPressed = async () => {
@@ -66,9 +72,10 @@ const NewEvent = ({ route, navigation }) => {
       // generate unique event id
       const eventId = Math.random().toString(36).substring(7);
 
-      set(ref(db, 'events/' + eventId), {
+      set(ref(db,  `${emailSplit()}/events/${eventId}`), {
         id: eventId,
         clubId: clubId,
+        categories: clubCategories,
         name: eventName,
         description: eventDescription,
         date: date.toDateString(),
@@ -81,7 +88,7 @@ const NewEvent = ({ route, navigation }) => {
         public: publicEvent,
       });
   
-      navigation.goBack();
+      setOverlayVisible(true);
     } catch (error) {
       console.log(error);
       alert('event creation failed: ' + error.message);
@@ -105,6 +112,7 @@ const NewEvent = ({ route, navigation }) => {
         instructions: instructions,
         clubId: clubId,
         public: publicEvent,
+        categories: clubCategories,
       }
     });
   }
@@ -117,128 +125,118 @@ const NewEvent = ({ route, navigation }) => {
     return split;
   }
 
-  const iconSize = 30;
-
   return (
     <View style={styles.container}>
       <Header text='New Event' back navigation={navigation}></Header>
-        <KeyboardAwareScrollView 
-          contentContainerStyle={styles.elementsContainer}
-          extraHeight={200}
-        >
-          <CustomText style={[styles.textNormal, {marginTop: 10}]} font="bold" text="Event Name" />
-          <CustomInput
-            placeholder="Event Name"
-            value={eventName}
-            setValue={setName}
-          />
+      <KeyboardAwareScrollView 
+        contentContainerStyle={styles.elementsContainer}
+        extraHeight={200}
+      >
+        <CustomText style={styles.textNormal} font="bold" text="Event Name*" />
+        <CustomInput
+          placeholder="Event Name (50 characters)"
+          value={eventName}
+          setValue={setName}
+          maxLength={50}
+        />
 
-          <CustomText style={[styles.textNormal, {marginTop: 10}]} font="bold" text="Public Event" />
-          <View style={{flexDirection: 'row', alignItems: 'center', gap: 10}}>
-          <Ionicons
-              name={publicEvent ? 'globe-outline' : 'lock-closed'}
-              size={iconSize}
-              color={Colors.black}
-            />
-            <Switch
-              trackColor={{ false: Colors.black, true: Colors.buttonBlue }}
-              thumbColor={Colors.white}
-              onValueChange={setPublicEvent}
-              value={publicEvent}
-            />
-          </View>
+        <CustomText style={styles.textNormal} font="bold" text={publicEvent ? "Public Event" : "Private Event"} />
+        <PrivacySwitch toggled={publicEvent} setToggled={setPublicEvent} />
 
-          <CustomText style={[styles.textNormal, {marginTop: 10}]} font="bold" text="Date" />
-          <DateTimePicker
-            testID="dateTimePicker"
-            value={date}
-            mode={'date'}
-            is24Hour={true}
-            onChange={(event, selectedDate) => setDate(selectedDate)}
-          />
+        <CustomText style={styles.textNormal} font="bold" text="Date" />
+        <DateTimePicker
+          testID="dateTimePicker"
+          value={date}
+          mode={'date'}
+          is24Hour={true}
+          onChange={(event, selectedDate) => setDate(selectedDate)}
+        />
 
-          <CustomText style={[styles.textNormal, {marginTop: 10}]} font="bold" text="Time" />
-          <DateTimePicker
-            testID="dateTimePicker"
-            value={time}
-            mode={'time'}
-            is24Hour={true}
-            onChange={(event, selectedTime) => setTime(selectedTime)}
-          />
+        <CustomText style={styles.textNormal} font="bold" text="Time" />
+        <DateTimePicker
+          testID="dateTimePicker"
+          value={time}
+          mode={'time'}
+          is24Hour={true}
+          onChange={(event, selectedTime) => setTime(selectedTime)}
+        />
 
-          <CustomText style={[styles.textNormal, {marginTop: 10}]} font="bold" text="Duration" />
-          <CustomInput
-            placeholder="Duration (in minutes)"
-            value={duration}
-            setValue={setDuration}
-            keyboardType="number-pad"
-            width={190}
-          />
+        <CustomText style={styles.textNormal} font="bold" text="Duration" />
+        <CustomInput
+          placeholder="Duration (in minutes)"
+          value={duration}
+          setValue={setDuration}
+          keyboardType="number-pad"
+          width={190}
+        />
 
-
-          <CustomText style={[styles.textNormal, {marginTop: 10}]} font="bold" text="Location" /> 
-          <TouchableOpacity style={styles.mapStyle} onPress={onMapPressed}>
+        <CustomText style={styles.textNormal} font="bold" text="Location" /> 
+        <TouchableOpacity style={styles.mapStyle} onPress={onMapPressed}>
           <MapView
             style={styles.mapStyle}
             region={location}
           >
-
-            <Marker
-              coordinate={location}
-              title={eventName ? eventName : undefined} // doesn't pass if eventName is empty
-            />
-
+            <Marker coordinate={location} />
           </MapView>
-
           <View style={{position: 'absolute', top: 40, left: 40, right: 40, down: 40}}>
             <Ionicons name="location" size={70} color='rgba(0,0,0,0.5)' />
           </View>
         </TouchableOpacity>
-        {
-          address ? (
-            <View>
-              <CustomText style={styles.textSmall} text={splitAddress(address)[0] + "\n" + splitAddress(address)[1]} />
-            </View>
+        {address ? (
+            <CustomText style={styles.textSmall} text={splitAddress(address)[0] + "\n" + splitAddress(address)[1]} />
           ) : (
             <CustomText style={styles.textSmall} text="No location selected" />
-          )
-        }
+          )}
 
-        <CustomText style={[styles.textNormal, {marginTop: 10}]} font="bold" text="Room Number" />
+        <CustomText style={styles.textNormal} font="bold" text="Room Number" />
         <CustomInput
-          placeholder="Room Number (Optional)"
+          placeholder="Room Number"
           value={roomNumber}
           setValue={setRoomNumber}
           keyboardType="number-pad"
           width={190}
         />
 
-        <CustomText style={[styles.textNormal, {marginTop: 10}]} font="bold" text="Instructions" />
+        <CustomText style={styles.textNormal} font="bold" text="Instructions" />
         <CustomInput
-          placeholder="ex. Up the stairs on your right (Optional)"
+          placeholder="ex. Up the stairs on your right"
           value={instructions}
           setValue={setInstructions}
           keyboardType="default"
         />
 
-        <CustomText style={[styles.textNormal, {marginTop: 10}]} font="bold" text="Details" />
+        <CustomText style={styles.textNormal} font="bold" text="Details*" />
         <View style={styles.largeInputContainer}>
           <TextInput
-            placeholder="What's happening?"
+            placeholder="What's happening? (250 characters)"
             value={eventDescription}
             onChangeText={setDescription}
             keyboardType="default"
-            maxLength={500}
+            maxLength={250}
             numberOfLines={5}
             style={styles.input}
             multiline={true}
             textAlignVertical='top'
           />
         </View>
+
+        <CustomText style={styles.smallText} text="* Indicates a required field" />
     
+        {loading && <CustomText text="Loading..." />}
         <CustomButton text="Create" onPress={onSubmitPressed} type="primary"/>
         <View style={{height: 50}} />
       </KeyboardAwareScrollView>
+
+      <IconOverlay 
+        visible={overlayVisible}
+        setVisible={setOverlayVisible}
+        closeCondition={() => {
+          navigation.goBack();
+        }}
+        icon="checkmark-circle"
+        iconColor={Colors.green}
+        text="Event created!"
+      />
     </View>
   );
 }
@@ -246,13 +244,13 @@ const NewEvent = ({ route, navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FAFAFA',
-    gap: 10,
+    backgroundColor: Colors.white,
+    gap: 5,
   },
   elementsContainer: {
     marginTop: 0,
     alignItems: 'flex-start',
-    marginLeft: 30,
+    marginLeft: 20,
   },
   mapStyle: {
     width: 150,
@@ -261,7 +259,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   largeInputContainer: {
-    borderColor: '#ccc',
+    borderColor: Colors.inputBorder,
     borderWidth: 1,
     borderRadius: 20,
     height: 100,
@@ -272,19 +270,23 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     height: 50,
-    color: '#333',
+    color: Colors.black,
     backgroundColor: 'transparent',
     width: '90%',
   },
   textNormal: {
-    ...textNormal,
     fontSize: 20,
     marginLeft: 5,
+    marginTop: 10,
   },
   textSmall: {
-    ...textNormal,
     fontSize: 12,
     marginLeft: 5,
+  },
+  smallText: { // for required fields
+    marginTop: -5,
+    fontSize: 14,
+    color: Colors.darkGray,
   },
 });
 

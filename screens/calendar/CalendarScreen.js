@@ -1,49 +1,29 @@
 import React, { useState, useEffect } from 'react';
 // react native components
-import { View, StyleSheet, Button, ScrollView, TouchableOpacity, TouchableWithoutFeedback } from 'react-native';
-import SwipeUpDownModal from 'react-native-swipe-modal-up-down';
+import { View, StyleSheet, ScrollView, TouchableWithoutFeedback, TouchableOpacity } from 'react-native';
 // my components
-import Header from '../../components/Header';
+import Header from '../../components/display/Header';
 import UpcomingEvents from '../../components/event/UpcomingEvents';
 import ToggleButton from '../../components/buttons/ToggleButton';
-import CustomText from '../../components/CustomText';
+import CustomText from '../../components/display/CustomText';
 import FilterList from '../../components/input/FilterList';
+import CustomSlider from '../../components/input/CustomSlider';
+import IconButton from '../../components/buttons/IconButton';
 // calendar
 import { LocaleConfig, Calendar } from 'react-native-calendars';
-// multi slider
-import MultiSlider from '@ptomasroos/react-native-multi-slider';
 // functions
-import { getSetAllEventsData, getSetUserData, getSetAllClubsData } from '../../functions/backendFunctions';
-import { formatDate, formatTime } from '../../functions/timeFunctions';
+import { getSetAllEventsData, getSetUserData, getSetAllClubsDataObject } from '../../functions/backendFunctions';
+import { formatDate, formatStartEndTime } from '../../functions/timeFunctions';
+// modal
+import SwipeUpDownModal from 'react-native-swipe-modal-up-down';
 // macros
-import { clubCategories } from '../../macros/macros';
-// fonts
-import { title, textNormal } from '../../styles/FontStyles';
-// icons
-import { Ionicons } from '@expo/vector-icons';
+import { CLUBCATEGORIES, DAYSOFTHEWEEK } from '../../macros/macros';
 // styles
 import { Colors } from '../../styles/Colors';
 // scroll view
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 
-// list data for days of the week filter
-const daysOfTheWeek = [{
-    key: 1, value: 'Sun',
-  }, {
-    key: 2, value: 'Mon',
-  }, {
-    key: 3, value: 'Tue',
-  }, {
-    key: 4, value: 'Wed',
-  }, {
-    key: 5, value: 'Thu',
-  }, {
-    key: 6, value: 'Fri',
-  }, {
-    key: 7, value: 'Sat',
-  }
-];
-
+// calendar config
 LocaleConfig.locales['eng'] = {
   monthNames: [
     'January','February','March','April','May','June','July','August','September','October','November','December'
@@ -55,60 +35,48 @@ LocaleConfig.locales['eng'] = {
 };
 LocaleConfig.defaultLocale = 'eng';
 
-// club list screen
-const CalendarScreen = ({ route, navigation }) => {
-  // get props
-  const calendarSettingProp = 'myClubs';
-  const clubsProp = [];
-  if (route) {
-    calendarSettingProp = route.params.calendarSettingProp;
-    clubsProp = route.params.clubsProp;
-  }
+// calendar screen
+const CalendarScreen = ({ navigation }) => {
 
-  // state for loading
-  const [loading, setLoading] = useState(true);
   // state for events data
   const [eventData, setEventData] = useState([]);
   // state for user data
   const [userData, setUserData] = useState(null);
   // state for clubs data
   const [clubsData, setClubsData] = useState([]);
+  // state for loading
+  const [loading, setLoading] = useState(true);
 
   // state for calendar
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().slice(0,10));
+  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().slice(0,10)); // selected date, default today
   const [specificDateSelected, setSpecificDateSelected] = useState(false); // whether a specific date is selected or not
-  // state for filter overlay
-  const [visible, setVisible] = useState(false);
+  // overlay
+  let [showFilter, setShowFilter] = useState(false);
   let [animateModal, setanimateModal] = useState(false);
   // overlay filters
-  const [calendarSetting, setCalendarSetting] = useState('myClubs');
-  const [daySelected, setSelectedDay] = React.useState([1,2,3,4,5,6,7]);
-  const [myClubsSelected, setMySelectedClubs] = React.useState([]);
-  const [clubCategoriesSelected, setClubCategoriesSelected] = React.useState([]);
-  const [startEndTime, setStartEndTime] = React.useState([0, 24]);
+  const [calendarSetting, setCalendarSetting] = useState("myClubs"); // either 'myClubs' or 'newClubs'
+  const [daySelected, setSelectedDay] = React.useState([1,2,3,4,5,6,7]); // days of the week selected
+  const [myClubsSelected, setMySelectedClubs] = React.useState([]); // clubs selected if calendar setting is 'myClubs'
+  const [clubCategoriesSelected, setClubCategoriesSelected] = React.useState([]); // club categories selected if calendar setting is 'newClubs'
+  const [startEndTime, setStartEndTime] = React.useState([0, 24]); // filter by time of day
 
   // get data from firebase
   useEffect (() => {
-    getSetUserData(setUserData, setLoading);
+    const getDataAsync = async () => {
+      setLoading(true);
 
-    getSetAllEventsData(setEventData, setLoading);
+      await getSetUserData(setUserData);
+      await getSetAllEventsData(setEventData);
+      await getSetAllClubsDataObject(setClubsData);
 
-    getSetAllClubsData(setClubsData, setLoading);
-
-    // set calendar setting
-    if (calendarSettingProp) {
-      setCalendarSetting(calendarSettingProp);
-
-      // set clubs if right setting
-      if (clubsProp) {
-        setMySelectedClubs(clubsProp);
-      }
+      setLoading(false);
     }
+    getDataAsync();
   }, []);
 
   // club list
-  let clubList = [];
-  if (userData) {
+  let clubList = []; // club list for filter list in 'myClubs' setting
+  if (userData && userData.clubs) {
     clubList = Object.keys(userData.clubs).map((id) => {
       return {
         key: id,
@@ -119,7 +87,7 @@ const CalendarScreen = ({ route, navigation }) => {
 
   // toggle overlay
   const toggleFilter = () => {
-    setVisible(!visible);
+    setShowFilter(!showFilter);
   };
 
   // select a specific date
@@ -130,7 +98,6 @@ const CalendarScreen = ({ route, navigation }) => {
 
   // filter for events
   const filterFunct = (event) => {
-    
     // filter by specific date
     if (specificDateSelected) {
       if (formatDate(event.date) != selectedDate) {
@@ -139,10 +106,8 @@ const CalendarScreen = ({ route, navigation }) => {
     }
 
     // filter by calendar setting
-    if (userData) console.log(userData.clubs);
-    console.log(event.clubId);
-    console.log(calendarSetting);
-    if (calendarSetting == 'newClubs' && userData != null) {
+    if (calendarSetting == 'newClubs') {
+      // if already in my clubs
       if (userData.clubs[event.clubId] != null) {
         return false;
       }
@@ -153,44 +118,40 @@ const CalendarScreen = ({ route, navigation }) => {
       }
     }
     if (calendarSetting == 'myClubs' && userData != null) {
-      if (userData.clubs[event.clubId] == null) {
-        return false;
+      // if not in my clubs
+      if (userData.clubs != null) {
+        if (userData.clubs[event.clubId] == null) {
+          return false;
+        } 
       }
     }
     
     // filter by day of the week
     if (daySelected.length > 0) {
+      // get day of the week from date
       const filteredDays = daySelected.map((day) => { return day - 1; });
       
       // reformat date to form 'YYYY-MM-DD'
       const eventDate = new Date(formatDate(event.date));
-      console.log(formatDate(event.date));
-      console.log(eventDate);
-      console.log(eventDate.getUTCDay());
       if (!filteredDays.includes(eventDate.getUTCDay())) {
         return false;
       }
     }
 
     // filter by time of day
-    // reformate time to form 'HH:MM:SS'
     const formattedStartTime = startEndTime[0];
     const formattedEndTime = startEndTime[1];
-    // don't know if right yet (not sure on format of above)
-    console.log(formattedStartTime);
-    console.log(formattedEndTime);
-
+    // get hour from event time
     const hour = parseInt(event.time.substring(0, event.time.indexOf(':')));
-    console.log(hour);
+    // if hour outside of bounds
     if (hour < formattedStartTime || hour > formattedEndTime) {
       return false;
     }
 
-    // filter by my clubs if right setting
-    if (calendarSetting == 'myClubs' && myClubsSelected.length > 0 && userData != null) {
+    // filter by my clubs if setting is 'myClubs'
+    if (calendarSetting == 'myClubs' && myClubsSelected.length > 0) {
       // get clubName from clubID
       const clubName = userData.clubs[event.clubId].clubName;
-      console.log(clubName);
       
       // create list of club names from myClubsSelected
       const clubNames = myClubsSelected.map((club) => userData.clubs[club].clubName);
@@ -200,10 +161,14 @@ const CalendarScreen = ({ route, navigation }) => {
       }
     }
 
-    // filter by club categories if right setting
+    // filter by club categories if setting is 'newClubs'
     if (calendarSetting == 'newClubs' && clubCategoriesSelected.length > 0) {
-      // get club categories from clubID
-      const clubCategories = clubsData.find((club) => club.id == event.clubId).clubCategories;
+      if (clubsData == null || clubsData[event.clubId] == null) {
+        return false;
+      }
+      
+      // get club categories from event's club
+      const clubCategories = clubsData[event.clubId].clubCategories;
 
       // if event's club's category is not in the selected categories
       if (!clubCategories.some((category) => clubCategoriesSelected.includes(category))) {
@@ -216,7 +181,10 @@ const CalendarScreen = ({ route, navigation }) => {
   }
 
   // filtered events
-  const filteredEvents = eventData.filter((event) => filterFunct(event));
+  let filteredEvents = [];
+  if (eventData) {
+    filteredEvents = eventData.filter((event) => filterFunct(event));
+  }
 
   // add filtered events to marked dates
   let markedDates = {};
@@ -233,16 +201,15 @@ const CalendarScreen = ({ route, navigation }) => {
 
     // get dot colors for this event from club categories
     let dotColors = [];
-    if (clubsData.length > 0) {
-      const thisEventClubCategories = clubsData.find((club) => club.id == event.clubId).clubCategories;
+    if (clubsData && clubsData[event.clubId]) {
+      const thisEventClubCategories = clubsData[event.clubId].clubCategories;
       dotColors = thisEventClubCategories.map((category) => {
         return {
           key: category,
-          color: clubCategories.find((item) => item.value == category).color,
+          color: CLUBCATEGORIES.find((item) => item.value == category).color,
         }
       });
     }
-    console.log(dotColors);
   
     // add dots with dot color to marked dates if not already there
     if (markedDates[formattedDate].dots == null) {
@@ -255,9 +222,11 @@ const CalendarScreen = ({ route, navigation }) => {
         }
       });
     } else {
-      // check if dot color is already there
+      // if dots already there
       dotColors.forEach((dotColor) => {
+        // if dot color not already there
         if (!markedDates[formattedDate].dots.some((item) => item.color == dotColor.color)) {
+          // add dot color
           markedDates[formattedDate].dots.push({
             key: dotColor.key,
             color: dotColor.color,
@@ -271,27 +240,12 @@ const CalendarScreen = ({ route, navigation }) => {
   if (specificDateSelected) {
     markedDates = {[selectedDate]: {selected: true, selectedColor: Colors.red, dotColor: Colors.red}};
   }
-  console.log(markedDates);
-  console.log(selectedDate);
-
-  // format start and end time for slider
-  const formatStartEndTime = (time) => {
-    let formattedTime = time > 12 ? time - 12 : time;
-    formattedTime = time >= 12 ? `${formattedTime} PM` : `${formattedTime} AM`;
-    if (time == 0 || time == 24) { 
-      formattedTime = '12 AM';
-    }
-
-    return formattedTime;
-  }
 
   return (
     <View style={styles.container}>
       <Header text='Calendar'></Header>
-      <TouchableOpacity style={styles.filterButtonView} onPress={toggleFilter}>
-        <CustomText style={[styles.text, {marginTop: 12, color: Colors.buttonBlue}]} text='Filter' />
-        <Ionicons name={visible ? "funnel" : "funnel-outline"} size={30} color={Colors.buttonBlue} />
-      </TouchableOpacity>
+
+      <IconButton icon={showFilter ? 'options' : 'options-outline'} text='' onPress={toggleFilter} style={styles.filterButtonView} color={Colors.buttonBlue} />
 
       <ScrollView style={{flex: 1}} keyboardShouldPersistTaps='always'>
         <View style={styles.calendarContainer} keyboardShouldPersistTaps='always'>
@@ -300,15 +254,7 @@ const CalendarScreen = ({ route, navigation }) => {
             current={selectedDate}
             markingType='multi-dot'
             markedDates={markedDates}
-            theme={{
-              calendarBackground: 'transparent',
-              textSectionTitleColor: Colors.red,
-              todayTextColor: Colors.red,
-              dayTextColor: Colors.black,
-              textDisabledColor: Colors.gray,
-              arrowColor: Colors.red,
-              fontFamily: 'nunito-regular',
-            }}
+            theme={styles.calendarTheme}
             onDayPress={(day) => selectSpecificDate(day)}
           />
         </View>
@@ -316,79 +262,112 @@ const CalendarScreen = ({ route, navigation }) => {
         <View style={styles.eventsContainer} >
           <UpcomingEvents filteredEvents={filteredEvents} navigation={navigation} />
         </View>
+
         <View style={{position: "absolute", bottom: -600, left: 0, right: 0, backgroundColor: Colors.white, height: 600}}/>
       </ScrollView>
 
       {/* filter overlay */}
       <SwipeUpDownModal
-        modalVisible={visible} 
-        pressToanimate={animateModal}
-        onClose={() => {
-          setVisible(false);
-          setanimateModal(false);
-        }}
+        modalVisible={showFilter}
+        PressToanimate={animateModal}
+        //if you don't pass HeaderContent you should pass marginTop in view of ContentModel to Make modal swipeable
         ContentModal={
-          <View style={styles.modal}>
-            <View style={styles.filter}>
-              <TouchableWithoutFeedback>
-                <View style={{ alignItems: 'center', width: '100%'}}>
-                  <View style={styles.bar} />
+        <View style={styles.modal}>
+          <View style={styles.filter}>
+            <TouchableWithoutFeedback>
+              <View style={{ alignItems: 'center', width: '100%'}}>
+                <View style={styles.bar} />
+              </View>
+            </TouchableWithoutFeedback>
+            
+            <KeyboardAwareScrollView 
+              contentContainerStyle={{ marginHorizontal: 20, paddingBottom: 20 }}
+              extraHeight={400}
+            >
+
+              <CustomText style={styles.filterSectionTitle} font="bold" text={`Calendar Settings:`} />
+              <View style={styles.toggleButtonRow}>
+                <View style={styles.toggleButtonView} >
+                  <ToggleButton
+                    text='My Clubs'
+                    onPress={() => setCalendarSetting('myClubs')}
+                    toggled={calendarSetting == 'myClubs'}
+                    toggledCol={Colors.red}
+                    untoggledCol={Colors.gray}
+                    icon='people'
+                  />
                 </View>
-              </TouchableWithoutFeedback>
+                <View style={styles.toggleButtonView} >
+                  <ToggleButton
+                    text='New Clubs'
+                    onPress={() => setCalendarSetting('newClubs')}
+                    toggled={calendarSetting == 'newClubs'}
+                    toggledCol={Colors.blue}
+                    untoggledCol={Colors.gray}
+                    icon='search'
+                  />
+                </View>
+              </View>
+
+              <CustomText style={styles.filterSectionTitle} font="bold" text={`Day of the week:`} />
+              <View style={[styles.toggleButtonRow, {gap: 15, marginLeft: 5}]}>
+              { 
+                // create a toggle component for each category
+                DAYSOFTHEWEEK.map((day) => {
+
+                  // toggle button to update categories selected
+                  const toggleButton = () => {
+                    if (daySelected.includes(day.key)) {
+                      setSelectedDay(daySelected.filter((item) => item !== day.key));
+                    } else {
+                      setSelectedDay([...daySelected, day.key]);
+                    }
+                    setSpecificDateSelected(false);
+                    console.log("daySelected: ", daySelected)
+                  }
+
+                  return (
+                    <TouchableOpacity style={styles.toggleButtonView} onPress={toggleButton}>
+                      <CustomText font="black" style={{ fontSize: 18, marginTop: 5, marginLeft: 5, color: daySelected.includes(day.key) ? Colors.black : Colors.gray}} text={day.value} />
+                    </TouchableOpacity>
+                  )
+                })
+              }
+              </View>
               
-              <KeyboardAwareScrollView 
-                contentContainerStyle={{ marginHorizontal: 20, paddingBottom: 20 }}
-                extraHeight={400}
-              >
-
-                <CustomText style={styles.filterSectionTitle} font="bold" text={`Calendar Settings:`} />
-                <View style={styles.toggleButtonRow}>
-                  <View style={styles.toggleButtonView} >
-                    <ToggleButton
-                      text='My Clubs'
-                      onPress={() => setCalendarSetting('myClubs')}
-                      toggled={calendarSetting == 'myClubs'}
-                      toggledCol={Colors.purple}
-                      untoggledCol={Colors.gray}
-                      icon='people'
-                    />
-                  </View>
-                  <View style={styles.toggleButtonView} >
-                    <ToggleButton
-                      text='New Clubs'
-                      onPress={() => setCalendarSetting('newClubs')}
-                      toggled={calendarSetting == 'newClubs'}
-                      toggledCol={Colors.blue}
-                      untoggledCol={Colors.gray}
-                      icon='search'
-                    />
-                  </View>
+              <View style={styles.sliderAndTitle}>
+                <CustomText style={styles.filterSectionTitle} font="bold" text={`Time:`} />
+                <View style={styles.sliderView}>
+                  <CustomText style={{fontSize: 15, marginTop: 5, marginLeft: startEndTime[0] * 9.75 }} text={formatStartEndTime(startEndTime[0])} />
+                  <CustomSlider values={startEndTime} onValuesChange={(values) => setStartEndTime(values)} />
+                  <CustomText style={{fontSize: 15, marginLeft: startEndTime[1] * 9.75 }} text={formatStartEndTime(startEndTime[1])} />
                 </View>
+              </View>
 
-                <CustomText style={styles.filterSectionTitle} font="bold" text={`Day of the week:`} />
+              {calendarSetting == 'newClubs' && 
+              <View>
+                <CustomText style={styles.filterSectionTitle} font="bold" text={`Club Categories:`} />
                 <View style={styles.toggleButtonRow}>
                 { 
                   // create a toggle component for each category
-                  daysOfTheWeek.map((day) => {
+                  CLUBCATEGORIES.map((category) => {
 
                     // toggle button to update categories selected
                     const toggleButton = () => {
-                      if (daySelected.includes(day.key)) {
-                        setSelectedDay(daySelected.filter((item) => item !== day.key));
+                      if (clubCategoriesSelected.includes(category.value)) {
+                        setClubCategoriesSelected(clubCategoriesSelected.filter((item) => item !== category.value));
                       } else {
-                        setSelectedDay([...daySelected, day.key]);
+                        setClubCategoriesSelected([...clubCategoriesSelected, category.value]);
                       }
-                      setSpecificDateSelected(false);
-                      console.log("daySelected: ", daySelected)
                     }
 
                     return (
                       <View style={styles.toggleButtonView} >
                         <ToggleButton 
-                          text={day.value} 
+                          text={`${category.emoji} ${category.value}`} 
                           onPress={toggleButton} 
-                          toggled={daySelected.includes(day.key)}
-                          toggledCol={Colors.black}
+                          toggled={clubCategoriesSelected.includes(category.value)}
+                          toggledCol={category.color}
                           untoggledCol={Colors.gray}
                         />
                       </View>
@@ -396,84 +375,22 @@ const CalendarScreen = ({ route, navigation }) => {
                   })
                 }
                 </View>
-                
-                <View style={styles.sliderAndTitle}>
-                  <CustomText style={styles.filterSectionTitle} font="bold" text={`Time:`} />
-                  <View style={styles.sliderView}>
-                    <CustomText style={{fontSize: 15, marginTop: 5, marginLeft: startEndTime[0] * 9.75 }} text={formatStartEndTime(startEndTime[0])} />
-                    <CustomText style={{fontSize: 15, marginTop: -21, marginLeft: startEndTime[1] * 9.75 }} text={formatStartEndTime(startEndTime[1])} />
-                    <MultiSlider
-                      values={startEndTime}
-                      sliderLength={250}
-                      onValuesChange={(values) => setStartEndTime(values)}
-                      touchDimensions={{
-                        height: 50,
-                        width: 50,
-                        borderRadius: 15,
-                        slipDisplacement: 200,
-                      }}
-                      selectedStyle={{backgroundColor: Colors.black, height: 4}}
-                      unselectedStyle={{backgroundColor: Colors.gray, height: 4}}
-                      markerContainerStyle={{marginTop: 2}}
-                      customMarker={() => {
-                        return (
-                          <View style={{height: 20, width: 20, borderRadius: 10, backgroundColor: Colors.black}} />
-                        )
-                      }}
-                      containerStyle={{height: 30}}
-                      min={0}
-                      max={24}
-                      step={1}
-                      allowOverlap
-                      snapped         
-                    />
-                  </View>
-                </View>
+              </View>}
 
-                {calendarSetting == 'newClubs' && 
+              {calendarSetting == 'myClubs' &&
                 <View>
-                  <CustomText style={styles.filterSectionTitle} font="bold" text={`Club Categories:`} />
-                  <View style={styles.toggleButtonRow}>
-                  { 
-                    // create a toggle component for each category
-                    clubCategories.map((category) => {
-
-                      // toggle button to update categories selected
-                      const toggleButton = () => {
-                        if (clubCategoriesSelected.includes(category.value)) {
-                          setClubCategoriesSelected(clubCategoriesSelected.filter((item) => item !== category.value));
-                        } else {
-                          setClubCategoriesSelected([...clubCategoriesSelected, category.value]);
-                        }
-                      }
-
-                      return (
-                        <View style={styles.toggleButtonView} >
-                          <ToggleButton 
-                            text={category.value} 
-                            onPress={toggleButton} 
-                            toggled={clubCategoriesSelected.includes(category.value)}
-                            toggledCol={category.color}
-                            untoggledCol={Colors.gray}
-                            icon={category.icon}
-                          />
-                        </View>
-                      )
-                    })
-                  }
-                  </View>
-                </View>}
-
-                {calendarSetting == 'myClubs' &&
-                  <View>
-                    <CustomText style={[styles.filterSectionTitle, { marginBottom: 10 }]} font="bold" text={`My Clubs:`} />
-                    <FilterList items={clubList} setter={setMySelectedClubs} selected={myClubsSelected} text='My Clubs'  />
-                  </View>
-                }
-              </KeyboardAwareScrollView>
-            </View>
+                  <CustomText style={[styles.filterSectionTitle, { marginBottom: 10 }]} font="bold" text={`My Clubs:`} />
+                  <FilterList items={clubList} setter={setMySelectedClubs} selected={myClubsSelected} text='My Clubs'  />
+                </View>
+              }
+            </KeyboardAwareScrollView>
           </View>
+        </View>
         }
+        onClose={() => {
+          setShowFilter(false);
+          setanimateModal(false);
+        }}
       />
     </View>
   );
@@ -482,21 +399,29 @@ const CalendarScreen = ({ route, navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    width: '100%',
     backgroundColor: Colors.lightGray,
+    justifyContent: 'flex-start',
+    gap: 10,
   },
   calendarContainer: {
     flex: 1,
     width: '100%',
   },
+  calendarTheme: {
+    calendarBackground: 'transparent',
+    textSectionTitleColor: Colors.red,
+    todayTextColor: Colors.red,
+    dayTextColor: Colors.black,
+    textDisabledColor: Colors.gray,
+    arrowColor: Colors.red,
+    fontFamily: 'nunito-regular',
+  },
   filterButtonView: {
     position: 'absolute',
-    top: 15,
-    right: 0,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10,
-    margin: 40,
+    top: 65,
+    right: 20,
+    color: Colors.buttonBlue,
   },
   eventsContainer: {
     flex: 1,
@@ -529,17 +454,12 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.lightGray,
     borderRadius: 5,
     marginTop: 20,
-    marginBottom: 30,
-},
-  filterSectionTitle: {
-    fontSize: 20,
-    marginTop: 10,
-    marginLeft: 10,
+    marginBottom: 10,
   },
   toggleButtonRow: {
     flexDirection: 'row',
     marginTop: 10,
-    width: '100%',
+    width: 300,
     flexWrap: 'wrap',
     marginBottom: 10,
     gap: 10,
@@ -557,17 +477,20 @@ const styles = StyleSheet.create({
   sliderView: {
     height: 30,
     width: 250,
-    margin: 20,
-    marginTop: 10,
+    margin: 10,
+    marginBottom: 20,
     width: '100%',
   },
 
   // fonts
   text: {
-    ...textNormal,
     fontSize: 20,
   },
-  title: title,
+  filterSectionTitle: {
+    fontSize: 20,
+    marginTop: 10,
+    marginLeft: 10,
+  },
 });
 
 export default CalendarScreen;

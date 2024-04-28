@@ -1,207 +1,252 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, FlatList, Button } from 'react-native';
-import { getAuth } from 'firebase/auth';
-// backend
-import { ref, get } from 'firebase/database';
-import { db } from '../../backend/FirebaseConfig';
+import { View, StyleSheet, ScrollView, Alert } from 'react-native';
+// fade
+import Fade from 'react-native-fade';
 // functions
-import { requestToJoinClub, leaveClubConfirmed, getSetAllEventsData } from '../../functions/backendFunctions';
+import { requestToJoinClub, getSetAllEventsData, checkMembership, getSetClubData } from '../../functions/backendFunctions';
+import { goToChatScreen, goToAdminChatScreen } from '../../functions/navigationFunctions';
 // my components
-import Header from '../../components/Header';
+import Header from '../../components/display/Header';
 import UpcomingEvents from '../../components/event/UpcomingEvents';
-import CustomText from '../../components/CustomText';
+import CustomText from '../../components/display/CustomText';
 import ClubImg from '../../components/club/ClubImg';
 import IconButton from '../../components/buttons/IconButton';
 import IconText from '../../components/display/IconText';
 import Chip from '../../components/display/Chip';
-// modal
-import Modal from 'react-native-modal';
+import IconOverlay from '../../components/overlays/IconOverlay';
+import CircleButton from '../../components/buttons/CircleButton';
+import CustomButton from '../../components/buttons/CustomButton';
 // macros
-import { clubCategories } from '../../macros/macros';
-// icons
-import { Ionicons } from '@expo/vector-icons';
-// fonts
-import { textNormal } from '../../styles/FontStyles';
+import { CLUBCATEGORIES } from '../../macros/macros';
 // colors
 import { Colors } from '../../styles/Colors';
-import CircleButton from '../../components/buttons/CircleButton';
-import { Icon } from '@rneui/base';
 
 const ClubScreen = ({ route, navigation }) => {
-  const { name, img, id, description, categories, members } = route.params;
-  const [isMember, setIsMember] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [isOwner, setIsOwner] = useState(false);
-  const [isLeaveClubModalVisible, setLeaveClubModalVisible] = useState(false);
-  // events
+  //  get club data
+  const { club } = route.params; // just use clubId to get club data
+  // membership
+  const [currentUserPrivilege, setCurrentUserPrivilege] = useState('none');
+  // club data
+  const [clubData, setClubData] = useState(null);
+  // event data
   const [eventData, setEventData] = useState([]);
+  // fade text
+  const [showText, setShowText] = useState(true);
+  // loading
   const [loading, setLoading] = useState(true);
-  // join club modal
+  // modals
   const [isJoinClubModalVisible, setJoinClubModalVisible] = useState(false);
+  const [isRequestClubModalVisible, setRequestClubModalVisible] = useState(false);
+  const [isRequestSent, setIsRequestSent] = useState(false);
 
-  const filterByThisClub = (event) => { // change to where club stores event IDs
-    return event.clubId === id;
+  useEffect(() => {
+
+    const asyncFunction = async () => {
+      setLoading(true);
+
+      await getSetAllEventsData(setEventData);
+      await getSetClubData(club.clubId, setClubData);
+
+      setLoading(false);
+
+      checkMembership(club.clubId, setCurrentUserPrivilege, setIsRequestSent);
+    };
+
+    asyncFunction();
+  }, []);
+
+  // fade out text after 2 seconds
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowText(false);
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // go to calendar with this club's events
+  const onCalendarButtonPress = () => {
+    navigation.navigate("ClubCalendar", {
+      club: clubData,
+    });
+  };
+
+  // request to join club
+  const onRequestButtonPress = () => {
+    if (isRequestSent) {
+      Alert.alert('Request already sent.');
+      return;
+    } 
+    // change modal
+    requestToJoinClub(clubData.clubId, clubData.clubName, clubData.publicClub);
+    if (clubData.publicClub) {
+      setJoinClubModalVisible(true);
+
+      // start timer for checking membership
+      const timer = setTimeout(() => {
+        checkMembership(club.clubId, setCurrentUserPrivilege, setIsRequestSent);
+      }, 1000);
+    } else {
+      setRequestClubModalVisible(true);
+    }
+  };
+
+  // goto UserList
+  const gotoUserList = () => {
+    navigation.navigate('UserList', { clubId : club.clubId, members: clubData.clubMembers, clubName: clubData.clubName });
   }
 
+  // goto message search
+  const gotoMessageSearch = () => {
+    navigation.navigate('MessageSearchScreen', { clubId: club.clubId, chatName: "chats", pin: false });
+  }
+
+  // goto image gallery
+  const gotoImageGallery = () => {
+    navigation.navigate('ImageGalleryScreen', { clubId: club.clubId });
+  }
+
+  // goto admin chat (fix later)
+  const gotoAdminChat = () => {
+    goToAdminChatScreen(clubData, navigation);
+  }
+
+  // go to manage club
+  const goToManageClub = () => {
+    navigation.navigate('InClubView', { clubId: club.clubId });
+  }
+
+  // add event button
   const onAddEventPress = () => {
     navigation.navigate("NewEvent", {
-      clubName: name,
-      clubId: id,
+      clubId: club.clubId,
+      clubCategories: club.clubCategories,
       fromMap: false,
     });
   }
 
-  const onChatButtonPress = () => {
-    navigation.navigate('Chat', {
-      clubName: name,
-    });
-  };
-
-  const checkMembership = async () => {
-    const auth = getAuth();
-    const user = auth.currentUser;
-
-    if (user) {
-      const userId = user.uid;
-      const clubRef = ref(db, `clubs/${id}/clubMembers`);
-
-      const snapshot = await get(clubRef);
-      if (snapshot.exists()) {
-        const clubMembers = snapshot.val();
-        console.log(clubMembers);
-        if (clubMembers[userId] !== undefined) {
-          setIsMember(true);
-        }
-        if (clubMembers[userId].privilege === 'admin') {
-          setIsAdmin(true);
-        }
-        if (clubMembers[userId].privilege === 'owner') {
-          setIsOwner(true);
-          setIsAdmin(true);
-        }
-      }
-    }
-  };
-
-  useEffect(() => {
-    getSetAllEventsData(setEventData, setLoading);
-
-    checkMembership();
-  }, []);
-
-  const toggleLeaveClubModal = () => {
-    setLeaveClubModalVisible(!isLeaveClubModalVisible);
-  };
-
-  const onEditButtonPress = () => {
-    navigation.navigate('EditClub', {
-      name: name,
-      img: img,
-      clubId: id,
-      description: description,
-      navigation: navigation,
-    });
-  };
-
-  // go to calendar with this club's events
-  const onCalendarButtonPress = () => {
-    navigation.navigate('Calendar', {
-      calendarSettingProp: "myClubs",
-      clubsProp: [name],
-    });
-  };
-
-  // get member count
+  // get member count from members object (not used currently)
   const memberCount = () => {
-    if (members) {
-      const memberCount = Object.keys(members).length;
+    if (clubData.clubMembers) {
+      const memberCount = Object.keys(clubData.clubMembers).length;
       return memberCount;
     } else {
       return 0;
     }
   }
-  
+
   // filter events by club
-  const filteredEvents = eventData.filter((event) => filterByThisClub(event));
+  const filterFunct = (event) => {
+    if (event.clubId !== club.clubId) {
+      return false;
+    }
+    
+    // filter by public events
+    if (currentUserPrivilege == 'none') {
+      if (!event.public) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  const filteredEvents = eventData.filter(filterFunct);
 
   return (
     <View style={styles.container}>
-      
-      <Header text={name} back navigation={navigation}></Header>
+      <Header back navigation={navigation}></Header>
+      {clubData &&
       <ScrollView>
-        <View style={styles.clubImage}>
-          <ClubImg clubImg={img} width={120} />
+        <View style={styles.content}>
+          <ClubImg clubImg={clubData.clubImg} width={120} />
+
           <View style={styles.clubContent}>
+
+            <CustomText style={styles.clubName} text={clubData.clubName} font="black" />
+
+            {/* categories */}
             <View style={styles.categoriesContent}>
-              {categories.length !== 0 &&
-                categories.map((item) => {
+              {club.clubCategories.length !== 0 &&
+                club.clubCategories.map((item) => {
                   // get corresponding club category
-                  const category = clubCategories.find((clubCategory) => clubCategory.value === item);
+                  const category = CLUBCATEGORIES.find((clubCategory) => clubCategory.value === item);
 
                   return (
-                    <Chip key={item} style={styles.categoriesChip} text={category.emoji + " " + category.value} color={category.lightColor} />
+                    <Chip 
+                      key={item} 
+                      style={styles.categoriesChip} 
+                      text={category.emoji + " " + category.value} 
+                      color={category.lightColor} 
+                      textColor={category.color}
+                    />
                   );
                 })
               }
             </View>
-            <View style={{ flexDirection: 'row', gap: 10 }}>
-              <Ionicons name="people-outline" size={20} color={Colors.black} />
-              <CustomText
-                style={[styles.textNormal, { textAlign: 'center', marginBottom: 20 }]}
-                text={memberCount()}
-              />
-            </View>
-            <CustomText
-              style={[styles.textNormal, { textAlign: 'center', marginBottom: 20 }]}
-              text={description}
+
+            {/* description */}
+            <CustomText 
+              style={styles.clubDescription} 
+              text={clubData.clubDescription} 
+              numberOfLines={5}
             />
+            
+            {/* join club button */}
+            {currentUserPrivilege === 'none' && (
+              <CustomButton text="Join" onPress={onRequestButtonPress} />
+            )}
           </View>
 
           <View style={styles.clubButtons}>
-            <IconText icon="people-outline" iconColor={Colors.lightGray} text="Club Settings" onPress={onChatButtonPress} />
-            {!isMember && (
-              <IconButton icon={'add-circle-outline'} text="Request to Join" onPress={() => {
-                // change modal
-                setJoinClubModalVisible(true);
-                requestToJoinClub(id, setIsMember)}
-              } />
-            )}
-            {isAdmin && (
-              <IconButton icon={'create-outline'} text="Edit Club" onPress={onEditButtonPress} />
-            )}
-            {isMember && (
-              <IconButton icon={'log-out-outline'} text="Leave Club" onPress={toggleLeaveClubModal} />
+            {currentUserPrivilege != 'none' && (
+              <View>
+                <IconText icon="hammer-outline" iconColor={Colors.lightGray} text="Tools" />
+                <View style={{ height: 15 }} />
+                <IconButton onPress={gotoUserList} text={`Members (${memberCount()})`} icon="people-outline" />
+                <View style={styles.separator} />
+                <IconButton onPress={gotoMessageSearch} text="Search Messages" icon="search-outline" />
+                <View style={styles.separator} />
+                <IconButton onPress={gotoImageGallery} text="Image Gallery" icon="images-outline" />
+                {(currentUserPrivilege === 'admin' || currentUserPrivilege === 'owner') && (
+                  <View>
+                    <View style={styles.separator} />
+                    <IconButton onPress={gotoAdminChat} text="Admin Chat" icon="key-outline" />
+                  </View>
+                )}
+                <View style={styles.separator} />
+                <IconButton onPress={goToManageClub} text="Manage Club" icon="settings-outline" />
+              </View>
             )}
 
             <IconText icon="calendar-outline" iconColor={Colors.lightGray} text="Upcoming Events" />
-            <UpcomingEvents filteredEvents={filteredEvents} navigation={navigation} />
+            <UpcomingEvents filteredEvents={filteredEvents} navigation={navigation} screenName={"ClubScreen"}/>
+
+            {/* extra space at the bottom of the screen */}
+            <View style={{height: 50}}/>
+
             <View style={{position: "absolute", bottom: -600, left: 0, right: 0, backgroundColor: Colors.white, height: 600}}/>
           </View>
 
         </View>
       </ScrollView>
+      }
         
-      <CircleButton icon="create-outline" onPress={onAddEventPress} position={{ bottom: 0, right: 0 }} size={80} />
-
-      <CircleButton icon='chatbubbles-outline' onPress={onChatButtonPress} position={{ bottom: 0, left: 0 }} size={80} />
-
-      <Modal isVisible={isLeaveClubModalVisible}>
-        <View style={styles.modalContainer}>
-          <CustomText style={styles.modalText} text="Are you sure you want to leave this club?" />
-          <View style={styles.modalButtons}>
-            <Button title="Yes" onPress={() => leaveClubConfirmed(id, setIsMember)} />
-            <Button title="No" onPress={toggleLeaveClubModal} />
+      {/* extra buttons */}
+      {(currentUserPrivilege == 'admin' || currentUserPrivilege == 'owner') && (
+        <View>
+          <View style={{position: 'absolute', bottom: 5, right: 75, margin: 30}}>
+            <Fade visible={showText}>
+              <CustomText style={styles.popUpText} text="Create an Event." font='bold' />
+            </Fade>
           </View>
+          <CircleButton icon="calendar-number-outline" onPress={onAddEventPress} position={{ bottom: 0, right: 0 }} size={80} />
         </View>
-      </Modal>
+      )}
+      <IconButton icon='calendar-outline' onPress={onCalendarButtonPress} style={styles.calendarButton} text="" color={Colors.buttonBlue} />
 
-      <Modal isVisible={isJoinClubModalVisible}>
-        <View style={styles.modalContainer}>
-          <Ionicons name="checkmark-circle-outline" size={90} color={Colors.green} />
-          <CustomText style={styles.modalText} text="You have successfully joined the club." />
-          <Button title="Ok" onPress={() => setJoinClubModalVisible(false)} />
-        </View>
-      </Modal>
+      {/* other modals */}
+      <IconOverlay visible={isJoinClubModalVisible} setVisible={setJoinClubModalVisible} icon="checkmark-circle-outline" iconColor={Colors.green} text="You have joined the club." />
+      <IconOverlay visible={isRequestClubModalVisible} setVisible={setRequestClubModalVisible} icon="mail-outline" iconColor={Colors.green} text="Your request has been sent." />
     </View>
   );
 };
@@ -212,20 +257,20 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.lightGray,
     flex: 1,
   },
-  clubImage: {
-    marginTop: 50,
+  content: {
+    marginTop: 30,
     alignItems: 'center',
   },
   clubContent: {
-    marginTop: 20,
+    marginTop: 15,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  categoriesContent: {
-    marginBottom: 20,
-    justifyContent: 'center',
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+  clubName: {
+    fontSize: 24,
+    textAlign: 'center', 
+    marginBottom: 8, 
+    marginHorizontal: 40,
   },
   categoriesChip: {
     margin: 5,
@@ -234,12 +279,22 @@ const styles = StyleSheet.create({
     gap: 10,
     flexDirection: 'row',
   },
-  chipText: {
-    fontSize: 16,
-    color: 'white',
+  categoriesContent: {
+    marginBottom: 20,
+    justifyContent: 'center',
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
+  clubDescription: {
+    textAlign: 'center',
+    marginHorizontal: 40,
+    marginBottom: 10,
+    color: Colors.darkGray,
   },
   clubButtons: {
     flex: 1,
+    justifyContent: 'center',
+    backgroundColor: Colors.white,
     width: '100%',
     marginTop: 20,
     paddingTop: 20,
@@ -247,71 +302,21 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 30,
     borderTopRightRadius: 30,
     paddingHorizontal: 20,
-    justifyContent: 'center',
-    backgroundColor: Colors.white,
   },
   separator: {
     backgroundColor: Colors.lightGray,
     height: 1,
-    width: '120%',
-    marginLeft: -20,
+    marginVertical: 10,
   },
   calendarButton: {
     position: 'absolute',
-    top: 0,
-    right: 0,
+    top: 70,
+    right: 30,
   },
-
-  // bottom buttons
-  rightButtonView: {
-    position: 'absolute',
-    bottom: 0,
-    right: 0,
-    margin: 30,
-  },
-  addEventButton: {
-    backgroundColor: Colors.red,
-    padding: 20,
-    borderRadius: 50,
-    shadowColor: 'black',
-    shadowOffset: { width: 3, height: 5 },
-    shadowOpacity: 0.25,
-  },
-  leftButtonView: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    margin: 25,
-  },
-  chatButton: {
-    backgroundColor: Colors.red,
-    padding: 20,
-    borderRadius: 50,
-  },
-
-  // modal styles
-  modalContainer: {
-    backgroundColor: 'white',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-    margin: 20,
-    borderRadius: 20,
-  },
-  modalText: {
-    textAlign: 'center',
-    fontSize: 18,
-    marginBottom: 20,
-  },
-  modalButtons: {
-    flexDirection: 'row',
-    gap: 80,
-    justifyContent: 'space-between',
-  },
-
-  // fonts
-  textNormal: {
-    ...textNormal,
+  popUpText: {
+    color: Colors.black,
+    fontSize: 25,
+    textAlign: 'right',
   },
 });
 

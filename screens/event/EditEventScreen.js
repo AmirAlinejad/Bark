@@ -1,22 +1,25 @@
-import React, { useEffect, useState } from 'react'
+import React, { useState } from 'react'
 // react native components
-import { View, StyleSheet, TouchableOpacity, TextInput, Switch } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, TextInput } from 'react-native';
 // my components
-import CustomText from '../../components/CustomText';
-import CustomInput from '../../components/CustomInput';
-import CustomButton from '../../components/CustomButton';
-import Header from '../../components/Header';
+import CustomText from '../../components/display/CustomText';
+import CustomInput from '../../components/input/CustomInput';
+import CustomButton from '../../components/buttons/CustomButton';
+import PrivacySwitch from '../../components/input/PrivacySwitch';
+import CircleButton from '../../components/buttons/CircleButton';
+import Header from '../../components/display/Header';
 // date time picker
 import DateTimePicker from '@react-native-community/datetimepicker';
-// time functions
-import { toTimeString, toDateString } from '../../functions/timeFunctions';
 // maps
 import MapView, { Marker } from 'react-native-maps';
+// modal
+import Modal from 'react-native-modal';
 // backend
 import { ref, set, update } from 'firebase/database';
 import { db } from '../../backend/FirebaseConfig';
-// fonts
-import { textNormal } from '../../styles/FontStyles';
+// functions
+import { emailSplit } from '../../functions/backendFunctions';
+import { dateForObj, timeForObj } from '../../functions/timeFunctions';
 // icons
 import Ionicons from 'react-native-vector-icons/Ionicons';
 // keyboard aware scroll view
@@ -29,60 +32,6 @@ const EditEventScreen = ({ route, navigation }) => {
   const event = route.params.event;
   console.log(event);
 
-  // format date from DOT Mon DD YYYY to create date object
-  const dateForObj = (date) => {
-    const split = date.split(" ");
-    let month = split[1];
-    if (month === "Jan") {
-      month = "01";
-    } else if (month === "Feb") {
-      month = "02";
-    } else if (month === "Mar") {
-      month = "03";
-    } else if (month === "Apr") {
-      month = "04";
-    } else if (month === "May") {
-      month = "05";
-    } else if (month === "Jun") {
-      month = "06";
-    } else if (month === "Jul") {
-      month = "07";
-    } else if (month === "Aug") {
-      month = "08";
-    } else if (month === "Sep") {
-      month = "09";
-    } else if (month === "Oct") {
-      month = "10";
-    } else if (month === "Nov") {
-      month = "11";
-    } else if (month === "Dec") {
-      month = "12";
-    }
-    let day = split[2];
-    const dayNum = parseInt(day) + 1;
-    day = dayNum.toString();
-    if (day.length === 1) {
-      // add 1 to value of day
-      day = "0" + day;
-    }
-    const year = split[3];
-    console.log(year + "-" + month + "-" + day);
-    return year + "-" + month + "-" + day;
-  };
-
-  // time format
-  const timeForObj = (time) => {
-    const split = time.split(" ");
-    const timeSplit = split[0].split(":");
-    const hour = timeSplit[0];
-    let minute = parseInt(timeSplit[1]) - 3;
-    if (minute < 10) {
-      minute = "0" + minute;
-    }
-    console.log(hour + ":" + minute);
-    return "0000-00-00T" + hour + ":" + minute + ":00" + "-05:00";
-  };
-
   // state variables
   const [eventName, setEventName] = useState(event.name);
   const [eventDescription, setEventDescription] = useState(event.description);
@@ -92,29 +41,40 @@ const EditEventScreen = ({ route, navigation }) => {
   const [eventInstructions, setEventInstructions] = useState(event.instructions);
   const [publicEvent, setPublicEvent] = useState(event.public);
   const [loading, setLoading] = useState(false);
+  // overlay
+  const [modalVisible, setModalVisible] = useState(false);
 
   // edit event
   const onEditEventSubmitted = async (e) => {
     setLoading(true);
     e.preventDefault();
 
+    // check if any fields are empty
+    if (!eventName || !eventDescription || !eventDate || !eventTime) {
+      alert('Please fill out all required fields');
+      setLoading(false);
+      return;
+    }
+
     // try to submit the edit profile request
     try {
-        // update old event info
-        const userRef = ref(db, `events/${event.id}`);
-        await update(userRef, {
-            name: eventName,
-            description: eventDescription,
-            date: eventDate,
-            time: eventTime,
-            location: event.Location,
-            address: event.address,
-            roomNumber: eventRoomNumber,
-            instructions: eventInstructions,
-            public: publicEvent,
-        });
+      // update old event info
+      const userRef = ref(db, `${emailSplit()}/events/${event.id}`);
+      await update(userRef, {
+          name: eventName,
+          description: eventDescription,
+          date: eventDate.toDateString(),
+          time: eventTime.toTimeString(),
+          location: event.location,
+          address: event.address,
+          roomNumber: eventRoomNumber,
+          instructions: eventInstructions,
+          public: publicEvent,
+          categories: event.categories,
+          id: event.id,
+      });
 
-        navigation.navigate("HomeScreen");
+      navigation.navigate("HomeScreen"); // make go back to event screen eventually
     } catch (error) {
       console.log(error);
       alert('Edit Event failed: ' + error.message);
@@ -129,11 +89,11 @@ const EditEventScreen = ({ route, navigation }) => {
     return split;
   };
 
-  // delete
+  // delete event
   const deleteEvent = async () => {
     setLoading(true);
     try {
-      const eventRef = ref(db, `events/${event.id}`);
+      const eventRef = ref(db, `${emailSplit()}/events/${event.id}`);
       await set(eventRef, null);
       navigation.navigate("HomeScreen");
     } catch (error) {
@@ -147,6 +107,7 @@ const EditEventScreen = ({ route, navigation }) => {
   // navigate to map screen
   const onMapPressed = () => {
     navigation.navigate('MapPicker', {
+      // send event data to map picker screen
       event: {
         location: event.location,
         address: event.address,
@@ -157,6 +118,8 @@ const EditEventScreen = ({ route, navigation }) => {
         instructions: eventInstructions,
         description: eventDescription,
         public: publicEvent,
+        categories: event.categories,
+        id: event.id,
       },
       fromEdit: true,
     });
@@ -164,13 +127,13 @@ const EditEventScreen = ({ route, navigation }) => {
 
   return (
     <View style={styles.container}>
+
       <Header text={'Edit ' + eventName} back navigation={navigation}/>
       <KeyboardAwareScrollView 
         contentContainerStyle={styles.elementsContainer}
         extraHeight={200}
       >
-
-        <CustomText style={styles.textNormal} font="bold" text="Event Name" />
+        <CustomText style={styles.textNormal} font="bold" text="Event Name*" />
         <CustomInput
           placeholder="Event Name"
           value={eventName}
@@ -178,19 +141,7 @@ const EditEventScreen = ({ route, navigation }) => {
         />
 
         <CustomText style={[styles.textNormal, {marginTop: 10}]} font="bold" text="Public Event" />
-        <View style={{flexDirection: 'row', alignItems: 'center', gap: 10}}>
-        <Ionicons
-            name={publicEvent ? 'globe-outline' : 'lock-closed'}
-            size={30}
-            color={Colors.black}
-          />
-          <Switch
-            trackColor={{ false: Colors.black, true: Colors.buttonBlue }}
-            thumbColor={Colors.white}
-            onValueChange={setPublicEvent}
-            value={publicEvent}
-          />
-        </View>
+        <PrivacySwitch toggled={publicEvent} setToggled={setPublicEvent} />
 
         <CustomText style={styles.textNormal} font="bold" text="Date" />
         <View style={{ alignItems: 'flex-start'}}> 
@@ -203,8 +154,8 @@ const EditEventScreen = ({ route, navigation }) => {
           />
         </View>
 
-        <CustomText style={[styles.textNormal, {marginTop: 10,}]} font="bold" text="Time" />
-        <View style={{ alignItems: 'flex-start', marginLeft: -10 }}> 
+        <CustomText style={styles.textNormal} font="bold" text="Time" />
+        <View style={{ alignItems: 'flex-start' }}> 
           <DateTimePicker
             testID="dateTimePicker"
             value={eventTime}
@@ -214,7 +165,7 @@ const EditEventScreen = ({ route, navigation }) => {
           />
         </View>
 
-        <CustomText style={[styles.textNormal, {marginTop: 10, marginBottom: 10}]} font="bold" text="Location" />
+        <CustomText style={[styles.textNormal, {marginVertical: 10}]} font="bold" text="Location" />
         <TouchableOpacity style={styles.mapStyle} onPress={onMapPressed}>
           <MapView
             style={styles.mapStyle}
@@ -225,7 +176,6 @@ const EditEventScreen = ({ route, navigation }) => {
                 latitude: event.location.latitude,
                 longitude: event.location.longitude,
               }}
-              title={eventName ? eventName : undefined} // doesn't pass if eventName is empty
             />
           </MapView>
           <View style={{position: 'absolute', top: 40, left: 40}} >
@@ -244,7 +194,7 @@ const EditEventScreen = ({ route, navigation }) => {
 
         <CustomText style={styles.textNormal} font="bold" text="Room Number" />
         <CustomInput
-          placeholder="Room Number (Optional)"
+          placeholder="Room Number"
           value={eventRoomNumber}
           setValue={setEventRoomNumber}
           keyboardType="number-pad"
@@ -253,13 +203,13 @@ const EditEventScreen = ({ route, navigation }) => {
 
         <CustomText style={styles.textNormal} font="bold" text="Instructions" />
         <CustomInput
-          placeholder="ex. Up the stairs on your right (Optional)"
+          placeholder="ex. Up the stairs on your right"
           value={eventInstructions}
           setValue={setEventInstructions}
           keyboardType="default"
         />
 
-        <CustomText style={styles.textNormal} font="bold" text="Details" />
+        <CustomText style={styles.textNormal} font="bold" text="Details*" />
         <View style={styles.largeInputContainer}>
           <TextInput
             placeholder="What's happening?"
@@ -273,17 +223,27 @@ const EditEventScreen = ({ route, navigation }) => {
           />
         </View>
 
+        <CustomText style={styles.smallText} text="* Indicates a required field" />
+
         <View style={styles.buttonContainer}>
           <CustomButton text="Save Changes" onPress={onEditEventSubmitted} />
         </View>
 
       </KeyboardAwareScrollView>
       
-      <View style={styles.rightButtonView}>
-          <TouchableOpacity style={styles.addEventButton} onPress={deleteEvent}>
-            <Ionicons name="trash-outline" color="white" size={40} />
-          </TouchableOpacity>
+      <CircleButton icon="trash-outline" onPress={() => setModalVisible(true)} position={{ bottom: 0, right: 0 }} size={80} />
+
+      <Modal isVisible={modalVisible}>
+
+        <View style={styles.modalContainer}>
+          <CustomText style={styles.modalText} text="Are you sure you want to delete the event?" />
+          <View style={styles.modalButtons}>
+            <CustomButton text="Yes" onPress={() => deleteEvent()} color={Colors.red}/>
+            <CustomButton text="No" onPress={() => setModalVisible(false)} color={Colors.buttonBlue}/>
+          </View>
         </View>
+
+      </Modal>
     </View>
   );
 };
@@ -291,22 +251,8 @@ const EditEventScreen = ({ route, navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FAFAFA',
+    backgroundColor: Colors.white,
     justifyContent: 'flex-start',
-  },
-  rightButtonView: {
-    position: 'absolute',
-    bottom: 0,
-    right: 0,
-    margin: 30,
-  },
-  addEventButton: {
-    backgroundColor: Colors.red,
-    padding: 20,
-    borderRadius: 50,
-    shadowColor: 'black',
-    shadowOffset: { width: 3, height: 5 },
-    shadowOpacity: 0.25,
   },
   elementsContainer: {
     justifyContent: 'flex-start',
@@ -319,21 +265,12 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     marginBottom: 10,
   },
-  inputContainer: {
-    borderColor: '#ccc',
-    borderWidth: 1,
-    borderRadius: 20,
-    height: 100,
-    width: '90%',
-    padding: 15,
-    marginBottom: 20,
-  },
   buttonContainer: {
    width: 400,
    height: 100,
   },
   largeInputContainer: {
-    borderColor: '#ccc',
+    borderColor: Colors.inputBorder,
     borderWidth: 1,
     borderRadius: 20,
     height: 100,
@@ -342,9 +279,33 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   textNormal: {
-    ...textNormal,
     fontSize: 20,
     marginLeft: 5,
+  },
+  smallText: { // for required fields
+    marginTop: -5,
+    fontSize: 14,
+    color: Colors.darkGray,
+  },
+
+  // modal styles
+  modalContainer: {
+    backgroundColor: Colors.white,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+    margin: 20,
+    borderRadius: 20,
+  },
+  modalText: {
+    textAlign: 'center',
+    fontSize: 18,
+    marginBottom: 20,
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    gap: 80,
+    justifyContent: 'space-between',
   },
 });
 export default EditEventScreen;

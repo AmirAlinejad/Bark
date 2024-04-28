@@ -4,24 +4,22 @@ import { View, StyleSheet, TouchableOpacity } from 'react-native';
 // keyboard avoiding view
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 // my components
-import CustomText from '../../components/CustomText';
-import CustomInput from '../../components/CustomInput';
-import CustomButton from '../../components/CustomButton';
+import CustomText from '../../components/display/CustomText';
+import CustomInput from '../../components/input/CustomInput';
+import CustomButton from '../../components/buttons/CustomButton';
 import ProfileImg from '../../components/display/ProfileImg';
-import Header from '../../components/Header';
+import Header from '../../components/display/Header';
+// backend functions
+import { emailSplit, handleImageUploadAndSend } from '../../functions/backendFunctions';
 // select list
 import { SelectList } from 'react-native-dropdown-select-list'
 // colors
 import { Colors } from '../../styles/Colors';
 // macros
-import { majors } from '../../macros/macros';
-// image picking
-import handleImageUpload from '../../functions/uploadImage';
+import { MAJORS } from '../../macros/macros';
 // backend
-import { ref, set, update } from 'firebase/database';
+import { ref, update } from 'firebase/database';
 import { db } from '../../backend/FirebaseConfig';
-// fonts
-import { textNormal } from '../../styles/FontStyles';
 import { getAuth } from 'firebase/auth';
 
 const EditProfile = ({ route, navigation }) => {
@@ -39,6 +37,7 @@ const EditProfile = ({ route, navigation }) => {
 
   // edit profile
   const onEditProfileSubmitted = async (e) => {
+
     setLoading(true);
     e.preventDefault();
 
@@ -50,17 +49,17 @@ const EditProfile = ({ route, navigation }) => {
     }
 
     // check grad year
-    if (graduationYear.length !== 4 || isNaN(graduationYear)) {
+    if (!graduationYear == "" && graduationYear.length !== 4) {
       alert('Graduation year must be a 4-digit number');
       setLoading(false);
       return;
     }
-    if (parseInt(graduationYear) < 2022) {
+    if (!graduationYear == "" && parseInt(graduationYear) < 2022) {
       alert('Graduation year must be 2022 or later');
       setLoading(false);
       return;
     }
-    if (parseInt(graduationYear) > 2030) {
+    if (!graduationYear == "" && parseInt(graduationYear) > 2030) {
       alert('Graduation year must be 2030 or earlier');
       setLoading(false);
       return;
@@ -68,15 +67,21 @@ const EditProfile = ({ route, navigation }) => {
 
     // try to submit the edit profile request
     try {
+        // get user id
+        const auth = getAuth();
+        const user = auth.currentUser;
+        const id = user.uid;
+        
         // update old user info
-        const userRef = ref(db, `users/${userData.uid}`);
+        // image, grad year, and major are optional
+        const userRef = ref(db, `${emailSplit()}/users/${id}`);
         await update(userRef, {
             userName: userName,
-            profileImg: profileImg,
             firstName: firstName,
             lastName: lastName,
-            graduationYear: graduationYear,
-            major: major,
+            profileImg: profileImg ? profileImg : "",
+            graduationYear: graduationYear ? graduationYear : "",
+            major: major ? major : "",
         });
 
         navigation.navigate("HomeScreen");
@@ -88,6 +93,9 @@ const EditProfile = ({ route, navigation }) => {
     }
   };
 
+  // sort majors by alphabetical order by first character
+  MAJORS.sort((a, b) => a.value.substring(2).localeCompare(b.value.substring(2)));
+
   return (
     <View style={styles.container}>
     <Header text='Edit Profile' back navigation={navigation}/>
@@ -96,65 +104,58 @@ const EditProfile = ({ route, navigation }) => {
         extraHeight={200}
       >
         <View style={{alignItems: 'center', margin: 20}} >
-          <TouchableOpacity onPress={() => handleImageUpload('profile', setProfileImg)}>
+          <TouchableOpacity onPress={() => handleImageUploadAndSend('profile', setProfileImg)}>
             <ProfileImg profileImg={profileImg} width={170} editable/>
           </TouchableOpacity>
         </View>
 
         <View style={styles.profileContainer}>
 
-          <CustomText style={styles.textNormal} font="bold" text="Username" />
+          <CustomText style={styles.textNormal} font="bold" text="Username*" />
           <CustomInput placeholder="New Username"
             value={userName}
             setValue={setUserName}
           />
 
-          <CustomText style={styles.textNormal} font="bold" text="Full Name" />  
-          <View style={{flexDirection: 'row', gap: -20}}>
-            <View style={{width: 175}}>
-              <CustomInput placeholder="First Name"
-                value={firstName}
-                setValue={setFirstName}
-              />
-            </View>
-
-            <View style={{width: 175}}>
-              <CustomInput placeholder="Last Name"
-                value={lastName}
-                setValue={setLastName}
-              />
-            </View>
+          <CustomText style={styles.textNormal} font="bold" text="Full Name*" />  
+          <View style={styles.namesView}>
+            <CustomInput placeholder="First Name"
+              value={firstName}
+              setValue={setFirstName}
+              width={150}
+            />
+            <View style={{width: 10}} />
+            <CustomInput placeholder="Last Name"
+              value={lastName}
+              setValue={setLastName}
+              width={150}
+            />
           </View>
 
           <CustomText style={styles.textNormal} font="bold" text="🎓 Graduation Year" />
           <CustomInput placeholder="Graduation Year"
             value={graduationYear}
             setValue={setGraduationYear}
+            keyboardType='numeric'
           />
 
           <CustomText style={styles.textNormal} font="bold" text="📚 Major" />
           <SelectList 
             setSelected={(val) => setMajor(val)} 
-            data={majors} 
+            data={MAJORS} 
             save="value"
-            boxStyles={{
-              width: 300,
-              borderRadius: 20,
-              borderColor: Colors.gray,
-              height: 50,
-            }}
-            dropdownStyles={{
-              width: 300,
-              borderRadius: 20,
-              borderColor: Colors.gray,
-            }}
-            inputStyles={{color: Colors.black, fontSize: 14, marginTop: 3}}
-            dropdownTextStyles={{color: Colors.black, fontSize: 14}}
+            boxStyles={styles.boxStyles}
+            dropdownStyles={styles.dropdownStyles}
+            inputStyles={styles.inputStyles}
+            dropdownTextStyles={styles.dropdownTextStyles}
           />
+
+          <CustomText style={styles.smallText} text="* Indicates a required field" />
 
         </View>
 
         <View style={styles.buttonContainer}>
+          {loading && <CustomText text="Loading..." />}
           <CustomButton text="Save Changes" onPress={onEditProfileSubmitted} />
         </View>
       </KeyboardAwareScrollView>
@@ -165,7 +166,7 @@ const EditProfile = ({ route, navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FAFAFA',
+    backgroundColor: Colors.white,
     justifyContent: 'flex-start',
   },
   profileContainer: {
@@ -173,15 +174,44 @@ const styles = StyleSheet.create({
     marginTop: 20,
     marginLeft: 20,
   },
+  namesView: {
+    flexDirection: 'row',
+  },
   buttonContainer: {
-  marginTop: 20,
+    marginTop: 20,
    marginLeft: 20,
    width: 400,
   },
   textNormal: {
-    ...textNormal,
     fontSize: 20,
     marginLeft: 5,
+  },
+
+  // dropdown
+  boxStyles: {
+    width: 300,
+    borderRadius: 20,
+    borderColor: Colors.inputBorder,
+    height: 50,
+  },
+  dropdownStyles: {
+    width: 300,
+    borderRadius: 20,
+    borderColor: Colors.inputBorder,
+  },
+  inputStyles: {
+    color: Colors.black,
+    fontSize: 14,
+    marginTop: 3,
+  },
+  dropdownTextStyles: {
+    color: Colors.black,
+    fontSize: 14,
+  },
+  smallText: {
+    marginTop: 10,
+    fontSize: 14,
+    color: Colors.darkGray,
   },
 });
 

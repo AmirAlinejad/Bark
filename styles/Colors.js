@@ -1,4 +1,3 @@
-<<<<<<< HEAD:styles/colors.js
 export const Colors = {
     // base colors
     primary: '#f57c00',
@@ -7,6 +6,7 @@ export const Colors = {
     darkGray: '#808080',
     red: '#FF5028',
     lightRed: '#FFEBE6',
+    inputBorder: '#D9D9D9',
     white: '#FFFFFF',
     gray: '#d3d3d3',
     black: '#203030',
@@ -21,17 +21,10 @@ export const Colors = {
     purple: '#8338EC',
     pink: '#FF6B6B',
     buttonBlue: '#1E90FF',
-=======
-export const Colors = {
-    primary: '#f57c00',
-    gray: '#C5C5C7',
-    mediumGray: '#F6F7FB',
-    lightGray: '#F2F2F2',
-    darkGray: '#A9A9A9',
-    red: '#FF5028',
-    lightRed: '#FFEBE6',
-    white: '#FAFAFA',
-    grey: '#E3F2FD',
-    black: '#203030',
->>>>>>> dfe4a17ddd108df15325f902cdfdaa4361e7c37e:styles/Colors.js
-};
+
+    // chat
+    chatBubbleOwner: '#E0F7FA',
+    chatBubblePinned: '#E0E0E0',
+    lightBlue: '#E0F7FA',
+
+}

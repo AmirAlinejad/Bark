@@ -1,122 +1,128 @@
-// Chat.js
-
-import React, { useState, useEffect, useCallback, useRef,useLayoutEffect } from 'react';
-import { TouchableOpacity, View, Text, TextInput,FlatList,Button, StyleSheet } from 'react-native';
-import { GiftedChat, Send, Bubble, Message,Time, Avatar } from 'react-native-gifted-chat';
-import {
-  collection,
-  addDoc,
-  orderBy,
-  query,
-  onSnapshot,
-  where,
-  setDoc,
-  getDoc,
-  getDocs,
-  updateDoc,
-  deleteDoc,
-  doc,
-  arrayUnion,
-  arrayRemove,
-  runTransaction
-} from 'firebase/firestore';
-import { getDatabase, ref, get } from 'firebase/database';
-import { getAuth, onAuthStateChanged } from 'firebase/auth';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { TouchableOpacity, View, Text, TextInput, FlatList, StyleSheet, KeyboardAvoidingView, Keyboard, TouchableWithoutFeedback, Platform, Dimensions } from 'react-native';
+// keyboard listener
+import KeyboardListener from 'react-native-keyboard-listener';
+// firebase
+import { collection, addDoc, orderBy, query, onSnapshot, where, getDocs } from 'firebase/firestore';
+import { ref, get, set } from 'firebase/database';
 import { auth, firestore, db } from '../../backend/FirebaseConfig';
-import { IconButton } from 'react-native-paper';
+// icons
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { uploadImage } from '../../components/imageUploadUtils'; // Import the utility function
-import { Colors } from '../../styles/Colors';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import { KeyboardAvoidingView} from 'react-native';
-import { Alert } from 'react-native';
-import { FontAwesome } from '@expo/vector-icons';
-import { TouchableWithoutFeedback, Keyboard } from 'react-native';
-import * as ImagePicker from 'expo-image-picker';
-import Entypo from 'react-native-vector-icons/Entypo';
+// styles
+import { Colors } from '../../styles/Colors';
+// image
 import { Image } from 'expo-image';
-import BottomSheetModal from '../../components/BottomSheetModal';
-import LikesBottomModal from '../../components/LikesBottomModal';
+// my components
+import BottomSheetModal from '../../components/chat/BottomSheetModal';
+import ChatMessage from '../../components/chat/ChatMessage';
+import LikesBottomModal from '../../components/chat/LikesBottomModal';
+import Header from '../../components/display/Header';
+import ProfileOverlay from '../../components/overlays/ProfileOverlay';
+import CustomText from '../../components/display/CustomText';
+import ReplyPreview from '../../components/chat/ReplyPreview';
+import IconButton from '../../components/buttons/IconButton';
+// functions
+import { checkMembership, fetchMessages, handleCameraPress, handleImageUploadAndSend, emailSplit } from '../../functions/backendFunctions';
+import { deleteImageFromStorage } from '../../functions/chatFunctions';
+import { isSameDay } from '../../functions/timeFunctions';
+import { goToClubScreen } from '../../functions/navigationFunctions';
+
+async function sendPushNotification(expoPushToken, message, firstName, lastName, clubName) {
+  const text = message ? message : "An image was sent.";
+
+  const notification = {
+    to: expoPushToken,
+    sound: 'default',
+    title: clubName,
+    body: `${firstName} ${lastName}: ${message}`,
+    data: { someData: 'goes here' },
+  };
+
+  await fetch('https://exp.host/--/api/v2/push/send', {
+    method: 'POST',
+    headers: {
+      Accept: 'application/json',
+      'Accept-encoding': 'gzip, deflate',
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(notification),
+  });
+}
 
 export default function Chat({ route, navigation }) {
+
+  // keyboard state
+  const [keyboardIsOpen, setKeyboardIsOpen] = useState(false);
+
+  // Define states for message text, messages, image URL, and pinned message count
   const [messageText, setMessageText] = useState('');
   const [messages, setMessages] = useState([]);
   const [imageUrl, setImageUrl] = useState(null); // Define imageUrl state
+  const [tempImageUrl, setTempImageUrl] = useState(null); // Define tempImageUrl state
   const [pinnedMessageCount, setPinnedMessageCount] = useState(0);
   const [isAtBottom, setIsAtBottom] = useState(true); // Initially assume the user is at the bottom
   const [likedMessages, setLikedMessages] = useState(new Set());
   const [gifUrl, setGifUrl] = useState(null); 
+
+  // Define states for the liked messages modal
   const [isLikesModalVisible, setIsLikesModalVisible] = useState(false);
-  const [likedUsernames, setLikedUsernames] = useState([]);
-  // To hold user IDs
-  const [likedUserIDs, setLikedUserIDs] = useState([]);
+  const [likedUsernames, setLikedUsernames] = useState(new Set()); // user ids instead of usernames
+
+  // replying state
   const [replyingToMessage, setReplyingToMessage] = useState(null);
-  // To hold detailed user information
-  const [likedUserDetails, setLikedUserDetails] = useState([]);
+
+  // user state
+  const [currentUserPrivilege, setCurrentUserPrivilege] = useState(''); // Define currentUserPrivilege state
+
+  // overlay state
+  const [overlayVisible, setOverlayVisible] = useState(false);
+  const [overlayUserData, setOverlayUserData] = useState(null);
 
   const chatName = "chats";
   const screenName = "Chat";
-  const clubName = route?.params?.clubName;
-  console.log(clubName);
+  const clubId = route?.params?.id;
+  const clubName = route?.params?.name;
+  const clubImg = route?.params?.img;
+  
   const flatListRef = useRef(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
 
-  // Define functions to handle modal open and close
+  // Define functions to handle modal open and close0
   const openModal = () => {
     setIsModalVisible(true);
   };
   
+  // Define function to close the modal
   const closeModal = () => {
     setIsModalVisible(false);
   };
   
-  useEffect(() => {
-    if (!clubName) return;
-  
+  // Fetch messages on initial render
+  useEffect(() => {  
     // Fetching messages in descending order to suit the inverted list.
-    const messagesQuery = query(collection(firestore, 'chats'), where('clubName', '==', clubName), orderBy('createdAt', 'desc'));
+    const messagesQuery = query(collection(firestore, 'chats'), where('clubId', '==', clubId), orderBy('createdAt', 'desc')); // called clubName instead of clubId
   
     const unsubscribe = onSnapshot(messagesQuery, querySnapshot => {
-      const fetchedMessages = querySnapshot.docs.map(doc => {
-        const docData = doc.data();
+
+      fetchMessages(querySnapshot, setMessages, setPinnedMessageCount);
       
-        return {
-          _id: doc.id,
-          createdAt: docData.createdAt.toDate(),
-          text: docData.text,
-          user: docData.user,
-          image: docData.image,
-          likeCount: docData.likeCount || 0,
-          pinned: docData.pinned || false,
-          gifUrl: docData.gifUrl,
-          likes: docData.likes || [],
-          replyTo: docData.replyTo || null, // This structure is already suitable
-        };
-      });
-    
-      // Since we fetch messages in descending order, we set them directly.
-      setMessages(fetchedMessages);
-  
-      // Calculate and update the count of pinned messages.
-      setPinnedMessageCount(fetchedMessages.filter(message => message.pinned).length);
     }, error => {
       console.error("Error fetching messages: ", error);
     });
+
+    // Check the user's membership status
+    checkMembership(clubId, setCurrentUserPrivilege, clubId);
+
+    // clear unread messages
+    const unreadRef = ref(db, `${emailSplit()}/users/${auth.currentUser.uid}/clubs/${clubId}/unreadMessages`);
+    set(unreadRef, 0);
   
     // Cleanup subscription on component unmount
     return () => unsubscribe();
-  }, [clubName]);
+  }, []);
   
-  useEffect(() => {
-    const { selectedGifUrl } = route.params;
-    if (selectedGifUrl) {
-      setGifUrl(selectedGifUrl); // Set the selected GIF URL for sending
-      // Clear the selectedGifUrl from params after setting
-      navigation.setParams({ selectedGifUrl: undefined });
-    }
-  }, [route.params]);
-  
-  
+  // Fetch liked messages on initial render after messages are fetched
   useEffect(() => {
     // Function to fetch liked messages and update the local state
     const fetchLikedMessages = async () => {
@@ -135,541 +141,320 @@ export default function Chat({ route, navigation }) {
     fetchLikedMessages();
   }, [messages]); 
 
-  const handleCameraPress = async () => {
-     
-    const { status } = await ImagePicker.requestCameraPermissionsAsync();
-    if (status !== 'granted') {
-      alert('Permission to access camera was denied');
-      return;
+  // Use the route params to set the selected GIF URL
+  useEffect(() => {
+    const { selectedGifUrl } = route.params;
+    if (selectedGifUrl) {
+      setGifUrl(selectedGifUrl); // Set the selected GIF URL for sending
+      // Clear the selectedGifUrl from params after setting
+      navigation.setParams({ selectedGifUrl: undefined });
     }
+  }, [route.params]);
+  
+  // Function to navigate to the message search screen
+  const navigateToMessageSearchScreen = (pin) => {
+    navigation.navigate('MessageSearchScreen', { clubId, chatName: 'chats', pin });
+  };
+  
+  const renderMessage = ({ item, index }) => {
+    const isLastMessageOfTheDay = index === messages.length - 1 || !isSameDay(item.createdAt, messages[index + 1]?.createdAt);
+    const isLikedByUser = likedMessages.has(item._id);
 
+    return (
+      
+      <ChatMessage 
+        item={item} 
+        chatType='chats'
+        isLastMessageOfTheDay={isLastMessageOfTheDay} 
+        isLikedByUser={isLikedByUser} 
+        likedMessages={likedMessages}
+        setLikedMessages={setLikedMessages} 
+        currentUserPrivilege={currentUserPrivilege}
+        setLikedUsernames={setLikedUsernames}
+        setIsLikesModalVisible={setIsLikesModalVisible}
+        setReplyingToMessage={setReplyingToMessage}
+        setOverlayUserData={setOverlayUserData}
+        setOverlayVisible={setOverlayVisible}
+        navigation={navigation}
+      />
+    );
+  };
 
-    const result = await ImagePicker.launchCameraAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [4, 3],
-      quality: 1,
-    });
+  const isCloseToTop = ({ contentOffset }) => {
+    const paddingTop = 20; // Distance from the top to consider "at the top"
+    return contentOffset.y <= paddingTop;
+  };
+    
+  const navigateToInClubView = () => {
+    goToClubScreen(route.params.club, navigation); // Pass the image URLs to the next screen
+  };
+  
+  const scrollToTop = () => {
+    if (flatListRef.current) {
+      flatListRef.current.scrollToOffset({ offset: 0, animated: true });
+    }
+  };
+  
+  const handleTextInputFocus = () => {
+    if (flatListRef.current) {
+      scrollToTop();
+    }
+  };
+  
+  const handleGifSend = () => {
+    // Example: Navigate to a new screen for selecting a GIF
+    navigation.navigate('GifSelectionScreen', {clubId, clubName, screenName});
     closeModal();
-    if (!result.cancelled) {
-      setImageUrl(result.uri); // Set the image URL
-      sendMessage(); // Send the message
-      
-    }
   };
+  
 
-
-
-
-  const handleLongPress = async (message) => {
+  const sendMessage = useCallback(async () => {
+    setMessageText('');
+    setImageUrl(null);
+    setTempImageUrl(null);
+    setGifUrl(null);
     const userId = auth.currentUser.uid;
-    const db = getDatabase();
-  
-    // Correctly form the reference to the user's data in the Realtime Database
-    const userRef = ref(db, `clubs/${clubName}/clubMembers/${userId}`);
-  
-    try {
-      const snapshot = await get(userRef);
-      if (snapshot.exists()) {
-        const currentUserPrivilege = snapshot.val().privilege;
-        
-  
-        let options = [
-          { text: 'Cancel', style: 'cancel' },
-          {
-            text: message.pinned ? 'Unpin' : 'Pin',
-            onPress: async () => {
-              // Assuming this part remains unchanged as it likely updates Firestore
-              const newPinStatus = !message.pinned;
-              await updateDoc(doc(firestore, 'chats', message._id), { pinned: newPinStatus });
-              // Update local state as necessary
-            },
-          },
-          {
-            text: 'Reply',
-            onPress: () => setReplyingToMessage(message),
-          },
-        ];
-  
-        // Add the delete option based on the fetched privilege
-        if (message.user._id === userId || currentUserPrivilege === 'owner' || currentUserPrivilege === 'admin') {
-          options.push({
-            text: 'Delete Message',
-            style: 'destructive',
-            onPress: () => {
-              // Assuming the delete operation targets Firestore
-              deleteMessage(message._id);
-            },
-          });
-        }
-  
-        Alert.alert('Options', 'Select an option', options.filter(Boolean), { cancelable: false });
-      } else {
-        console.log("User privilege data not found.");
-      }
-    } catch (error) {
-      console.error("Error fetching user privilege:", error);
-    }
-  };
 
+    // Adjust the reference path to include `userName` at the end
+    const userRef = ref(db, `${emailSplit()}/users/${userId}`);
+    const userSnapshot = await get(userRef);
+    // Since you're now directly accessing the userName, you can directly use `.val()` to get the userName value
+    const userData = userSnapshot.val();
+    const userName = userData.userName;
+    const firstName = userData.firstName;
+    const lastName = userData.lastName;
 
-  const handlePressMessage = (message) => {
-    if (!message.likes || message.likes.length === 0) {
-      setLikedUserIDs([]); // Corrected to use setLikedUserIDs
-      setIsLikesModalVisible(true);
-      return;
-    }
-  
-    setLikedUserIDs(message.likes);
-    setIsLikesModalVisible(true);
-  };
-  
-  
-  
-  const handleImageUploadAndSend = () => {
-    closeModal(); 
-    uploadImage((imageUri) => {
-      setImageUrl(imageUri); // Set the image URL
-      const message = {
-        _id: Date.now().toString(),
-        createdAt: new Date(),
-        user: {
-          _id: auth?.currentUser?.email,
-          name: 'Username',
-          avatar: 'https://i.pravatar.cc/300',
-        },
-        image: imageUri,
-        text: '', // Ensure text is always defined
-        replyTo: replyingToMessage ? {
-          _id: replyingToMessage._id,
-          text: replyingToMessage.text ? replyingToMessage.text.substring(0, 100) + (replyingToMessage.text.length > 100 ? "..." : "") : null,
-          userName: replyingToMessage.user.name, // Assuming you have access to the user name here
-          image: replyingToMessage.image || null, // Include image URL if available
-        } : null,
-        
-      };
-  
-      sendMessage([message]); // Call sendMessage with the message containing the image
-      
-    });
-  };
-  
-  
-  const deleteMessage = async (messageId) => {
-    await deleteDoc(doc(firestore, 'chats', messageId));
-    console.log('Message deleted successfully');
-  };
-  
-  const navigateToMessageSearchScreen = () => {
-    navigation.navigate('MessageSearchScreen', { clubName, chatName});
-  };
-
-  const navigateToSearchPinnedMessages = () => {
-    navigation.navigate('PinnedMessagesScreen', { clubName, chatName});
-  };
-  const isSameDay = (date1, date2) => {
-    const d1 = new Date(date1);
-    const d2 = new Date(date2);
-    return d1.getFullYear() === d2.getFullYear() &&
-           d1.getMonth() === d2.getMonth() &&
-           d1.getDate() === d2.getDate();
-  };
-  
-  const formatDate = (date) => {
-    const options = { weekday: 'short', year: 'numeric', month: 'long', day: 'numeric' };
-    return date.toLocaleDateString(undefined, options);
-  };
-
-
-  const formatTime = (date) => {
-    const hours = date.getHours();
-    const minutes = date.getMinutes();
-    const amOrPm = hours >= 12 ? 'PM' : 'AM';
-    const twelveHourFormatHours = hours % 12 || 12; // Convert 0 to 12 in 12-hour format
-
-    // Removed the condition to add leading zero for hours
-    const formattedHours = twelveHourFormatHours; // Directly use the calculated hour
-    const formattedMinutes = minutes < 10 ? `0${minutes}` : minutes; // Keep the leading zero for minutes if necessary
-  
-    // Return the formatted time string without leading zero for hours
-    return `${formattedHours}:${formattedMinutes} ${amOrPm}`;
-};
-
-const renderMessage = ({ item, index }) => {
-  const isLastMessageOfTheDay = index === messages.length - 1 || !isSameDay(item.createdAt, messages[index + 1]?.createdAt);
-  const isLikedByUser = likedMessages.has(item._id);
-
-  return (
-    <View>
-      {isLastMessageOfTheDay && (
-        <View style={styles.dateContainer}>
-          <View style={styles.dateWrapper}>
-            <Text style={styles.dateText}>{formatDate(item.createdAt)}</Text>
-          </View>
-        </View>
-      )}
-      <TouchableOpacity 
-        onLongPress={() => handleLongPress(item)} 
-        onPress={() => handlePressMessage(item)} // Attach the tap handler here
-        style={[styles.messageContainer, item.pinned && styles.pinnedMessage]}
-      >
-        <View style={styles.messageContent}>
-          {item.user.avatar && <Image source={{ uri: item.user.avatar }} style={styles.avatar} />}
-          <View style={{ flex: 1 }}>
-            <Text style={styles.senderName}>{item.user.name}</Text>
-            {item.text && <Text style={styles.messageText}>{item.text}</Text>}
-            {item.image && (
-              <TouchableOpacity onPress={() => navigation.navigate('ImageViewerScreen', { imageUri: item.image })}>
-                <Image source={{ uri: item.image }} style={styles.messageImage} />
-              </TouchableOpacity>
-            )}
-            {item.gifUrl && (
-              <TouchableOpacity onPress={() => navigation.navigate('ImageViewerScreen', { imageUri: item.gifUrl })}>
-                <Image source={{ uri: item.gifUrl }} style={styles.messageImage} />
-              </TouchableOpacity>
-            )}
-            {item.replyTo && (
-              <View style={styles.replyContextContainer}>
-                <Ionicons name="ios-arrow-down" size={24} color="gray" style={styles.arrowIcon} />
-                <Text style={styles.replyContextLabel}>
-                  Replying to {item.replyTo.userName}:
-                </Text>
-                {item.replyTo.image && (
-                  <TouchableOpacity onPress={() => navigation.navigate('ImageViewerScreen', { imageUri: item.replyTo.image })} style={styles.replyContent}>
-                    <Image source={{ uri: item.replyTo.image }} style={styles.replyImageContext} />
-                  </TouchableOpacity>
-                )}
-                {item.replyTo.gifUrl && (
-                  <TouchableOpacity onPress={() => navigation.navigate('ImageViewerScreen', { imageUri: item.replyTo.gifUrl })} style={styles.replyContent}>
-                    <Image source={{ uri: item.replyTo.gifUrl }} style={styles.replyImageContext} />
-                  </TouchableOpacity>
-                )}
-                {item.replyTo.text && (
-                  <Text style={styles.replyContextText}>
-                    "{item.replyTo.text.length > 20 ? `${item.replyTo.text.substring(0, 20)}...` : item.replyTo.text}"
-                  </Text>
-                )}
-              </View>
-            )}
-
-
-            <Text style={styles.messageTime}>{formatTime(item.createdAt)}</Text>
-            
-          </View>
-        </View>
-        <TouchableOpacity onPress={() => toggleLike(item)} style={styles.likeButton}>
-          <Ionicons name={isLikedByUser ? "heart" : "heart-outline"} size={24} color={isLikedByUser ? "red" : "black"} />
-          <Text style={styles.likeCountText}>{item.likeCount || 0}</Text>
-        </TouchableOpacity>
-      </TouchableOpacity>
-    </View>
-  );
-};
-
-
-    const isCloseToTop = ({ layoutMeasurement, contentOffset, contentSize }) => {
-      const paddingTop = 20; // Distance from the top to consider "at the top"
-      return contentOffset.y <= paddingTop;
-    };
-    
-
-    const navigateToInClubView = () => {
-      const imageUrls = getImageUrls(); // Get the current image URLs
-      navigation.navigate("InClubView", { clubName, imageUrls, chatName }); // Pass them as part of navigation
-    };
-    
-    const getImageUrls = () => {
-      // Filter messages to get those with images, then map to get the URLs
-      return messages.filter(message => message.image).map(message => message.image);
-    };
-    
-    const toggleLike = async (message) => {
-      const userId = auth.currentUser.uid;
-      const messageRef = doc(firestore, 'chats', message._id);
-    
-      // Optimistically update the UI
-      let newLikedMessages = new Set(likedMessages);
-      const isCurrentlyLiked = likedMessages.has(message._id);
-      if (isCurrentlyLiked) {
-        newLikedMessages.delete(message._id);
-      } else {
-        newLikedMessages.add(message._id);
-      }
-      setLikedMessages(newLikedMessages);
-    
+    // Check if there's either text, an image URL, or a gifUrl
+    if (messageText.trim() || tempImageUrl || gifUrl) {
       try {
-        const messageDoc = await getDoc(messageRef);
-        if (!messageDoc.exists()) {
-          console.error("Document does not exist!");
-          throw new Error("Document does not exist!");
-        }
-    
-        const data = messageDoc.data();
-        const likesArray = data.likes || [];
-        const isLikedByUser = likesArray.includes(userId);
-    
-        const newLikesArray = isLikedByUser
-          ? likesArray.filter(id => id !== userId)
-          : [...likesArray, userId];
-        const newLikeCount = isLikedByUser
-          ? (data.likeCount || 0) - 1
-          : (data.likeCount || 0) + 1;
-    
-        await updateDoc(messageRef, {
-          likes: newLikesArray,
-          likeCount: newLikeCount
-        });
-      } catch (error) {
-        console.error('Error updating like:', error);
-        // If error, revert the optimistic update
-        setLikedMessages(likedMessages); // revert to previous state
-      }
-    };
-    
-  
-    
-    const scrollToTop = () => {
-      if (flatListRef.current) {
-        flatListRef.current.scrollToOffset({ offset: 0, animated: true });
-      }
-    };
-    
-  
-    const handleTextInputFocus = () => {
-      if (flatListRef.current) {
-        scrollToTop();
-      }
-    };
-    
-    const handleGifSend = () => {
-      // Example: Navigate to a new screen for selecting a GIF
-      navigation.navigate('GifSelectionScreen', {clubName, screenName});
-      closeModal();
-    };
-    
+        const message = {
+          id: Date.now().toString(),
+          createdAt: new Date(),
+          text: messageText.trim(),
+          user: {
+            _id: auth.currentUser.uid,
+            name: userName,
+            avatar: userData.profileImg,
+            first: firstName,
+            last: lastName,
+          },
+          likeCount: 0,
+          pinned: false,
+          image: imageUrl,
+          gifUrl: gifUrl, // Add the gifUrl to the message
+          likes: [],
+          userId: auth.currentUser.uid,
+          replyTo: replyingToMessage,
+        };
 
-    const sendMessage = useCallback(async () => {
-      setMessageText('');
-      const userId = auth.currentUser.uid;
-      // Adjust the reference path to include `userName` at the end
-      const userNameRef = ref(db, `users/${userId}/userName`);
-      const userNameSnapshot = await get(userNameRef);
-      // Since you're now directly accessing the userName, you can directly use `.val()` to get the userName value
-      const userName = userNameSnapshot.val();
-      // Check if there's either text, an image URL, or a gifUrl
-      if (messageText.trim() || imageUrl || gifUrl) {
-        try {
-          const message = {
-            id: Date.now().toString(),
-            createdAt: new Date(),
-            text: messageText.trim(),
-            user: {
-              _id: auth.currentUser.uid,
-              name: userName,
-              avatar: 'https://i.pravatar.cc/300',
-            },
-            likeCount: 0,
-            image: imageUrl,
-            gifUrl: gifUrl, // Add the gifUrl to the message
-            likes: [],
-            replyTo: replyingToMessage ? {
-              _id: replyingToMessage._id,
-              text: replyingToMessage.text, // This remains for text replies.
-              userName: replyingToMessage.user.name, // The name of the user you're replying to.
-              image: replyingToMessage.image || null, // Include the image URL if the original message was an image.
-              gifUrl: replyingToMessage.gifUrl || null,
-            } : null,
-            
-          };
-  
-          // Add the message to Firestore
-          await addDoc(collection(firestore, 'chats'), {
-            ...message,
-            clubName,
-          });
-  
-          // Clear the message input field, image URL, and gifUrl
-          setImageUrl(null);
-          setGifUrl(null); // Reset the gifUrl after sending the message
-          setReplyingToMessage(null);
-          scrollToTop();
-        } catch (error) {
-          console.error('Error sending message:', error);
+        // Add the message to Firestore
+        await addDoc(collection(firestore, 'chats'), {
+          ...message,
+          clubId: clubId,
+        });
+
+        // say "sent an image" if no text
+        if (message.text === '') {
+          if (imageUrl) {
+            message.text = 'sent an image.';
+          } else if (gifUrl) {
+            message.text = 'sent a gif.';
+          }
         }
+
+        // do for all members in club (if not muted)
+        const clubMembersRef = ref(db, `${emailSplit()}/clubs/${clubId}/clubMembers`);
+        const clubMembersSnapshot = await get(clubMembersRef);
+        const clubMembers = clubMembersSnapshot.val();
+        for (const member in clubMembers) {
+          if (!clubMembers[member].muted && member !== auth.currentUser.uid) {
+            const memberRef = ref(db, `${emailSplit()}/users/${member}`);
+            const memberSnapshot = await get(memberRef);
+            const memberData = memberSnapshot.val();
+            sendPushNotification(memberData.expoPushToken, messageText, userData.firstName, userData.lastName, clubName);
+          }
+
+          // increment unread messages
+          const unreadRef = ref(db, `${emailSplit()}/users/${member}/clubs/${clubId}/unreadMessages`);
+          const unreadSnapshot = await get(unreadRef);
+          const unread = unreadSnapshot.val();
+          await set(unreadRef, unread + 1);
+        }
+
+        // set most recent message in club to current time
+        const clubRef = ref(db, `${emailSplit()}/clubs/${clubId}/mostRecentMessage`);
+        set(clubRef, Date.now());
+
+        // Clear the message input field, image URL, and gifUrl
+        setImageUrl(null);
+        setTempImageUrl(null);
+        setGifUrl(null); // Reset the gifUrl after sending the message
+        setReplyingToMessage(null);
+
+      } catch (error) {
+        console.error('Error sending message:', error);
       }
-  }, [messageText, imageUrl, gifUrl, replyingToMessage]); // Include gifUrl in the dependency array
-  
+    }
+  }, [messageText, imageUrl, gifUrl]); // Include gifUrl in the dependency array
   
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-    <View style={styles.container}>
-    <View style={styles.header}>
-  <TouchableOpacity style={styles.headerIcon} onPress={() => navigation.goBack()}>
-    <FontAwesome name="arrow-left" size={20} color="black" />
-  </TouchableOpacity>
-  <TouchableOpacity style={styles.clubNameContainer} onPress={navigateToInClubView}>
-    <View style={styles.imageContainer}>
-    <Image source={require('../../assets/logo.png')} style={{width: '100%', height: '100%'}} />
+      <View style={styles.container}>
 
-    </View>
-    <Text style={styles.clubNameText}>{clubName}</Text>
-  </TouchableOpacity>
-  <TouchableOpacity style={styles.headerIcon} onPress={navigateToMessageSearchScreen}>
-    <FontAwesome name="search" size={20} color="black" />
-  </TouchableOpacity>
-</View>
-{( pinnedMessageCount > 0 &&
-<TouchableOpacity style={styles.pinnedMessagesContainer} onPress={navigateToSearchPinnedMessages}>
-  <View style={styles.blueBar}>
-    <MaterialCommunityIcons name="pin" size={20} color="black" />
-  </View>
-  <Text style={styles.pinnedMessagesText}>Pinned Messages: {pinnedMessageCount}</Text>
-</TouchableOpacity>
-)}
-      {!isAtBottom && (
-    <TouchableOpacity
-      style={{
-        position: 'absolute', // Ensures it's positioned relative to the container.
-        right: 20, // Adjust this value to ensure it's comfortably reachable.
-        bottom: 125, // Adjust this so it's above your keyboard avoiding view or other lower components.
-        backgroundColor: 'rgba(255,255,255,0.9)',
-        borderRadius: 25,
-        padding: 10, // Increasing padding can help with touchability.
-        zIndex: 1, // Only if necessary, to ensure it's above other components.
-      }}
-      onPress={scrollToTop}
-    >
-      <Ionicons name="arrow-down" size={24} color="black" />
-    </TouchableOpacity>
-  )}
-
-      <FlatList
-        ref={flatListRef}
-        renderItem={renderMessage}
-        keyExtractor={(item) => item._id}
-        inverted
-        //onContentSizeChange={() => scrollToTop()}
-       // Adjust as needed for performance
-        contentContainerStyle={{ paddingBottom: 50 }} 
-        data={messages} 
-        onScroll={({nativeEvent}) => {
-          const isAtBottom = isCloseToTop(nativeEvent);
-          setIsAtBottom(isAtBottom);
-        }}
-      />  
-      <LikesBottomModal
-        isVisible={isLikesModalVisible}
-        onClose={() => setIsLikesModalVisible(false)}
-        userIDs={likedUserIDs} // This prop now contains usernames instead of userIDs
-      />
-
-      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"}>
-      {replyingToMessage && (
-  <View style={styles.replyPreview}>
-    <Text style={styles.replyPreviewText}>
-      Replying to: {replyingToMessage.user.name}:
-    </Text>
-    {replyingToMessage.image && (
-      <View>
-        <Image
-          source={{ uri: replyingToMessage.image }}
-          style={styles.replyImagePreview}
+        {/* Keyboard listener */}
+        <KeyboardListener
+          onWillShow={() => { setKeyboardIsOpen(true); }}
+          onWillHide={() => { setKeyboardIsOpen(false); }}
         />
-        {replyingToMessage.text && (
-          <Text style={styles.replyImageText}>
-            "{replyingToMessage.text.length > 20
-              ? `${replyingToMessage.text.substring(0, 17)}...`
-              : replyingToMessage.text}"
-          </Text>
+
+        <Header text={clubName} navigation={navigation} back onBack={() => {
+            navigation.navigate("HomeScreen");
+
+            // clear unread messages
+            const unreadRef = ref(db, `${emailSplit()}/users/${auth.currentUser.uid}/clubs/${clubId}/unreadMessages`);
+            set(unreadRef, 0);
+          }} useClubImg clubImg={clubImg} onTextPress={navigateToInClubView} />
+
+        <IconButton icon="search" text="" onPress={() => navigateToMessageSearchScreen(false)} style={styles.searchButton} />
+        <View style={{ height: 15}} />
+
+        {/* Pinned Messages */}
+        {pinnedMessageCount > 0 && (
+        <TouchableOpacity style={styles.pinnedMessagesContainer} onPress={() => navigateToMessageSearchScreen(true)}>
+          <MaterialCommunityIcons name="pin" size={20} color={Colors.darkGray} />
+          <CustomText style={styles.pinnedMessagesText} text={`Pinned Messages: ${pinnedMessageCount}`} />
+        </TouchableOpacity>)}
+
+        {/* Scroll to top button */}
+        {!isAtBottom && (
+          <TouchableOpacity
+            style={{
+            position: 'absolute', // Ensures it's positioned relative to the container.
+            right: 20, // Adjust this value to ensure it's comfortably reachable.
+            bottom: 100, // Adjust this so it's above your keyboard avoiding view or other lower components.
+            backgroundColor: 'rgba(255,255,255,0.7)',
+            borderRadius: 25,
+            padding: 10, // Increasing padding can help with touchability.
+            zIndex: 1, // Only if necessary, to ensure it's above other components.
+          }}
+          onPress={scrollToTop}
+        >
+          <Ionicons name="arrow-down" size={24} color="black" />
+        </TouchableOpacity>)}
+
+        {/* Show if no messages */}
+        {messages.length === 0 && (
+          <View style={{ position: 'absolute', left: Dimensions.get('window').width/2 - 75, top: 350 }}>
+            <View style={{justifyContent: 'center', alignItems: 'center'}}>
+              <Ionicons name="chatbubbles" size={100} color={Colors.gray} />
+              <CustomText text="Start chatting!" font='bold' style={{ fontSize: 20, color: Colors.darkGray }} />
+            </View>
+          </View>
         )}
-      </View>
-    )}
-    {replyingToMessage.gifUrl && (
-      <View>
-        <Image
-          source={{ uri: replyingToMessage.gifUrl }}
-          style={styles.replyImagePreview}
+
+        {/* Messages */}
+        <FlatList
+          ref={flatListRef}
+          renderItem={renderMessage}
+          keyExtractor={(item) => item._id}
+          inverted
+          data={messages} 
+          onScroll={({nativeEvent}) => {
+            const isAtBottom = isCloseToTop(nativeEvent);
+            setIsAtBottom(isAtBottom);
+          }}
         />
-        {replyingToMessage.text && (
-          <Text style={styles.replyImageText}>
-            "{replyingToMessage.text.length > 20
-              ? `${replyingToMessage.text.substring(0, 17)}...`
-              : replyingToMessage.text}"
-          </Text>
-        )}
-      </View>
-    )}
-    {!replyingToMessage.image && !replyingToMessage.gifUrl && (
-      <Text style={styles.replyPreviewText}>
-        "{replyingToMessage.text.length > 20
-          ? `${replyingToMessage.text.substring(0, 17)}...`
-          : replyingToMessage.text}"
-      </Text>
-    )}
-    <TouchableOpacity onPress={() => setReplyingToMessage(null)}>
-      <Ionicons name="close-circle" size={20} color="gray" />
-    </TouchableOpacity>
-  </View>
-)}
 
-
-
-
-
-
-    <View style={styles.toolbar}>
-
-    <TouchableOpacity style={styles.toolbarButton} onPress={openModal}>
-        <Entypo name='plus' size={30} color="black" />
-      </TouchableOpacity>
-      <BottomSheetModal
-        isVisible={isModalVisible}
-        onClose={closeModal}
-        onUploadImage={handleImageUploadAndSend}
-        onUploadGif={handleGifSend}
-        onOpenCamera={handleCameraPress}
-      />
+        {/* Likes Bottom Modal */}
+        <LikesBottomModal
+          isVisible={isLikesModalVisible}
+          onClose={() => setIsLikesModalVisible(false)}
+          userIDs={likedUsernames} // This prop now contains userids instead of usernames
+        />
       
-    {/* Container for TextInput and Image Preview */}
-    <View style={styles.inputWithPreview}>
-      {imageUrl && (
-        <View style={styles.imagePreviewContainer}>
-          <Image source={{ uri: imageUrl }} style={styles.imagePreview} />
-          <TouchableOpacity onPress={() => setImageUrl(null)} style={styles.removeImageButton}>
-            <Ionicons name="close-circle" size={20} color="gray" />
-          </TouchableOpacity>
-        </View>
-      )}
+        {/* Toolbar */}
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
 
-    {gifUrl && (
-      <View style={styles.imagePreviewContainer}>
-        <Image source={{ uri: gifUrl }} style={styles.imagePreview} />
-        <TouchableOpacity onPress={() => setGifUrl(null)} style={styles.removeImageButton}>
-          <Ionicons name="close-circle" size={20} color="gray" />
-        </TouchableOpacity>
+          <View style={styles.toolbar}>
+            
+            {/* Reply Preview */}
+            {replyingToMessage && (
+              <ReplyPreview 
+                replyingToMessage={replyingToMessage} 
+                setReplyingToMessage={setReplyingToMessage}
+              />
+            )}
+
+            <View style={styles.toolbarContent}>
+              {/* Toolbar buttons */}
+              <TouchableOpacity style={styles.toolbarButton} onPress={openModal}>
+                <Ionicons name='add' size={30} color={Colors.darkGray} />
+              </TouchableOpacity>
+              <BottomSheetModal
+                isVisible={isModalVisible}
+                onClose={closeModal}
+                onUploadImage={() => handleImageUploadAndSend("chat", setImageUrl, closeModal, setTempImageUrl)}
+                onUploadGif={handleGifSend}
+                onOpenCamera={() => handleCameraPress(setImageUrl, closeModal, setTempImageUrl)}
+              />
+
+              {/* Container for TextInput and Image Preview */}
+              <View style={styles.inputWithPreview}>
+                {tempImageUrl && (
+                  <View style={styles.imagePreviewContainer}>
+                    <Image source={{ uri: tempImageUrl }} style={styles.imagePreview} />
+                    <TouchableOpacity onPress={() => {
+                        deleteImageFromStorage(imageUrl);
+
+                        setImageUrl(null)
+                        setTempImageUrl(null);
+                      }} style={styles.removeImageButton}
+                    >
+                      <Ionicons name="close-circle" size={20} color="gray" />
+                    </TouchableOpacity>
+                  </View>
+                )}
+
+                {gifUrl && (<View style={styles.imagePreviewContainer}>
+                  <Image source={{ uri: gifUrl }} style={styles.imagePreview} />
+                  <TouchableOpacity onPress={() => setGifUrl(null)} style={styles.removeImageButton}>
+                    <Ionicons name="close-circle" size={20} color="gray" />
+                  </TouchableOpacity>
+                </View>)}
+
+                <TextInput
+                  style={styles.input}
+                  value={messageText}
+                  onChangeText={setMessageText}
+                  placeholder={tempImageUrl ? "Add a message or send." : "Type a message..."}
+                  multiline={true}
+                  maxHeight={120}
+                  onFocus={handleTextInputFocus} // Add this line
+                  returnKeyType="done" // Prevents new lines
+                  placeholderTextColor="#888888"
+                />
+              </View>
+
+              {/* Send Button */}
+              <TouchableOpacity onPress={sendMessage} style={styles.sendButton}>
+                <Ionicons name="send" size={24} color={tempImageUrl || gifUrl || messageText ? Colors.buttonBlue : Colors.gray} />
+              </TouchableOpacity>
+            </View>
+          </View>
+          
+          {/* add height if keyboard is not open */}
+          <View style={{ height: keyboardIsOpen ? 0 : 10, backgroundColor: Colors.white }} />
+        </KeyboardAvoidingView>
+
+        {/* Profile Overlay */}
+        <ProfileOverlay
+          visible={overlayVisible}
+          setVisible={() => setOverlayVisible(false)}
+          userData={overlayUserData}
+        />
+      
       </View>
-    )}
-    
-      <TextInput
-        style={styles.input}
-        value={messageText}
-        onChangeText={setMessageText}
-        placeholder={imageUrl ? "Add a message or send." : "Type a message..."}
-        multiline={true}
-        maxHeight={120}
-        onFocus={handleTextInputFocus} // Add this line
-        returnKeyType="done" // Prevents new lines
-        placeholderTextColor="#888888"
-      />
-    </View>
-
-    <TouchableOpacity onPress={sendMessage} style={styles.sendButton}>
-      <Ionicons name="send" size={24} color={messageText.trim() ? '#007AFF' : Colors.black} />
-    </TouchableOpacity>
-
-  </View>
-</KeyboardAvoidingView>
-    </View>
     </TouchableWithoutFeedback>
   );
 };
@@ -677,7 +462,7 @@ const renderMessage = ({ item, index }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "white",
+    backgroundColor: Colors.lightGray,
   },
   header: {
     flexDirection: 'row',
@@ -689,80 +474,47 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     width: '100%',
   },
-  headerText: {
-    color: 'black',
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
   headerIcon: {
     padding: 5,
     marginRight: 15,
-  },
-  messageContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 10,
-    paddingBottom: 10,
-  },
-  messageContent: {
-    flexDirection: 'row',
-    alignItems: 'flex-start', // Adjusted alignment
-    maxWidth: '70%'
-  },
-  messageText: {
-    maxWidth: '100%',
-    paddingBottom: 5,
   },
   toolbarButton: {
     paddingLeft: 5,
     backgroundColor: 'transparent',
   },
-  senderName: {
-    fontSize: 12,
-    marginRight: 5,
-    color: '#3b3b3b'
-  },
-  likeButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    position: "absolute", // Corrected typo here
-    right: 25, // Adjust right positioning as needed
-  },
-  likeCount: {
-    marginLeft: 5,
-  },
   toolbar: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
     paddingHorizontal: 10,
-    paddingTop: 25,
-    paddingBottom: 25,
+    paddingTop: 15,
+    paddingBottom: 15,
     borderTopWidth: 1,
-    borderTopColor: '#EEEEEE',
-    backgroundColor: 'white',
+    borderTopColor: Colors.inputBorder,
+    backgroundColor: Colors.white,
+  },
+  toolbarContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
   imagePreviewContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 5,
+    margin: 10,
+    marginRight: 0,
   },
   inputWithPreview: {
     flexDirection: 'row',
     alignItems: 'center',
     flex: 1,
     marginLeft: 10,
-    backgroundColor: "#EEEEEE",
-    borderRadius: 10,
+    backgroundColor: Colors.lightGray,
+    borderRadius: 20,
   },
   input: {
     flex: 1,
-    borderColor: 'white',
     borderRadius: 10,
-    marginLeft: 0,
-    marginTop: 5,
-    backgroundColor: "#EEEEEE",
+    marginLeft: -5,
+    marginTop: 10,
+    marginBottom: 5,
     paddingHorizontal: 20,
     height: '80%',
     width: '65%',
@@ -780,43 +532,24 @@ const styles = StyleSheet.create({
     marginLeft: 10,
   },
   sendButtonText: {
-    color: 'white',
+    color: Colors.white,
   },
   imagePreview: {
     width: 50, // Adjust size as needed
     height: 50, // Adjust size as needed
-    borderRadius: 5,
+    borderRadius: 15,
   },
   removeImageButton: {
     position: 'absolute',
     right: 5,
     top: 5,
   },
-  removeImageText: {
-    color: 'white',
-    fontSize: 12,
-  },
-  avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 40,
-    marginRight: 10,
-  },
-  messageTime: {
-    fontSize: 12,
-    color: 'gray',
-  },
-  messageImage: {
-    width: 200,
-    height: 200,
-    contentFit: 'contain',
-    borderRadius: 10,
-  },
   pinnedMessagesContainer: {
     flexDirection: 'row',
-    marginTop: 10,
+    paddingLeft: 10,
     borderBottomWidth: 1,
-    borderBottomColor: '#EEEEEE',
+    gap: 5,
+    borderBottomColor: Colors.inputBorder,
   },
   pinnedMessagesText: {
     color: 'gray',
@@ -844,72 +577,11 @@ const styles = StyleSheet.create({
     flex: 1,
     marginLeft: 10,
   },
-  imageContainer: {
-    width: 30,
-    height: 30,
-    borderRadius: 10,
-    overflow: 'hidden',
-    marginRight: 10,
-    backgroundColor: 'lightgray', // Placeholder background color
-  },
-  dateContainer: {
-    alignItems: 'center',
-    marginBottom: 10, // Add some space between date and message
-  },
-  dateWrapper: {
-    borderRadius: 10,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-  },
-  pinnedMessage: {
-    backgroundColor: '#dbe9f4', // Light gray background color for pinned messages
-  },
-  dateText: {
-    fontSize: 14, 
-    color: 'gray',
-  },
-  replyPreview: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 10,
-    backgroundColor: '#f0f0f0',
-  },
-  replyImagePreview: {
-    width: 100, // Adjust the width as needed
-    height: 100, // Adjust the height as needed
-    borderRadius: 10, // Optional: for rounded corners
-    margin: 5, // Optional: for spacing
-  },
-  
-  replyPreviewText: {
-    fontStyle: 'italic',
-  },
-  replyContext: {
-    fontStyle: 'italic',
-    color: '#606060',
-  },
-  replyContextContainer: {
-    flexDirection: 'column',
-    alignItems: 'left',
-    marginTop: 5,
-    marginBottom: 5,
-  },
-  replyContextLabel: {
-    fontStyle: 'italic',
-    color: 'gray', // This makes the "Replying to ____" text gray and italicized
-   
-  },
-  replyContextText: {
-    fontStyle: 'italic',
-    color: '#606060',
-  },
-  replyImageContext: {
-    width: 100, // Adjust based on your design
-    height: 100, // Adjust based on your design
-    resizeMode: 'cover',
-  },
-  arrowIcon: {
-    marginRight: 10, // Adjust the spacing as needed
+
+  // absolute button
+  searchButton: {
+    position: 'absolute',
+    top: 65,
+    right: 20,
   },
 });

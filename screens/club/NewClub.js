@@ -1,42 +1,37 @@
+import React, { useState } from 'react';
 // react native components
-import { View, StyleSheet, ScrollView, Text, TextInput } from 'react-native';
+import { View, StyleSheet, TextInput } from 'react-native';
 // backend
 import { set, ref, get } from "firebase/database";
-import { getAuth, onAuthStateChanged } from 'firebase/auth';
+import { getAuth } from 'firebase/auth';
 import { db } from '../../backend/FirebaseConfig';
 // my components
-import CustomInput from '../../components/CustomInput';
-import CustomButton from '../../components/CustomButton';
-import CustomText from '../../components/CustomText';
-import Header from '../../components/Header';
+import CustomInput from '../../components/input/CustomInput';
+import CustomButton from '../../components/buttons/CustomButton';
+import CustomText from '../../components/display/CustomText';
+import Header from '../../components/display/Header';
+import IconOverlay from '../../components/overlays/IconOverlay';
+import PrivacySwitch from '../../components/input/PrivacySwitch';
+// functions
+import { emailSplit, joinClub } from '../../functions/backendFunctions';
 // multi-select list
 import { MultipleSelectList } from 'react-native-dropdown-select-list';
 // macros
-import { clubCategories } from '../../macros/macros';
-// fonts
-import { textNormal, title} from '../../styles/FontStyles';
+import { CLUBCATEGORIES } from '../../macros/macros';
 // scroll view
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+// colors
+import { Colors } from '../../styles/Colors';
 
 const NewClub = ({ navigation }) => {
   // set state for all club vars
   const [clubName, setName] = useState('');
   const [clubDescription, setDescription] = useState('');
   const [categoriesSelected, setSelected] = useState([]);
+  const [publicClub, setpublicClub] = useState(true);
   const [loading, setLoading] = useState(false);
-  const [currentUser, setCurrentUser] = useState(null);
-
-  // get user data from auth
-  const auth = getAuth();
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user) {
-        setCurrentUser(user);
-      }
-    });
-
-    return () => unsubscribe();
-  }, [auth]);
+  // overlay
+  const [overlayVisible, setOverlayVisible] = useState(false);
 
   // submit club
   const onSubmitPressed = async () => {
@@ -52,22 +47,26 @@ const NewClub = ({ navigation }) => {
     // add data to clubs
     try {
       // generate unique club id
-      const clubId = (Math.random() + 1).toString(36).substring(7);
+      const clubId = (Math.random() + 1).toString(36).substring(7);;
 
-      const clubRef = ref(db, 'clubs/' + clubId);
-      set(clubRef, {
+      // add club to database
+      const clubRef = ref(db, `${emailSplit()}/clubs/${clubId}`);
+      await set(clubRef, {
         clubName: clubName,
         clubId: clubId,
         clubDescription: clubDescription,
         clubCategories: categoriesSelected,
+        publicClub: publicClub,
+        mostRecentMessage: new Date().toLocaleString(),
       });
 
+      // add club to user's clubs
       const auth = getAuth();
       const user = auth.currentUser;
   
       if (user) {
         const userId = user.uid;
-        const userRef = ref(db, `users/${userId}`);
+        const userRef = ref(db, `${emailSplit()}/users/${userId}`);
         const userSnapshot = await get(userRef);
   
         if (userSnapshot.exists()) {
@@ -84,40 +83,29 @@ const NewClub = ({ navigation }) => {
           });
 
           // add user to club's members
-          const clubRef = ref(db, 'clubs/' + clubId);
+          const clubRef = ref(db, `${emailSplit()}/clubs/${clubId}`);
           const clubSnapshot = await get(clubRef);
 
           // if club exists
           if (clubSnapshot.exists()) {
             const clubData = clubSnapshot.val();
 
-            const updatedClubMembers = {...clubData.clubMembers, [userId]: {
-              userName: userData.userName,
-              privilege: 'owner',
-            }};
-
-            await set(clubRef, {
-              ...clubData,
-              clubMembers: updatedClubMembers,
-            });
+            joinClub(clubId, clubName, userId, 'owner'); // test
           } else {
             console.error('Club data not found.');
           }
-  
-          alert(`Created new club ${clubName}`);
         } else {
           console.error('User data not found.');
         }
       } else {
         console.error('User not authenticated.');
       }
-      
-      navigation.goBack();
     } catch (error) {
       console.log(error);
       alert('Club creation failed: ' + error.message);
     } finally {
       setLoading(false);
+      setOverlayVisible(true);
     }
   }
 
@@ -131,19 +119,24 @@ const NewClub = ({ navigation }) => {
 
         <CustomText style={styles.textNormal} font="bold" text="Club Name" />
         <CustomInput
-          placeholder="Club Name"
+          placeholder="Club Name (50 characters)"
           value={clubName}
           setValue={setName}
+          maxLength={50}
         />
+
+        <CustomText style={styles.textNormal} font="bold" text="Public Club" />
+        <PrivacySwitch toggled={publicClub} setToggled={setpublicClub} />
+        <View style={{height: 10}}></View>
 
         <CustomText style={styles.textNormal} font="bold" text="Description" />
         <View style={styles.inputContainer}>
           <TextInput
-            placeholder="Tell us about your club."
+            placeholder="Tell us about your club. (200 characters)"
             value={clubDescription}
             onChangeText={setDescription}
             keyboardType="default"
-            maxLength={500}
+            maxLength={200}
             numberOfLines={5}
             style={styles.input}
             multiline={true}
@@ -153,17 +146,28 @@ const NewClub = ({ navigation }) => {
 
         <CustomText style={styles.textNormal} font="bold" text="Club Categories" />
         <MultipleSelectList
-          data={clubCategories}
+          data={CLUBCATEGORIES}
           setSelected={(val) => setSelected(val)}
           save='value'
           label='Categories'
-          boxStyles={{borderWidth: 1, borderColor: '#ccc', borderRadius: 20, width: 200, padding: 15, marginBottom: 20}}
-          dropdownStyles={{borderWidth: 1, borderColor: '#ccc', borderRadius: 20, width: 200, marginBottom: 20}}
+          boxStyles={{borderWidth: 1, borderColor: Colors.inputBorder, borderRadius: 20, width: 200, padding: 15, marginBottom: 20}}
+          dropdownStyles={{borderWidth: 1, borderColor: Colors.inputBorder, borderRadius: 20, width: 200, marginBottom: 20}}
         />
     
         <CustomButton text="Create" onPress={onSubmitPressed} type="primary"/>
         <View style={{height: 50}}></View>
       </KeyboardAwareScrollView>
+      
+      <IconOverlay 
+        visible={overlayVisible} 
+        setVisible={setOverlayVisible} 
+        closeCondition={() => {
+          navigation.goBack();
+        }} 
+        icon="checkmark-circle" 
+        iconColor={Colors.green} 
+        text="Club Created!" 
+      />
     </View>
   );
 }
@@ -172,15 +176,16 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: 'center',
-    backgroundColor: '#FAFAFA',
+    backgroundColor: Colors.white,
   },
   elementsContainer: {
     marginTop: 10,
     alignItems: 'flex-start',
-    marginLeft: 30,
+    marginLeft: 20,
+    gap: 5,
   },
   inputContainer: {
-    borderColor: '#ccc',
+    borderColor: Colors.inputBorder,
     borderWidth: 1,
     borderRadius: 20,
     height: 100,
@@ -191,18 +196,16 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     height: 50,
-    color: '#333',
+    color: Colors.black,
     backgroundColor: 'transparent',
     width: '90%',
   },
-  title: title,
   textNormal: {
-    ...textNormal,
     fontSize: 20,
+    marginBottom: 5,
     marginLeft: 5,
   },
   text: {
-    ...textNormal,
     fontSize: 12,
   },
 });

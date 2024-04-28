@@ -1,28 +1,31 @@
 import React, { useState, useEffect } from 'react';
 // react native components
-import { View, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, ScrollView } from 'react-native';
+// fade
+import Fade from 'react-native-fade';
 // my components
 import ClubCategory from '../../components/club/ClubCategory';
-import Header from '../../components/Header';
+import Header from '../../components/display/Header';
 import SearchBar from '../../components/input/SearchBar';
 import ToggleButton from '../../components/buttons/ToggleButton';
 import CircleButton from '../../components/buttons/CircleButton';
 // macros
-import { clubCategories } from '../../macros/macros';
+import { CLUBCATEGORIES } from '../../macros/macros';
 // functions
 import { getSetAllClubsData } from '../../functions/backendFunctions';
-// fonts
-import { title } from '../../styles/FontStyles';
-// icons
-import { Ionicons } from '@expo/vector-icons';
 // styles
 import { Colors } from '../../styles/Colors';
+import CustomText from '../../components/display/CustomText';
 
 const ClubList = ({ navigation }) => {
   // state for club data
   const [clubData, setClubData] = useState([]);
   const [searchText, setSearchText] = useState('');
   const [categoriesSelected, setSelectedCategories] = useState([]);
+  // fading text
+  const [showText, setShowText] = useState(true);
+  // loading
+  const [loading, setLoading] = useState(true);
 
   // go to add club screen
   const onAddClubPress = () => {
@@ -31,8 +34,24 @@ const ClubList = ({ navigation }) => {
 
   // get data from firebase
   useEffect(() => {
-    // get club data and set state
-    getSetAllClubsData(setClubData);
+    const asyncFunc = async () => {
+      setLoading(true);
+
+      // get club data and set state
+      await getSetAllClubsData(setClubData);
+
+      setLoading(false);
+    }
+
+    asyncFunc();
+  }, []);
+
+  // fade out text after 2 seconds
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowText(false);
+    }, 2000);
+    return () => clearTimeout(timer);
   }, []);
 
   // filter for clubs
@@ -47,7 +66,7 @@ const ClubList = ({ navigation }) => {
   
     // filter by categories selected
     if (categoriesSelected.length > 0) { 
-      if (!categoriesSelected.some(item => club.clubCategories && club.clubCategories.includes(item))) { // make sure clubCategories is right
+      if (!categoriesSelected.some(category => club.clubCategories.includes(category))) { // make sure at least one category is in the club's categories
         return false;
       }
     }
@@ -56,25 +75,36 @@ const ClubList = ({ navigation }) => {
   }
 
   // filter clubs by category and sort into sortedClubs
-  const sortedClubs = clubCategories.map((category) => {
+  const sortedClubs = CLUBCATEGORIES.map((category) => {
+
+    // only have data if category is selected
+    if (categoriesSelected.length > 0 && !categoriesSelected.includes(category.value)) {
+      return {
+        categoryName: category.emoji + ' ' + category.value,
+        data: []
+      };
+    }
+
     return {
       categoryName: category.emoji + ' ' + category.value,
-      data: clubData?.filter(filterFunct).filter((club) => club.clubCategories && club.clubCategories.includes(category.value))
+      data: clubData?.filter(filterFunct).filter((club) => club.clubCategories.includes(category.value))
     };
   });
 
   return (
     <View style={styles.container}>
       <Header text='Club List'></Header>
+
       <View style={styles.searchBarView}>
         <SearchBar placeholder='Search' value={searchText} setValue={setSearchText}/>
       </View>
 
-      <View style={styles.content}>
-        <ScrollView style={{marginRight: 20, marginLeft: 20}} contentContainerStyle={styles.categoriesButtonRow} horizontal>
+      <View style={styles.upperContent}>
+        {/* categories selected */}
+        <ScrollView style={{marginHorizontal: 20}} contentContainerStyle={styles.categoriesButtonRow} horizontal>
         { 
           // create a club category component for each category
-          clubCategories.map((category) => {
+          CLUBCATEGORIES.map((category) => {
 
             // toggle button to update categories selected
             const toggleButton = () => {
@@ -97,26 +127,42 @@ const ClubList = ({ navigation }) => {
           })
         }
         </ScrollView>
+        <View style={styles.separator} />
       </View>
       
-        <ScrollView style={styles.clubCategoriesView} contentContainerStyle={styles.clubCategoriesContent}>
-        { 
+      <ScrollView style={styles.clubCategoriesView} contentContainerStyle={styles.clubCategoriesContent} nestedScrollEnabled={true}>
+      {
           // create a club category component for each category
-          sortedClubs.map((category) => {
-            if (category?.data.length != 0) {
+          sortedClubs?.map((category, index) => {
+            if (category.data.length != 0) {
               return (
-                <View style={{flex: 1, width: '100%'}}>
-                  <View style={styles.separator} />
+                <View style={{flex: 1, width: '100%', alignItems: 'flex-start'}}>
+                  <View style={{height: 10}} />
                   <ClubCategory name={category.categoryName} data={category.data} navigation={navigation} />
+                  <CustomText 
+                    text="Load more..." 
+                    style={styles.loadMoreText} 
+                    onPress={() => {
+                      navigation.navigate('ClubCategoryScreen', { 
+                        clubCategory: category.data,
+                        navigation: navigation,  
+                      })
+                    }}
+                  />
                 </View>
               )
             }
           })
-        }
-        </ScrollView>
-  
+      }
+      </ScrollView>
 
-      <CircleButton icon="create-outline" onPress={onAddClubPress} position={{ bottom: 0, right: 0 }} size={80} />
+      <View style={{position: 'absolute', bottom: 5, right: 75, margin: 30}}>
+        <Fade visible={showText}>
+          <CustomText style={styles.popUpText} text="Create a club." font='bold' />
+        </Fade>
+      </View>
+      
+      <CircleButton icon="create-outline" onPress={onAddClubPress} position={{ bottom: 0, right: 0 }} size={60} />
     </View>
   );
 }
@@ -127,15 +173,15 @@ const styles = StyleSheet.create({
     width: '100%',
     backgroundColor: Colors.lightGray,
   },
-  content: {
+  upperContent: {
+    justifyContent: 'flex-start',
     backgroundColor: Colors.white,
-    paddingTop: 20,
+    paddingTop: 10,
     borderTopLeftRadius: 30,
     borderTopRightRadius: 30,
-    justifyContent: 'flex-start',
   },
   clubCategoriesView: {
-    paddingLeft: 20,
+    paddingLeft: 15,
     backgroundColor: Colors.white,
   },
   clubCategoriesContent: {
@@ -143,8 +189,9 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   searchBarView: {
-    marginLeft: 20,
-    marginBottom: 20,
+    margin: 15,
+    marginTop: 5,
+    marginBottom: 15,
   },
   categoriesButtonRow: {
     marginBottom: 10,
@@ -152,8 +199,8 @@ const styles = StyleSheet.create({
   },
   separator: {
     height: 1,
-    width: '110%',
-    marginLeft: -20,
+    width: '95%',
+    marginRight: 20,
     backgroundColor: Colors.lightGray,
   },
   rightButtonView: {
@@ -166,11 +213,21 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.red,
     padding: 20,
     borderRadius: 50,
-    shadowColor: 'black',
+    shadowColor: Colors.black,
     shadowOffset: { width: 3, height: 5 },
     shadowOpacity: 0.25,
   },
-  title: title,
+  loadMoreText: {
+    color: Colors.buttonBlue,
+  },
+  title: {
+    fontSize: 20,
+  },
+  popUpText: {
+    color: Colors.black,
+    fontSize: 25,
+    textAlign: 'right',
+  },
 });
 
 export default ClubList;

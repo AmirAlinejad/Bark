@@ -1,28 +1,28 @@
-import React from "react";
-import { View, StyleSheet, ScrollView, TextInput } from 'react-native';
+import React, {useState} from "react";
+import { View, StyleSheet, TextInput } from 'react-native';
 // backend
 import { ref, get } from 'firebase/database';
 import { db } from '../../backend/FirebaseConfig';
-import { getAuth } from 'firebase/auth';
 // my components
-import Header from '../../components/Header';
-import CustomButton from '../../components/CustomButton';
+import Header from '../../components/display/Header';
+import CustomButton from '../../components/buttons/CustomButton';
+import CustomText from '../../components/display/CustomText';
 // styles
 import { Colors } from '../../styles/Colors';
 
 const FeedbackScreen = ({ route, navigation }) => {
+    const { userData } = route.params;
+
+    // state for feedback
     const [feedback, setFeedback] = useState('');
     
     const submitFeedback = async () => {
-        const user = getAuth().currentUser;
-        const userId = user.uid;
-        const userRef = ref(db, `users/${userId}`);
-        const userSnap = await get(userRef);
-        const userData = userSnap.val();
-        const feedbackRef = ref(db, `feedback/${userId}`);
+        const emailSplit = userData.email.split('@')[1].split('.')[0];
+
+        const feedbackRef = ref(db, `${emailSplit}feedback/${userData.userId}`);
         const feedbackSnap = await get(feedbackRef);
         const feedbackData = feedbackSnap.val();
-        set(ref(db, `feedback/${userId}`), [
+        set(feedbackRef, [
             ...feedbackData,
             {
                 feedback: feedback,
@@ -30,30 +30,33 @@ const FeedbackScreen = ({ route, navigation }) => {
                 email: userData.email,
             }
         ]);
-        navigation.navigate('Profile');
+        navigation.goBack();
     }
 
     return (
         <View style={styles.container}>
-            <Header title='Feedback' navigation={navigation} />
-            <View>
-                <CustomText style={styles.textNormal} font="bold" text="Details" />
+            <Header text='Contact Us' navigation={navigation} back />
+            <View style={styles.content}>
+                <CustomText text='Please provide feedback on your experience with Bark!'  style={styles.textStyle} />
                 <View style={styles.largeInputContainer}>
-                <TextInput
-                    placeholder="Please tell us your feedback!"
-                    value={feedback}
-                    onChangeText={setFeedback}
-                    keyboardType="default"
-                    maxLength={500}
-                    numberOfLines={5}
-                    multiline={true}
-                    textAlignVertical='top'
-                />
+                    <TextInput
+                        placeholder="Please tell us your feedback! (500 characters)"
+                        value={feedback}
+                        onChangeText={setFeedback}
+                        keyboardType="default"
+                        maxLength={500}
+                        numberOfLines={10}
+                        multiline={true}
+                        textAlignVertical='top'
+                    />
                 </View>
-                <CustomButton
-                    title='Submit Feedback'
-                    onPress={submitFeedback}
-                />
+                <View style={styles.buttonContainer}>
+                    <CustomButton
+                        text='Submit'
+                        onPress={submitFeedback}
+                    />
+                </View>
+                <CustomText text='Your feedback is important to us!' font='light' />
             </View>
         </View>
     );
@@ -62,19 +65,26 @@ const FeedbackScreen = ({ route, navigation }) => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: Colors.background,
+        backgroundColor: Colors.white,
     },
-    scrollView: {
-        alignItems: 'center',
-        justifyContent: 'center',
+    content: {
+        flex: 1,
+        padding: 20,
     },
     largeInputContainer: {
-        borderColor: '#ccc',
+        borderColor: Colors.inputBorder,
         borderWidth: 1,
         borderRadius: 20,
-        height: 100,
+        height: 200,
+        padding: 20,
+        marginBottom: 20,
+    },
+    buttonContainer: {
         width: '90%',
-        padding: 15,
+        marginBottom: 15,
+    },
+    textStyle: {
+        fontSize: 22,
         marginBottom: 20,
     },
 });
