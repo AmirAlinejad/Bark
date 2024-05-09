@@ -16,7 +16,7 @@ import { emailSplit } from '../../functions/backendFunctions';
 import { db } from '../../backend/FirebaseConfig';
 // date time picker
 import { ref, set } from "firebase/database";
-import { collection, doc, updateDoc } from "firebase/firestore"; // firestore
+import { doc, updateDoc } from "firebase/firestore"; // firestore
 import DateTimePicker from '@react-native-community/datetimepicker';
 // maps
 import MapView, { Marker } from 'react-native-maps';

@@ -78,6 +78,8 @@ const SignIn = ({ route, navigation }) => {
 
       // set user data in async storage
       // get user data from db first***
+
+      console.log(response.user);
       
       await AsyncStorage.setItem('user', JSON.stringify(response.user));
     } catch (error) {

@@ -3,6 +3,10 @@ import React, { useState } from 'react';
 import { View, StyleSheet, TextInput } from 'react-native';
 // backend
 import { set, ref, get } from "firebase/database";
+// async storage
+import AsyncStorage from '@react-native-async-storage/async-storage';
+// firestore
+import { updateDoc, doc } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 import { db } from '../../backend/FirebaseConfig';
 // my components
@@ -49,7 +53,7 @@ const NewClub = ({ navigation }) => {
       // generate unique club id
       const clubId = (Math.random() + 1).toString(36).substring(7);;
 
-      // add club to database
+      /*// add club to database
       const clubRef = ref(db, `${emailSplit()}/clubs/${clubId}`);
       await set(clubRef, {
         clubName: clubName,
@@ -58,48 +62,36 @@ const NewClub = ({ navigation }) => {
         clubCategories: categoriesSelected,
         publicClub: publicClub,
         mostRecentMessage: new Date().toLocaleString(),
+      });*/
+
+      // add club to firestore
+      const docRef = doc(db, `${emailSplit()}/clubs/${clubId}`);
+      await updateDoc(docRef, {
+        clubName: clubName,
+        clubId: clubId,
+        clubDescription: clubDescription,
+        clubCategories: categoriesSelected,
+        publicClub: publicClub,
       });
 
-      // add club to user's clubs
-      const auth = getAuth();
-      const user = auth.currentUser;
-  
-      if (user) {
-        const userId = user.uid;
-        const userRef = ref(db, `${emailSplit()}/users/${userId}`);
-        const userSnapshot = await get(userRef);
-  
-        if (userSnapshot.exists()) {
-          const userData = userSnapshot.val();
-          const updatedClubs = {...(userData.clubs || []), [clubId] : {
-            clubName: clubName,
-            privelege: 'owner',
-          }};
-  
-          // Update the user's information in the database
-          await set(userRef, {
-            ...userData,
-            clubs: updatedClubs,
-          });
-
-          // add user to club's members
-          const clubRef = ref(db, `${emailSplit()}/clubs/${clubId}`);
-          const clubSnapshot = await get(clubRef);
-
-          // if club exists
-          if (clubSnapshot.exists()) {
-            const clubData = clubSnapshot.val();
-
-            joinClub(clubId, clubName, userId, 'owner'); // test
-          } else {
-            console.error('Club data not found.');
-          }
-        } else {
-          console.error('User data not found.');
+      // add club to myClubs data
+      // get user data from async storage
+      const userData = await AsyncStorage.getItem('user');
+      const user = JSON.parse(userData);
+      // update myclubs data
+      const myClubsDocRef = doc(db, `${emailSplit()}/myClubsData/${user.uid}`);
+      await updateDoc(myClubsDocRef, {
+        [clubId]: {
+          clubName: clubName,
+          muted: false,
+          /*most recent message: */
+          // no image yet
         }
-      } else {
-        console.error('User not authenticated.');
-      }
+      });
+
+      // add user to club's members
+      await joinClub(clubId, clubName, user.uid, 'owner'); // test
+
     } catch (error) {
       console.log(error);
       alert('Club creation failed: ' + error.message);
