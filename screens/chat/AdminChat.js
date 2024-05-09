@@ -291,6 +291,14 @@ export default function Chat({ route, navigation }) {
       }
     }
   }, [messageText, imageUrl, gifUrl]); // Include gifUrl in the dependency array
+
+  const openKeyboard = () => {
+    setKeyboardIsOpen(true);
+  }
+
+  const closeKeyboard = () => {
+    setKeyboardIsOpen(false);
+  }
   
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
@@ -298,8 +306,8 @@ export default function Chat({ route, navigation }) {
 
         {/* Keyboard listener */}
         <KeyboardListener
-          onWillShow={() => { setKeyboardIsOpen(true); }}
-          onWillHide={() => { setKeyboardIsOpen(false); }}
+          onWillShow={openKeyboard}
+          onWillHide={closeKeyboard}
         />
 
         <TouchableOpacity onPress={navigateToInClubView}>

@@ -296,31 +296,53 @@ export default function Chat({ route, navigation }) {
       }
     }
   }, [messageText, imageUrl, gifUrl]); // Include gifUrl in the dependency array
+
+  const openKeyboard = () => {
+    setKeyboardIsOpen(true);
+  }
+
+  const closeKeyboard = () => {
+    setKeyboardIsOpen(false);
+  }
+
+  const goToHomeScreen = () => {
+    navigation.navigate("HomeScreen");
+
+    // clear unread messages
+    const unreadRef = ref(db, `${emailSplit()}/users/${auth.currentUser.uid}/clubs/${clubId}/unreadMessages`);
+    set(unreadRef, 0);
+  }
   
+  
+  const goToMessageSearchScreen = () => {
+    navigateToMessageSearchScreen(false);
+  }
+
+  const deleteImagePreview = () => () => {
+    deleteImageFromStorage(imageUrl);
+
+    setImageUrl(null)
+    setTempImageUrl(null);
+  }
+
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
       <View style={styles.container}>
 
         {/* Keyboard listener */}
         <KeyboardListener
-          onWillShow={() => { setKeyboardIsOpen(true); }}
-          onWillHide={() => { setKeyboardIsOpen(false); }}
+          onWillShow={openKeyboard}
+          onWillHide={closeKeyboard}
         />
 
-        <Header text={clubName} navigation={navigation} back onBack={() => {
-            navigation.navigate("HomeScreen");
+        <Header text={clubName} navigation={navigation} back onBack={goToHomeScreen} useClubImg clubImg={clubImg} onTextPress={navigateToInClubView} />
 
-            // clear unread messages
-            const unreadRef = ref(db, `${emailSplit()}/users/${auth.currentUser.uid}/clubs/${clubId}/unreadMessages`);
-            set(unreadRef, 0);
-          }} useClubImg clubImg={clubImg} onTextPress={navigateToInClubView} />
-
-        <IconButton icon="search" text="" onPress={() => navigateToMessageSearchScreen(false)} style={styles.searchButton} />
+        <IconButton icon="search" text="" onPress={goToMessageSearchScreen} style={styles.searchButton} />
         <View style={{ height: 15}} />
 
         {/* Pinned Messages */}
         {pinnedMessageCount > 0 && (
-        <TouchableOpacity style={styles.pinnedMessagesContainer} onPress={() => navigateToMessageSearchScreen(true)}>
+        <TouchableOpacity style={styles.pinnedMessagesContainer} onPress={goToMessageSearchScreen}>
           <MaterialCommunityIcons name="pin" size={20} color={Colors.darkGray} />
           <CustomText style={styles.pinnedMessagesText} text={`Pinned Messages: ${pinnedMessageCount}`} />
         </TouchableOpacity>)}
@@ -404,13 +426,7 @@ export default function Chat({ route, navigation }) {
                 {tempImageUrl && (
                   <View style={styles.imagePreviewContainer}>
                     <Image source={{ uri: tempImageUrl }} style={styles.imagePreview} />
-                    <TouchableOpacity onPress={() => {
-                        deleteImageFromStorage(imageUrl);
-
-                        setImageUrl(null)
-                        setTempImageUrl(null);
-                      }} style={styles.removeImageButton}
-                    >
+                    <TouchableOpacity onPress={deleteImagePreview} style={styles.removeImageButton}  >
                       <Ionicons name="close-circle" size={20} color="gray" />
                     </TouchableOpacity>
                   </View>

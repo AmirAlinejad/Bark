@@ -156,7 +156,7 @@ const ClubList = ({ navigation }) => {
       }
       </ScrollView>
 
-      <View style={{position: 'absolute', bottom: 5, right: 75, margin: 30}}>
+      <View style={styles.fadeView}>
         <Fade visible={showText}>
           <CustomText style={styles.popUpText} text="Create a club." font='bold' />
         </Fade>
@@ -228,6 +228,12 @@ const styles = StyleSheet.create({
     fontSize: 25,
     textAlign: 'right',
   },
+  fadeView: {
+    position: 'absolute', 
+    bottom: 5, 
+    right: 75, 
+    margin: 30
+  }
 });
 
 export default ClubList;

@@ -69,6 +69,12 @@ const InClubView = ({ navigation, route }) => {
     }
   };
 
+  const leaveClub = () => {
+    leaveClubConfirmed(clubId);
+    toggleLeaveClubModal();
+    navigation.navigate('HomeScreen');
+  }
+
   return (
     <View style={styles.container}>
       {clubData === null ? null : (
@@ -114,11 +120,7 @@ const InClubView = ({ navigation, route }) => {
         <View style={styles.modalContainer}>
           <CustomText style={styles.modalText} text="Are you sure you want to leave this club?" />
           <View style={styles.modalButtons}>
-            <CustomButton text="Yes" onPress={() => {
-              leaveClubConfirmed(clubId);
-              toggleLeaveClubModal();
-              navigation.navigate('HomeScreen');
-            }} color={Colors.red}/>
+            <CustomButton text="Yes" onPress={leaveClub} color={Colors.red}/>
             <CustomButton text="No" onPress={toggleLeaveClubModal} color={Colors.green} />
           </View>
         </View>

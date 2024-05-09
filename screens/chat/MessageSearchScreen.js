@@ -70,7 +70,6 @@ const MessageSearchScreen = ({ route, navigation }) => {
           name={'pin'}
           size={30}
           color={searchPinned ? Colors.buttonBlue : Colors.gray}
-          
         />
       </TouchableOpacity>
       

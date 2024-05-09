@@ -139,7 +139,7 @@ const Profile = ({ navigation }) => {
       <Header text='Your Profile' />
         <View style={styles.profileContainer}>
 
-          <TouchableOpacity onPress={() => goToEditProfile()}>
+          <TouchableOpacity onPress={goToEditProfile}>
             <ProfileImg profileImg={userData?.profileImg} width={120} />
           </TouchableOpacity>
 
@@ -147,11 +147,11 @@ const Profile = ({ navigation }) => {
           <CustomText style={styles.userName} text={'@'+userData?.userName} font='bold'/>
 
           <View style={styles.detailsView}>
-            <TouchableOpacity onPress={() => goToEditProfile()}>
+            <TouchableOpacity onPress={goToEditProfile}>
               <CustomText text={'🎓' + gradYear} style={styles.detailsText} font='bold'/>
             </TouchableOpacity>
           <View style={{width: 25}}/>
-          <TouchableOpacity onPress={() => goToEditProfile()}>
+          <TouchableOpacity onPress={goToEditProfile}>
             <CustomText text={major} style={styles.detailsText} font='bold' />
           </TouchableOpacity>
         </View>
@@ -174,7 +174,7 @@ const Profile = ({ navigation }) => {
         <View style={styles.modalContainer}>
           <CustomText style={styles.modalText} text="Are you sure you want to delete your account?" />
           <View style={styles.modalButtons}>
-            <CustomButton text="Yes" onPress={() => deleteAccountFunc()} color={Colors.red}/>
+            <CustomButton text="Yes" onPress={deleteAccount} color={Colors.red}/>
             <CustomButton text="No" onPress={() => setDeleteAccountModal(false)} color={Colors.green}/>
           </View>
         </View>
@@ -186,7 +186,7 @@ const Profile = ({ navigation }) => {
         <View style={styles.modalContainer}>
           <CustomText style={styles.modalText} text="Are you sure you want to log out of your account?" />
           <View style={styles.modalButtons}>
-            <CustomButton text="Yes" onPress={() => logOut()} color={Colors.red}/>
+            <CustomButton text="Yes" onPress={logOut} color={Colors.red}/>
             <CustomButton text="No" onPress={() => setLogoutModal(false)} color={Colors.green}/>
           </View>
         </View>

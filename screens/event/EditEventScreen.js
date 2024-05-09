@@ -184,9 +184,7 @@ const EditEventScreen = ({ route, navigation }) => {
         </TouchableOpacity>
         {
           event.address ? (
-            <View>
-              <CustomText style={styles.textSmall} text={splitAddress(event.address)[0] + "\n" + splitAddress(event.address)[1]} />
-            </View>
+            <CustomText style={styles.textSmall} text={splitAddress(event.address)[0] + "\n" + splitAddress(event.address)[1]} />
           ) : (
             <CustomText style={styles.textSmall} text="No location selected" />
           )
@@ -238,7 +236,7 @@ const EditEventScreen = ({ route, navigation }) => {
         <View style={styles.modalContainer}>
           <CustomText style={styles.modalText} text="Are you sure you want to delete the event?" />
           <View style={styles.modalButtons}>
-            <CustomButton text="Yes" onPress={() => deleteEvent()} color={Colors.red}/>
+            <CustomButton text="Yes" onPress={deleteEvent} color={Colors.red}/>
             <CustomButton text="No" onPress={() => setModalVisible(false)} color={Colors.buttonBlue}/>
           </View>
         </View>
