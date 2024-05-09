@@ -22,7 +22,7 @@ const IconOverlay = ({ visible, setVisible, icon, iconColor, text, closeConditio
             animationType="slide"
             transparent={true}
             visible={visible}
-            onRequestClose={() => closeOverlay()}
+            onRequestClose={closeOverlay}
         >
             <View style={styles.view}>
                 <View style={styles.modal}>
@@ -30,7 +30,7 @@ const IconOverlay = ({ visible, setVisible, icon, iconColor, text, closeConditio
                     <Ionicons name={icon} size={80} color={iconColor} />
                     <CustomText style={styles.text} text={text} font='bold'/>
 
-                    <CustomButton text="Close" onPress={() => closeOverlay()} type="primary"/>
+                    <CustomButton text="Close" onPress={closeOverlay} type="primary"/>
                 </View>
             </View>
         </Modal>

@@ -11,7 +11,15 @@ import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../styles/Colors';
 
 // club card displayed on the club list screen
-const EventCard = ({ onPress, name, time, icon, iconColor }) => { // description and time are not used yet
+const EventCard = ({ name, time, icon, iconColor, screenName }) => { // description and time are not used yet
+
+  const onPress = () => {
+    // Navigate to the event screen
+    navigation.navigate("EventScreen", {
+      event: item,
+      fromScreen: screenName? screenName : null,
+    });
+  }
 
   return (
     <TouchableOpacity style={styles.eventCard} onPress={onPress}>   

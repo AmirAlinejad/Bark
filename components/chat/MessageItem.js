@@ -12,6 +12,7 @@ import { Colors } from "../../styles/Colors";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 // image
 import { Image } from "expo-image";
+import { onMessage } from "firebase/messaging";
 
 const MessageItem = ({ item, navigation, setOverlayVisible, setOverlayUserData }) => {
     // states
@@ -28,12 +29,24 @@ const MessageItem = ({ item, navigation, setOverlayVisible, setOverlayUserData }
         setUserId(auth.currentUser.uid);
     }, []);
 
+    // handle message press
+    onMessagePress = () => {
+        // Handle message press
+        setOverlayVisible(true);
+        updateProfileData(item.user._id, setOverlayUserData);
+    }   
+
+    // navigate to image/gif
+    onImagePress = () => {
+        navigation.navigate('ImageViewerScreen', { imageUri: item.image });
+    }
+    onGIFPress = () => {
+        navigation.navigate('ImageViewerScreen', { imageUri: item.gifUrl });
+    }
+
     return (
         <View style={styles.messageItem}>
-            <TouchableOpacity style={styles.avatarContainer} onPress={() => {
-                setOverlayVisible(true);
-                updateProfileData(item.user._id, setOverlayUserData);
-            }}>
+            <TouchableOpacity style={styles.avatarContainer} onPress={onMessagePress}>
                 <ProfileImg profileImg={item.user.avatar} width={40} />
             </TouchableOpacity>
             <View style={styles.messageContent}>
@@ -44,13 +57,13 @@ const MessageItem = ({ item, navigation, setOverlayVisible, setOverlayUserData }
                 {item.text && <CustomText style={styles.messageText} text={item.text} />}
                 {/* Display image with option to view larger */}
                 {item.image && (
-                <TouchableOpacity onPress={() => navigation.navigate('ImageViewerScreen', { imageUri: item.image })}>
+                <TouchableOpacity onPress={onImagePress}>
                     <Image source={{ uri: item.image }} style={styles.messageImage} />
                 </TouchableOpacity>
                 )}
                 {/* Display GIF with option to view larger */}
                 {item.gifUrl && (
-                <TouchableOpacity onPress={() => navigation.navigate('ImageViewerScreen', { imageUri: item.gifUrl })}>
+                <TouchableOpacity onPress={onGIFPress}>
                     <Image source={{ uri: item.gifUrl }} style={styles.messageImage} />
                 </TouchableOpacity>
                 )}
@@ -62,12 +75,12 @@ const MessageItem = ({ item, navigation, setOverlayVisible, setOverlayUserData }
           
                     <CustomText style={styles.replyContextLabel} text={`${item.replyTo.user.first} ${item.replyTo.user.last}`} font="bold"/>
                     {item.replyTo.image && (
-                    <TouchableOpacity onPress={() => navigation.navigate('ImageViewerScreen', { imageUri: item.replyTo.image })} style={styles.replyContent}>
+                    <TouchableOpacity style={styles.replyContent}>
                         <Image source={{ uri: item.replyTo.image }} style={styles.replyImageContext} />
                     </TouchableOpacity>
                     )}
                     {item.replyTo.gifUrl && (
-                    <TouchableOpacity onPress={() => navigation.navigate('ImageViewerScreen', { imageUri: item.replyTo.gifUrl })} style={styles.replyContent}>
+                    <TouchableOpacity style={styles.replyContent}>
                         <Image source={{ uri: item.replyTo.gifUrl }} style={styles.replyImageContext} />
                     </TouchableOpacity>
                     )}

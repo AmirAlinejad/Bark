@@ -38,7 +38,7 @@ const ClubCard = ({ onPress, name, description, img, muted, toggleMute, unreadMe
               </View>
             }
             {/* mute button */}
-            <TouchableOpacity style={styles.muteButton} onPress={() => { toggleMute() }}>
+            <TouchableOpacity style={styles.muteButton} onPress={toggleMute}>
               <Ionicons name={muted ? "notifications-off-outline" : "notifications-outline"} size={25} color={Colors.black} />
             </TouchableOpacity>
           </View>

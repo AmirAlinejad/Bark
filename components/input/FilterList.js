@@ -1,4 +1,5 @@
 import React from 'react';
+import { View, StyleSheet } from 'react-native';
 // multi-select list
 import MultiSelect from 'react-native-multiple-select';
 // colors
@@ -30,17 +31,70 @@ const FilterList = ({ items, setter, selected, text }) => {
         selectedItemIconColor={Colors.black}
         itemTextColor={Colors.black}
         displayKey="value"
-        searchInputStyle={{ color: Colors.black }}
-        styleMainWrapper={{margin: 0, width: 300}}
-        styleDropdownMenu={{height: 50}}
-        styleDropdownMenuSubsection={{borderColor: Colors.inputBorder, borderWidth: 1, borderRadius: 25, backgroundColor: Colors.white}}
-        styleTextDropdown={{ paddingLeft: 20, fontSize: 16 }}
-        styleTextDropdownSelected={{ paddingLeft: 20, fontSize: 16 }}
-        styleInputGroup={{height: 50, borderColor: Colors.inputBorder, borderWidth: 1, borderRadius: 25, paddingRight: 20, paddingLeft: 20,}}
-        styleItemsContainer={{borderColor: Colors.inputBorder, borderWidth: 1, borderRadius: 20, marginTop: 10, paddingVertical: 10, backgroundColor: Colors.white}}
-        styleRowList={{padding: 3}}
+        searchInputStyle={styles.searchInputStyle}
+        styleMainWrapper={styles.mainWrapper}
+        styleDropdownMenu={styles.dropdownMenu}
+        styleDropdownMenuSubsection={styles.dropdownMenuSubsection}
+        styleTextDropdown={styles.textDropdown}
+        styleTextDropdownSelected={styles.textDropdownSelected}
+        styleInputGroup={styles.inputGroup}
+        styleItemsContainer={styles.itemsContainer}
+        styleRowList={styles.rowList}
     />
   );
 }
+
+// styles
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: Colors.white,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  searchInputStyle: {
+    color: Colors.black,
+  },
+  mainWrapper: {
+    margin: 0,
+    width: 300,
+  },
+  dropdownMenu: {
+    height: 50,
+  },
+  dropdownMenuSubsection: {
+    borderColor: Colors.inputBorder,
+    borderWidth: 1,
+    borderRadius: 25,
+    backgroundColor: Colors.white,
+  },
+  textDropdown: {
+    paddingLeft: 20,
+    fontSize: 16,
+  },
+  textDropdownSelected: {
+    paddingLeft: 20,
+    fontSize: 16,
+  },
+  inputGroup: {
+    height: 50,
+    borderColor: Colors.inputBorder,
+    borderWidth: 1,
+    borderRadius: 25,
+    paddingRight: 20,
+    paddingLeft: 20,
+  },
+  itemsContainer: {
+    borderColor: Colors.inputBorder,
+    borderWidth: 1,
+    borderRadius: 20,
+    marginTop: 10,
+    paddingVertical: 10,
+    backgroundColor: Colors.white,
+  },
+  rowList: {
+    padding: 3,
+  },
+});
 
 export default FilterList;

@@ -26,14 +26,15 @@ const ProfileOverlay = ({ visible, setVisible, userData }) => {
         }
     }
 
+    const closeOverlay = () => {
+        setVisible(false);
+    }
     
     return (
         <SwipeUpDownModal
             modalVisible={visible} 
             pressToanimate={visible}
-            onClose={() => {
-                setVisible(false);
-            }}
+            onClose={closeOverlay}
             ContentModal={
                 <TouchableWithoutFeedback>
                     <View style={styles.modal}>
@@ -47,7 +48,7 @@ const ProfileOverlay = ({ visible, setVisible, userData }) => {
                                     />
                                     <CustomText style={styles.name} text={userData.firstName + " " + userData.lastName} font='bold'/>
                                     <CustomText style={styles.userName} text={'@'+userData.userName} font='bold'/>
-                                    <View style={{flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 80, marginTop: 20}}>
+                                    <View style={styles.info}>
                                         {graduationYear() != '' && <CustomText text={graduationYear()} style={styles.secondaryText} font='bold'/>}
                                         {major() != '' && <CustomText text={major()} style={styles.secondaryText} font='bold'/>}
                                     </View>
@@ -85,6 +86,14 @@ const styles = StyleSheet.create({
     profileContainer: {
         alignItems: 'center',
         justifyContent: 'flex-start',
+    },
+    info: {
+        width: '100%',
+        flexDirection: 'row',
+        justifyContent: 'center',
+        alignItems: 'center',
+        gap: 80,
+        marginBottom: 20,
     },
     name: {
         fontSize: 24,

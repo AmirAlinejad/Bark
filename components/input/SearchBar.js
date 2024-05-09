@@ -9,7 +9,7 @@ import { Colors } from '../../styles/Colors';
 const SearchBar = ({ value, setValue, placeholder }) => {
   return (
     <View style={styles.container}>
-      <Ionicons name="search" size={20} color={Colors.darkGray} style={{marginLeft: 10}}/>
+      <Ionicons name="search" size={20} color={Colors.darkGray} style={styles.iconStyle}/>
       <TextInput
         placeholder={placeholder}
         value={value}
@@ -37,6 +37,9 @@ const styles = StyleSheet.create({
     color: Colors.black,
     backgroundColor: 'transparent',
   },
+  iconStyle: {
+    marginLeft: 10,
+  }
 });
 
 export default SearchBar;

@@ -53,14 +53,6 @@ const UpcomingEvents = ({ filteredEvents, screenName, navigation }) => {
                 // map through the event data for each date
                 categorizedEvents[date].map((item, index) => {
 
-                  const onPress = () => {
-                    // Navigate to the event screen
-                    navigation.navigate("EventScreen", {
-                      event: item,
-                      fromScreen: screenName? screenName : null,
-                    });
-                  }
-
                   // get colors and icon based on first club category
                   let icon = null;
                   let iconColor = null;
@@ -76,7 +68,7 @@ const UpcomingEvents = ({ filteredEvents, screenName, navigation }) => {
                       <View style={styles.separator} />
                       <EventCard 
                         key={index}
-                        onPress={onPress} 
+                        screenName={screenName}
                         name={item.name}
                         description={item.description} 
                         date={item.date}

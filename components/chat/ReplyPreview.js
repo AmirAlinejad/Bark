@@ -9,6 +9,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../styles/Colors';
 
 const ReplyPreview = ({ replyingToMessage, setReplyingToMessage }) => {
+    closeMessage = () => {
+        setReplyingToMessage(null);
+    }
+
     return (
         <View style={[styles.replyPreview, {bottom: 80 }]}>
               
@@ -49,7 +53,7 @@ const ReplyPreview = ({ replyingToMessage, setReplyingToMessage }) => {
                 )}
               </View>
 
-              <TouchableOpacity onPress={() => setReplyingToMessage(null)} style={{position: 'absolute', top: 0, right: 0, margin: 10}}>
+              <TouchableOpacity onPress={closeMessage} style={{position: 'absolute', top: 0, right: 0, margin: 10}}>
                 <Ionicons name="close-circle" size={20} color="gray" />
               </TouchableOpacity>
             </View>
