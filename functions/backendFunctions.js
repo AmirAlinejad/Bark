@@ -4,6 +4,8 @@ import { db, firestore } from '../backend/FirebaseConfig';
 import { ref, get, update, onValue, set} from "firebase/database"
 import { updateDoc, doc, deleteDoc } from 'firebase/firestore';
 import { getAuth, deleteUser } from "firebase/auth";
+// storage
+import { getStorage } from "firebase/storage";
 // macros
 import { SCHOOLS } from '../macros/macros';
 // image
@@ -11,7 +13,19 @@ import * as ImagePicker from 'expo-image-picker';
 // functions
 import handleImageUpload from './uploadImage';
 
-const emailSplit = () => {
+const emailSplit = async () => {
+
+  // try async storage first
+  try {
+    const value = await AsyncStorage.getItem('school');
+    if (value !== null) {
+      return value.key;
+    }
+  } catch (error) {
+    console.error('Error getting school key from async:', error);
+  }
+
+  // if not there, get from auth
   const auth = getAuth();
   const user = auth.currentUser;
   return user.email.split('@')[1].split('.')[0];

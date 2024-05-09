@@ -422,11 +422,13 @@ export const SCHOOLS = {
         name: "The University of Georgia",
         emoji: "🐶",
         mascot: "Bulldogs",
+        key: 'uga',
     },
     "utk" : {
         name: "The University of Tennessee, Knoxville",
         emoji: "🍊",
         mascot: "Volunteers",
+        key: 'utk',
     },
 };
 

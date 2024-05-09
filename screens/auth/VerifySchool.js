@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, StyleSheet, ActivityIndicator } from 'react-native';
+// storage
+import AsyncStorage from '@react-native-async-storage/async-storage';
 // my components
 import CustomText from '../../components/display/CustomText';
 import CustomButton from '../../components/buttons/CustomButton';
@@ -15,9 +17,18 @@ const VerifySchool = ({ navigation }) => {
     const [schoolData, setSchoolData] = useState(null);
     // loading and error handling
     const [loading, setLoading] = useState(false);
+  
+    const storeSchool = async () => {
+      try {
+        await AsyncStorage.setItem("school", JSON.stringify(schoolData));
+      } catch (error) {
+        console.log(error);
+      }
+    };
 
     const confirmSchool = () => {
         navigation.navigate("VerifyEmail");
+        storeSchool();
     };
 
     useEffect(() => {

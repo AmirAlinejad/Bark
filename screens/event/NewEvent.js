@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+// storage
+import AsyncStorage from '@react-native-async-storage/async-storage';
 // react native components
 import { View, StyleSheet, TouchableOpacity, TextInput } from 'react-native';
 // my components
@@ -14,6 +16,7 @@ import { emailSplit } from '../../functions/backendFunctions';
 import { db } from '../../backend/FirebaseConfig';
 // date time picker
 import { ref, set } from "firebase/database";
+import { collection, doc, updateDoc } from "firebase/firestore"; // firestore
 import DateTimePicker from '@react-native-community/datetimepicker';
 // maps
 import MapView, { Marker } from 'react-native-maps';
@@ -72,7 +75,10 @@ const NewEvent = ({ route, navigation }) => {
       // generate unique event id
       const eventId = Math.random().toString(36).substring(7);
 
-      set(ref(db,  `${emailSplit()}/events/${eventId}`), {
+      // get school key from async storage
+      const schoolKey = await AsyncStorage.getItem('school').key;
+
+      /*set(ref(db,  `${emailSplit()}/events/${eventId}`), {
         id: eventId,
         clubId: clubId,
         categories: clubCategories,
@@ -86,7 +92,41 @@ const NewEvent = ({ route, navigation }) => {
         instructions: instructions,
         roomNumber: roomNumber,
         public: publicEvent,
-      });
+      });*/
+
+      try {
+        const docRef = await updateDoc(doc(db, `${emailSplit()}/eventData/${eventId}`), {
+          id: eventId,
+          clubId: clubId,
+          categories: clubCategories,
+          name: eventName,
+          description: eventDescription,
+          date: date.toDateString(),
+          time: time.toTimeString(),
+          duration: duration,
+          location: location,
+          address: address,
+          instructions: instructions,
+          roomNumber: roomNumber,
+          public: publicEvent,
+        });
+
+        // update calendar data
+        await updateDoc(doc(db, `${emailSplit()}/calendarData/${eventId}`), {
+          id: eventId,
+          categories: clubCategories,
+          name: eventName,
+          date: date.toDateString(),
+          time: time.toTimeString(),
+          duration: duration,
+          public: publicEvent,
+        });
+
+
+        console.log("Document written with ID: ", docRef.id);
+      } catch (e) {
+        console.error("Error adding document: ", e);
+      }
   
       setOverlayVisible(true);
     } catch (error) {

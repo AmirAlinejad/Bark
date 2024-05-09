@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+// storage
+import AsyncStorage from '@react-native-async-storage/async-storage';
 // react native components
 import { View, StyleSheet } from 'react-native';
 import { Image } from 'expo-image';
@@ -73,6 +75,11 @@ const SignIn = ({ route, navigation }) => {
 
       // Navigate to the home screen
       navigation.navigate('HomeScreen');
+
+      // set user data in async storage
+      // get user data from db first***
+      
+      await AsyncStorage.setItem('user', JSON.stringify(response.user));
     } catch (error) {
       console.log(error);
       setErrorMessage(handleFirebaseError(error));
