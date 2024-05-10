@@ -1,6 +1,8 @@
 import React, { useState } from 'react'
 // react native components
 import { View, StyleSheet, TouchableOpacity } from 'react-native';
+// storage
+import AsyncStorage from '@react-native-async-storage/async-storage';
 // keyboard avoiding view
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 // my components
@@ -18,9 +20,8 @@ import { Colors } from '../../styles/Colors';
 // macros
 import { MAJORS } from '../../macros/macros';
 // backend
-import { ref, update } from 'firebase/database';
-import { db } from '../../backend/FirebaseConfig';
-import { getAuth } from 'firebase/auth';
+import { doc, setDoc } from 'firebase/firestore';
+import { firestore } from '../../backend/FirebaseConfig';
 
 const EditProfile = ({ route, navigation }) => {
   // get user data from previous screen
@@ -67,22 +68,23 @@ const EditProfile = ({ route, navigation }) => {
 
     // try to submit the edit profile request
     try {
-        // get user id
-        const auth = getAuth();
-        const user = auth.currentUser;
-        const id = user.uid;
-        
-        // update old user info
-        // image, grad year, and major are optional
-        const userRef = ref(db, `${emailSplit()}/users/${id}`);
-        await update(userRef, {
+
+        let updatedUserData = {
             userName: userName,
             firstName: firstName,
             lastName: lastName,
-            profileImg: profileImg ? profileImg : "",
-            graduationYear: graduationYear ? graduationYear : "",
-            major: major ? major : "",
-        });
+            id: userData.id,
+        }
+        if (graduationYear) updatedUserData.graduationYear = graduationYear;
+        if (major) updatedUserData.major = major;
+        if (profileImg) updatedUserData.profileImg = profileImg;
+
+        // update firestore
+        const schoolKey = await emailSplit();
+        await setDoc(doc(firestore, 'schools', schoolKey, 'userData', userData.id), updatedUserData);
+        
+        // update async storage
+        await AsyncStorage.setItem('user', JSON.stringify(updatedUserData));
 
         navigation.navigate("HomeScreen");
     } catch (error) {

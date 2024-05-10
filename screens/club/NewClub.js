@@ -51,7 +51,10 @@ const NewClub = ({ navigation }) => {
     // add data to clubs
     try {
       // generate unique club id
-      const clubId = (Math.random() + 1).toString(36).substring(7);;
+      const clubId = (Math.random() + 1).toString(36).substring(7);
+      // get user data from async storage
+      const userData = await AsyncStorage.getItem('user');
+      const user = JSON.parse(userData);
 
       /*// add club to database
       const clubRef = ref(db, `${emailSplit()}/clubs/${clubId}`);
@@ -64,9 +67,9 @@ const NewClub = ({ navigation }) => {
         mostRecentMessage: new Date().toLocaleString(),
       });*/
 
-      // add club to firestore
-      const docRef = doc(db, `${emailSplit()}/clubs/${clubId}`);
-      await updateDoc(docRef, {
+      // add club to clubData
+      const clubDoc = doc(db, `${emailSplit()}/clubData/${clubId}`);
+      await updateDoc(clubDoc, {
         clubName: clubName,
         clubId: clubId,
         clubDescription: clubDescription,
@@ -74,22 +77,18 @@ const NewClub = ({ navigation }) => {
         publicClub: publicClub,
       });
 
-      // add club to myClubs data
-      // get user data from async storage
-      const userData = await AsyncStorage.getItem('user');
-      const user = JSON.parse(userData);
-      // update myclubs data
-      const myClubsDocRef = doc(db, `${emailSplit()}/myClubsData/${user.uid}`);
-      await updateDoc(myClubsDocRef, {
+      // add club to club search data
+      const clubSearchDoc = doc(db, `${emailSplit()}/clubSearchData/${user.uid}`);
+      await updateDoc(clubSearchDoc, {
         [clubId]: {
           clubName: clubName,
-          muted: false,
-          /*most recent message: */
-          // no image yet
+          clubDescription: clubDescription,
+          clubCategories: categoriesSelected,
+          publicClub: publicClub,
         }
       });
 
-      // add user to club's members
+      // add user to club's members (adds to myClubsData and clubUserData)
       await joinClub(clubId, clubName, user.uid, 'owner'); // test
 
     } catch (error) {

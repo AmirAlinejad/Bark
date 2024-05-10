@@ -5,7 +5,7 @@ import { ref, get, update, onValue, set} from "firebase/database"
 import { updateDoc, doc, deleteDoc } from 'firebase/firestore';
 import { getAuth, deleteUser } from "firebase/auth";
 // storage
-import { getStorage } from "firebase/storage";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 // macros
 import { SCHOOLS } from '../macros/macros';
 // image
@@ -17,9 +17,9 @@ const emailSplit = async () => {
 
   // try async storage first
   try {
-    const value = await AsyncStorage.getItem('school');
+    const value = await AsyncStorage.getItem('schoolKey');
     if (value !== null) {
-      return value.key;
+      return value;
     }
   } catch (error) {
     console.error('Error getting school key from async:', error);
@@ -32,27 +32,42 @@ const emailSplit = async () => {
 }
 
 const getSetUserData = async (setter) => {
-    // get user data from auth
-    const auth = getAuth();
-    const user = auth.currentUser;
-    const userId = user.uid;
+   // get data from async storage
+    try {
+      const userData = await AsyncStorage.getItem('user');
+      if (userData) {
+        console.log('User data found in async storage');
+        console.log(JSON.parse(userData));
+        setter(JSON.parse(userData));
+      } else {
+        // get user data from firestore
+        let schoolKey = await emailSplit();
+        const auth = getAuth();
+        const user = auth.currentUser;
+        const userId = user.uid;
+        const userData = await doc(firestore, 'schools', schoolKey, 'userData', userId).get(); // 'schools/${schoolKey}/userData/${userId}
 
-    updateProfileData(userId, setter);
+        setter(userData);
+        await AsyncStorage.setItem('user', JSON.stringify(userData));
+      
+      }
+    } catch (error) {
+      console.error('Error getting user data:', error);
+    }
 }
 
 const updateProfileData = async (userId, setter) => {
     try {
-      const userRef = ref(db, `${emailSplit()}/users/${userId}`);
-      const userSnapshot = await get(userRef);
+      let schoolKey = await emailSplit();
+5
+      const userData = await doc(firestore, 'schools', schoolKey, 'userData', userId).get(); // 'schools/${schoolKey}/userData/${userId}'
 
-      if (userSnapshot.exists()) {
-        const userData = userSnapshot.val();
-
-        // set user data
-        setter(userData);
-        console.log(userData);
-      }
+      // set user data
+      setter(userData);
+      console.log(userData);
+    
     } catch (error) {
+      console.log(emailSplit())
       console.error('Error updating user data:', error);
     }
 };
@@ -116,28 +131,44 @@ const getSetEventData = async (setter, eventId) => {
   })
 }
 
-const joinClub = async (id, name, userId, privilege) => {
+const joinClub = async (id, userId, privilege) => {
   try {
-    let _userId;
+    // if no user id, get data from async storage
+    let userData;
     if (!userId) {
-      const auth = getAuth();
-      const user = auth.currentUser;
-      _userId = user.uid;
+      userData = await AsyncStorage.getItem('user');
+      userData = JSON.parse(userData);
     } else {
-      _userId = userId;
+      // get user data based on user id
+      const userRef = ref(db, `${emailSplit()}/userData/${userId}`);
+      const userSnapshot = await get(userRef);
+      
+      if (!userSnapshot.exists()) {
+        console.error('User data not found.');
+        return;
+      }
+
+      userData = userSnapshot.val();
     }
 
-    const userRef = ref(db, `${emailSplit()}/users/${_userId}`);
-    const userSnapshot = await get(userRef);
+    // add user to club's members
+    const clubMembersDoc = doc(db, `${emailSplit()}/clubMemberData/${id}`);
+    await updateDoc(clubMembersDoc, {
+      [userData.id]: {
+        userName: userData.userName,
+        userImg: userData.profileImg,
+        privilege: privilege ? privilege : 'member',
+        firstName: userData.firstName,
+        lastName: userData.lastName,
+        expoPushToken: userData.expoPushToken,
+      }
+    });
 
-    if (!userSnapshot.exists()) {
-      console.error('User data not found.');
-      return;
-    }
+    // add club to user's clubs
+    const userClubsDoc = doc(db, `${emailSplit()}/userData/${userData.id}/clubs`);
+    await updateDoc(userClubsDoc, id); // see if this works
 
-    const userData = userSnapshot.val();
-
-    // add club to user data
+    /*// add club to user data
     const updatedUserClubs = {
       ...userData.clubs,
       [id]: {
@@ -183,7 +214,7 @@ const joinClub = async (id, name, userId, privilege) => {
     await set(clubRef, {
       ...clubData,
       clubMembers: updatedClubMembers,
-    });
+    });*/
 
   } catch (error) {
     console.error('Error processing request:', error);
@@ -252,24 +283,32 @@ const declineRequest = async (clubId, userId) => {
 
 const leaveClubConfirmed = async (id) => {
   try {
-    // get user id
+    /*// get user id
     const auth = getAuth();
     const user = auth.currentUser;
     const userId = user.uid;
 
     // remove user from club members
-    const clubRef = ref(db, `${emailSplit()}/clubs/${id}/clubMembers/${userId}`);
+    const clubRef = ref(db, `${emailSplit()}/clubs/${id}/clubMembers/${userId}`);*/
+
+    // get user id from async storage
+    const userData = await AsyncStorage.getItem('user');
+    const user = JSON.parse(userData);
+    const userId = user.id;
+
+    // get club members
+    const clubMembersDoc = doc(firestore, `${emailSplit()}/clubMemberData/${id}/${userId}`);
 
     let wasOwner = false;
 
     // check if user is owner
-    const clubSnapshot = await get(clubRef);
+    const clubSnapshot = await get(clubMembersDoc);
     const clubData = clubSnapshot.val();
     if (clubData.privilege === 'owner') {
       wasOwner = true;
     }
     // then remove user from club
-    await set(clubRef, null);
+    await deleteDoc(clubMembersDoc);
 
     // remove club from user data
     const userRef = ref(db, `${emailSplit()}/users/${userId}/clubs/${id}`);

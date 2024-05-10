@@ -16,6 +16,7 @@ import MapView, { Marker } from 'react-native-maps';
 import Modal from 'react-native-modal';
 // backend
 import { ref, set, update } from 'firebase/database';
+import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '../../backend/FirebaseConfig';
 // functions
 import { emailSplit } from '../../functions/backendFunctions';
@@ -72,6 +73,32 @@ const EditEventScreen = ({ route, navigation }) => {
           public: publicEvent,
           categories: event.categories,
           id: event.id,
+      });
+
+      // update event in firestore
+      const eventDoc = doc(db, `${emailSplit()}/eventData/${event.id}`);
+      await updateDoc(eventDoc, {
+        name: eventName,
+        description: eventDescription,
+        date: eventDate.toDateString(),
+        time: eventTime.toTimeString(),
+        location: event.location,
+        address: event.address,
+        roomNumber: eventRoomNumber,
+        instructions: eventInstructions,
+        public: publicEvent,
+        categories: event.categories,
+        id: event.id,
+      });
+
+      // update calendar data
+      const calendarDataDoc = doc(db, `${emailSplit()}/calendarData/${event.id}`);
+      await updateDoc(calendarDataDoc, {
+        name: eventName,
+        date: eventDate.toDateString(),
+        time: eventTime.toTimeString(),
+        public: publicEvent,
+        id: event.id,
       });
 
       navigation.navigate("HomeScreen"); // make go back to event screen eventually

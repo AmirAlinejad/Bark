@@ -15,8 +15,8 @@ import { createUserWithEmailAndPassword, updateProfile, sendEmailVerification } 
 // keyboard aware scroll view
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 // firebase
-import { ref, set } from 'firebase/database';
-import { FIREBASE_AUTH, db } from '../../backend/FirebaseConfig';
+import { doc, setDoc } from 'firebase/firestore';
+import { FIREBASE_AUTH, firestore } from '../../backend/FirebaseConfig';
 
 const SignUp = ({ route, navigation }) => {
 
@@ -78,21 +78,15 @@ const SignUp = ({ route, navigation }) => {
       await sendEmailVerification(response.user);
       // update user profile in auth
       const emailSplit = email.split('@')[1].split('.')[0];
-      await updateProfile(response.user, {
-        displayName: userName,
-      });
 
-      // create user in database
-      const userRef = ref(db, `${emailSplit}/users/${response.user.uid}`);
-      await set(userRef, {
+      // create user in firestore
+      await setDoc(doc(firestore, 'schools', emailSplit, 'userData', response.user.uid), {
         userName: userName,
         email: email,
         firstName: firstName,
         lastName: lastName,
-        clubs: [],
-        clubsJoined: [],
-        mutedClubs: [],
         expoPushToken: expoPushToken,
+        id: response.user.uid,
       });
 
       // navigate to verify school

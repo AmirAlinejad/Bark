@@ -6,6 +6,9 @@ import { View, StyleSheet } from 'react-native';
 import { Image } from 'expo-image';
 // assets
 import Logo from '../../assets/logo.png';
+// firestore
+import { firestore } from '../../backend/FirebaseConfig';
+import { doc, getDoc } from 'firebase/firestore';
 // my components
 import CustomText from '../../components/display/CustomText';
 import CustomInput from '../../components//input/CustomInput';
@@ -76,12 +79,17 @@ const SignIn = ({ route, navigation }) => {
       // Navigate to the home screen
       navigation.navigate('HomeScreen');
 
-      // set user data in async storage
-      // get user data from db first***
+      const schoolKey = response.user.email.split('@')[1].split('.')[0];
 
-      console.log(response.user);
+      // get user data from firestore
+      const userData = await getDoc(doc(firestore, 'schools', schoolKey, 'userData', response.user.uid));
+      console.log('user data from firestore: ', userData.data());
       
-      await AsyncStorage.setItem('user', JSON.stringify(response.user));
+      // set user data in async storage
+      await AsyncStorage.setItem('user', JSON.stringify(userData.data()));
+
+      // set school key in async storage
+      await AsyncStorage.setItem('schoolKey', schoolKey);
     } catch (error) {
       console.log(error);
       setErrorMessage(handleFirebaseError(error));
@@ -95,7 +103,6 @@ const SignIn = ({ route, navigation }) => {
     navigation.navigate('ForgotPassword');
   };
 
-  // go to sign up
   const onSignUp = () => {
     // Navigate to the sign-up screen
     navigation.navigate('SignUp');

@@ -15,6 +15,7 @@ import { handleImageUploadAndSend } from '../../functions/backendFunctions';
 // backend
 import { ref, update } from 'firebase/database';
 import { db } from '../../backend/FirebaseConfig';
+import { updateDoc, doc } from 'firebase/firestore';
 // colors
 import { Colors } from '../../styles/Colors';
 // keyboard avoiding view
@@ -47,13 +48,28 @@ const EditClubScreen = ({ route, navigation }) => {
 
     // try to submit the edit profile request
     try {
-        // update old event info
+        /*// update old club info
         const clubRef = ref(db, `${emailSplit()}/clubs/${id}`);
         await update(clubRef, {
             clubName: clubName,
             clubImg: clubImg ? clubImg : null,
             clubDescription: clubDescription,
             publicClub: publicClubState,
+        });*/
+
+        // update clubData
+        await updateDoc(doc(db, 'clubData', id), {
+          clubName: clubName,
+          clubImg: clubImg ? clubImg : null,
+          clubDescription: clubDescription,
+          publicClub: publicClubState,
+        });
+
+        // update clubSearch data
+        await updateDoc(doc(db, 'clubSearchData', id), {
+          clubName: clubName,
+          clubImg: clubImg ? clubImg : null,
+          publicClub: publicClubState,
         });
 
         navigation.navigate("InClubView", { clubId: id });
