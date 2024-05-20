@@ -74,6 +74,8 @@ const EditProfile = ({ route, navigation }) => {
             firstName: firstName,
             lastName: lastName,
             id: userData.id,
+            email: userData.email,
+            expoPushToken: userData.expoPushToken,
         }
         if (graduationYear) updatedUserData.graduationYear = graduationYear;
         if (major) updatedUserData.major = major;

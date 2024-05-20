@@ -6,9 +6,8 @@ import { set, ref, get } from "firebase/database";
 // async storage
 import AsyncStorage from '@react-native-async-storage/async-storage';
 // firestore
-import { updateDoc, doc } from 'firebase/firestore';
-import { getAuth } from 'firebase/auth';
-import { db } from '../../backend/FirebaseConfig';
+import { setDoc, doc } from 'firebase/firestore';
+import { firestore } from '../../backend/FirebaseConfig';
 // my components
 import CustomInput from '../../components/input/CustomInput';
 import CustomButton from '../../components/buttons/CustomButton';
@@ -52,24 +51,13 @@ const NewClub = ({ navigation }) => {
     try {
       // generate unique club id
       const clubId = (Math.random() + 1).toString(36).substring(7);
-      // get user data from async storage
-      const userData = await AsyncStorage.getItem('user');
-      const user = JSON.parse(userData);
 
-      /*// add club to database
-      const clubRef = ref(db, `${emailSplit()}/clubs/${clubId}`);
-      await set(clubRef, {
-        clubName: clubName,
-        clubId: clubId,
-        clubDescription: clubDescription,
-        clubCategories: categoriesSelected,
-        publicClub: publicClub,
-        mostRecentMessage: new Date().toLocaleString(),
-      });*/
+      const schoolKey = await emailSplit();
+      console.log(schoolKey);
 
       // add club to clubData
-      const clubDoc = doc(db, `${emailSplit()}/clubData/${clubId}`);
-      await updateDoc(clubDoc, {
+      const clubDoc = doc(firestore, 'schools', schoolKey, 'clubData', clubId);
+      await setDoc(clubDoc, {
         clubName: clubName,
         clubId: clubId,
         clubDescription: clubDescription,
@@ -77,19 +65,21 @@ const NewClub = ({ navigation }) => {
         publicClub: publicClub,
       });
 
-      // add club to club search data
-      const clubSearchDoc = doc(db, `${emailSplit()}/clubSearchData/${user.uid}`);
-      await updateDoc(clubSearchDoc, {
-        [clubId]: {
+      // add club to club search data for each category
+      for (let i = 0; i < categoriesSelected.length; i++) {
+        const category = categoriesSelected[i];
+        const categoryDoc = doc(firestore, 'schools', schoolKey, 'clubSearchData', category, 'clubs', clubId);
+        await setDoc(categoryDoc, {
           clubName: clubName,
+          clubId: clubId,
           clubDescription: clubDescription,
-          clubCategories: categoriesSelected,
           publicClub: publicClub,
-        }
-      });
+          clubMembers: 0,
+        });
+      }
 
-      // add user to club's members (adds to myClubsData and clubUserData)
-      await joinClub(clubId, clubName, user.uid, 'owner'); // test
+      // add user to club's members
+      await joinClub(clubId, 'owner');
 
     } catch (error) {
       console.log(error);

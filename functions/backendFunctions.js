@@ -1,8 +1,7 @@
 import { Alert } from 'react-native';
 // backend functions
-import { db, firestore } from '../backend/FirebaseConfig';
-import { ref, get, update, onValue, set} from "firebase/database"
-import { updateDoc, doc, deleteDoc } from 'firebase/firestore';
+import { firestore } from '../backend/FirebaseConfig';
+import { doc, collection, query, where, limit, updateDoc, deleteDoc, setDoc, getDoc, getDocs, orderBy } from 'firebase/firestore';
 import { getAuth, deleteUser } from "firebase/auth";
 // storage
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -36,31 +35,30 @@ const getSetUserData = async (setter) => {
     try {
       const userData = await AsyncStorage.getItem('user');
       if (userData) {
-        console.log('User data found in async storage');
-        console.log(JSON.parse(userData));
         setter(JSON.parse(userData));
-      } else {
-        // get user data from firestore
-        let schoolKey = await emailSplit();
-        const auth = getAuth();
-        const user = auth.currentUser;
-        const userId = user.uid;
-        const userData = await doc(firestore, 'schools', schoolKey, 'userData', userId).get(); // 'schools/${schoolKey}/userData/${userId}
-
-        setter(userData);
-        await AsyncStorage.setItem('user', JSON.stringify(userData));
-      
       }
-    } catch (error) {
+     } catch (error) {
       console.error('Error getting user data:', error);
     }
+}
+
+const getProfileData = async (userId) => {
+  try {
+    const userDocRef = doc(firestore, 'schools', emailSplit(), 'userData', userId);
+    const userDocSnapshot = await getDoc(userDocRef);
+    return userDocSnapshot.data();
+  } catch (error) {
+    console.error('Error getting user data:', error);
+  }
 }
 
 const updateProfileData = async (userId, setter) => {
     try {
       let schoolKey = await emailSplit();
-5
-      const userData = await doc(firestore, 'schools', schoolKey, 'userData', userId).get(); // 'schools/${schoolKey}/userData/${userId}'
+
+      const userDocRef = doc(firestore, 'schools', schoolKey, 'userData', userId);
+      const userDocSnapshot = await getDoc(userDocRef);
+      const userData = userDocSnapshot.data();
 
       // set user data
       setter(userData);
@@ -72,34 +70,144 @@ const updateProfileData = async (userId, setter) => {
     }
 };
 
-const getSetAllClubsData = async (setter) => {
-    const starCountRef = ref(db, `${emailSplit()}/clubs`);
-    onValue(starCountRef, (snapshot) => {
-      const data = snapshot.val();
-      const newClubs = Object.keys(data).map(key => ({
-          id: key,
-          ...data[key]
-      }));
-      console.log(newClubs);
-      setter(newClubs);
-    })
+const fetchClubMembers = async (clubId, setClubMembers) => {
+  const schoolKey = await emailSplit();
+
+  const clubMembersRef = collection(firestore, 'schools', schoolKey, 'clubMemberData', 'clubs', clubId);
+  const clubMembersSnapshot = await getDocs(clubMembersRef);
+
+  if (clubMembersSnapshot.empty) {
+    console.log('No club members found.');
+    return;
+  }
+
+  const clubMembers = clubMembersSnapshot.docs.map(doc => doc.data());
+  setClubMembers(clubMembers);
+};
+
+const getClubCategoryData = async (category) => {
+  const schoolKey = await emailSplit();
+
+  console.log('Getting clubs for category:', category);
+
+  const clubsDocRef = collection(firestore, 'schools', schoolKey, 'clubSearchData', category, 'clubs');
+  // get clubs based on category
+  const clubsQuery = query(clubsDocRef, orderBy('clubMembers', 'desc'), limit(10)); // order by club members
+  const clubsSnapshot = await getDocs(clubsQuery);
+
+  if (clubsSnapshot.empty) {
+    console.log('No clubs found.');
+    return;
+  }
+
+  const clubs = clubsSnapshot.docs.map(doc => doc.data());
+  console.log(clubs);
+  return clubs;
 }
 
-const getSetAllClubsDataObject = async (setter) => {
+const fetchClubs = async (querySnapshot, setter) => {
+  const fetchedClubs = querySnapshot.docs.map(doc => doc.data());
+  setter(fetchedClubs);
+};
+
+/*const getSetAllClubsDataObject = async (setter) => {
   const clubsRef = ref(db, `${emailSplit()}/clubs`);
   const snapshot = await get(clubsRef);
   setter(snapshot.val());
-}
+}*/
 
 const getSetClubData = async (clubId, setter) => {
-    const starCountRef = ref(db, `${emailSplit()}/clubs/${clubId}`);
-    onValue(starCountRef, (snapshot) => {
-      const data = snapshot.val();
-      setter(data);
-    })
+  const schoolKey = await emailSplit();
+  const clubDocRef = doc(firestore, 'schools', schoolKey, 'clubData', clubId);
+  const clubDocSnapshot = await getDoc(clubDocRef);
+
+  if (!clubDocSnapshot.exists()) {
+    console.log('Club not found.');
+    return;
+  }
+
+  setter(clubDocSnapshot.data());
 }
 
-const getSetAllEventsData = async (setter) => {
+// get set my clubs data
+const getSetMyClubsData = async (setter, setMutedClubs) => {
+  const schoolKey = await emailSplit();
+
+  // get clubs from async storage
+  const userData = await AsyncStorage.getItem('user');
+  const user = JSON.parse(userData);
+  const clubs = user.clubs;
+
+  // get club data
+  const clubData = [];
+  let mutedClubs = [];
+  for (let i = 0; i < clubs.length; i++) {
+    const clubId = clubs[i];
+    const clubDocRef = doc(firestore, 'schools', schoolKey, 'clubData', clubId);
+    const clubDocSnapshot = await getDoc(clubDocRef);
+
+    if (clubDocSnapshot.exists()) {
+      clubData.push(clubDocSnapshot.data());
+
+      // get club member data
+      const clubMemberRef = doc(firestore, 'schools', schoolKey, 'clubMemberData', 'clubs', clubId, user.id);
+      const clubMemberSnapshot = await getDoc(clubMemberRef);
+
+      if (clubMemberSnapshot.exists()) {
+        const clubMemberData = clubMemberSnapshot.data();
+        if (clubMemberData.muted) {
+          mutedClubs.push(clubId);
+        }
+        if (clubMemberData.unreadMessages) {
+          clubData[i].unreadMessages = clubMemberData.unreadMessages;
+        }
+      }
+
+      // get most recent message from club
+      const clubMessagesRef = collection(firestore, 'schools', schoolKey, 'chatData', 'clubs', clubId, 'chats', 'chat');
+      const clubMessagesQuery = query(clubMessagesRef, orderBy('createdAt', 'desc'), limit(1));
+      const clubMessagesSnapshot = await getDocs(clubMessagesQuery);
+
+      if (!clubMessagesSnapshot.empty) {
+        const messageData = clubMessagesSnapshot.docs[0].data();
+        if (messageData.text == '') {
+          if (messageData.image) {
+            clubData[i].lastMessage = 'An image was sent';
+          } else if (messageData.gif) {
+            clubData[i].lastMessage = 'A gif was sent';
+          }
+        } else {
+          clubData[i].lastMessage = messageData.text;
+        }
+
+        // most recent message time
+        if (messageData.createdAt) {
+          // say date if message was not sent today
+          const today = new Date();
+          if (messageData.createdAt.toDate().getDate() !== today.getDate()) {
+            clubData[i].lastMessageTime = messageData.createdAt.toDate().toLocaleDateString();
+          } else {
+            // take out seconds
+            clubData[i].lastMessageTime = messageData.createdAt.toDate().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+          }
+        }
+      } else {
+        clubData[i].lastMessage = 'No messages yet';
+        clubData[i].lastMessageTime = null;
+      }
+    }
+  }
+
+  console.log('MY CLUBS:', clubData);
+
+  // update async storage
+  await AsyncStorage.setItem('myClubs', JSON.stringify(clubData));
+
+  setMutedClubs(mutedClubs);
+  setter(clubData);
+}
+
+/*const getSetAllEventsData = async (setter) => {
   // get event data
   const starCountRef = ref(db, `${emailSplit()}/events`);
   onValue(starCountRef, (snapshot) => {
@@ -116,105 +224,131 @@ const getSetAllEventsData = async (setter) => {
     console.log(newEvents);
     setter(newEvents);
   })
+}*/
+
+const getSetCalendarData = async (setter) => { // maybe change to query based on date or club
+  const schoolKey = await emailSplit();
+  const eventsDocRef = collection(firestore, 'schools', schoolKey, 'calendarData');
+  const eventsSnapshot = await getDocs(eventsDocRef);
+
+  if (eventsSnapshot.empty) {
+    console.log('No events found.');
+    return;
+  }
+
+  const events = eventsSnapshot.docs.map(doc => doc.data());
+  console.log('EVENTS: ', events);
+  setter(events);
 }
 
-const getSetEventData = async (setter, eventId) => {
-  const starCountRef = ref(db, `${emailSplit()}/events/${eventId}`);
-  onValue(starCountRef, (snapshot) => {
-    const data = snapshot.val();
-    const newEvent = {
-      id: eventId,
-      ...data
-    };
-    console.log(newEvent);
-    setter(newEvent);
-  })
+const getSetClubCalendarData = async (clubId, setter) => {
+  const schoolKey = await emailSplit();
+  const eventsDocRef = collection(firestore, 'schools', schoolKey, 'calendarData');
+  const eventsQuery = query(eventsDocRef, where('clubId', '==', clubId));
+  const eventsSnapshot = await getDocs(eventsQuery);
+
+  if (eventsSnapshot.empty) {
+    console.log('No events found.');
+    return;
+  }
+
+  const events = eventsSnapshot.docs.map(doc => doc.data());
+  console.log('EVENTS: ', events);
+  setter(events);
 }
 
-const joinClub = async (id, userId, privilege) => {
+const getSetEventData = async (eventId, setter, setRSVPList) => {
+  const schoolKey = await emailSplit();
+  const eventDocRef = doc(firestore, 'schools', schoolKey, 'eventData', eventId);
+  const eventDocSnapshot = await getDoc(eventDocRef);
+
+  if (!eventDocSnapshot.exists()) {
+    console.log('Event not found.');
+    return;
+  }
+
+  const event = eventDocSnapshot.data();
+
+  console.log('Event data:', event);
+
+  // get RSVP list
+  setRSVPList(event.rsvps? event.rsvps : []);
+
+  setter(event);
+}
+
+const deleteEvent = async (eventId) => {
+  const schoolKey = await emailSplit();
+
+  // delete event data
+  await deleteDoc(doc(firestore, 'schools', schoolKey, 'eventData', eventId));
+
+  // delete event from calendar
+  await deleteDoc(doc(firestore, 'schools', schoolKey, 'calendarData', eventId));
+}
+
+const joinClub = async (id, privilege, userId) => {
   try {
-    // if no user id, get data from async storage
     let userData;
     if (!userId) {
-      userData = await AsyncStorage.getItem('user');
-      userData = JSON.parse(userData);
+      // get user data from async storage
+      const user = await AsyncStorage.getItem('user');
+      userData = JSON.parse(user);
     } else {
-      // get user data based on user id
-      const userRef = ref(db, `${emailSplit()}/userData/${userId}`);
-      const userSnapshot = await get(userRef);
-      
-      if (!userSnapshot.exists()) {
-        console.error('User data not found.');
-        return;
-      }
-
-      userData = userSnapshot.val();
+      // get user data based on user id from firestore
+      userData = await getProfileData(userId);
     }
+
+    const schoolKey = await emailSplit();
 
     // add user to club's members
-    const clubMembersDoc = doc(db, `${emailSplit()}/clubMemberData/${id}`);
-    await updateDoc(clubMembersDoc, {
-      [userData.id]: {
-        userName: userData.userName,
-        userImg: userData.profileImg,
-        privilege: privilege ? privilege : 'member',
-        firstName: userData.firstName,
-        lastName: userData.lastName,
-        expoPushToken: userData.expoPushToken,
-      }
-    });
-
-    // add club to user's clubs
-    const userClubsDoc = doc(db, `${emailSplit()}/userData/${userData.id}/clubs`);
-    await updateDoc(userClubsDoc, id); // see if this works
-
-    /*// add club to user data
-    const updatedUserClubs = {
-      ...userData.clubs,
-      [id]: {
-        clubName: name,
-        privilege: 'member',
-      }
+    let clubMember = {
+      userName: userData.userName,
+      privilege: privilege ? privilege : 'member',
+      firstName: userData.firstName,
+      lastName: userData.lastName,
+      expoPushToken: userData.expoPushToken,
+      muted: false,
+      unreadMessages: 0,
     };
-    
-    await set(userRef, {
-      ...userData,
-      clubs : updatedUserClubs,
-    });
-
-    // set club members in club
-    const clubRef = ref(db, `${emailSplit()}/clubs/${id}`);
-    const clubSnapshot = await get(clubRef);
-
-    if (!clubSnapshot.exists()) {
-      console.error('Club data not found.');
-      return;
+    if (userData.profileImg) {
+      clubMember.profileImg = userData.profileImg;
     }
 
-    const clubData = clubSnapshot.val();
+    const clubMembersDoc = doc(firestore, 'schools', schoolKey, 'clubMemberData', 'clubs', id, userData.id);
+    await setDoc(clubMembersDoc, clubMember);
 
-    if (clubData.clubMembers && clubData.clubMembers[_userId]) {
-      alert(`You are already a member of ${name}`);
-      return;
-    }
+    // append clubid to user's clubs
+    let updatedUserClubs = userData.clubs;
     
-    const updatedClubMembers = {
-      ...clubData.clubMembers,
-      [_userId]: {
-        userName: userData.userName,
-        privilege: privilege ? privilege : 'member',
-        profileImg: userData.profileImg ? userData.profileImg : null,
-        firstName: userData.firstName,
-        lastName: userData.lastName,
-        expoPushToken: userData.expoPushToken,
-        muted: false,
-      }
-    };
+    if (updatedUserClubs == undefined) {
+      updatedUserClubs = [];
+    }
+    updatedUserClubs.push(id);
 
-    await set(clubRef, {
-      ...clubData,
-      clubMembers: updatedClubMembers,
-    });*/
+    const userDocRef = doc(firestore, 'schools', schoolKey, 'userData', userData.id);
+    await updateDoc(userDocRef, {
+      clubs: updatedUserClubs,
+    });
+
+    // update clubSearchData (just updates club members for ordering purposes)
+    const clubDocRef = doc(firestore, 'schools', schoolKey, 'clubSearchData', 'clubs', id);
+    const clubDocSnapshot = await getDoc(clubDocRef);
+    let clubMembers = clubDocSnapshot.data();
+    if (clubMembers) {
+      clubMembers++;
+    } else {
+      clubMembers = 1;
+    }
+
+    await updateDoc(clubDocRef, {
+      clubMembers: clubMembers,
+    });
+
+    // update async storage
+    // create object of user data with updated clubs
+    userData.clubs = updatedUserClubs;
+    await AsyncStorage.setItem('user', JSON.stringify(userData));
 
   } catch (error) {
     console.error('Error processing request:', error);
@@ -223,118 +357,132 @@ const joinClub = async (id, userId, privilege) => {
 
 const requestToJoinClub = async (id, name, publicClub) => {
   if (publicClub) {
-    joinClub(id, name, null, 'member')
+    joinClub(id, 'member')
   } else {
+    const schoolKey = await emailSplit();
+    // get user id from async storage
+    const userData = await AsyncStorage.getItem('user');
+    const user = JSON.parse(userData);
+
     // send request to club
     // get club ref
-    const clubRequestsRef = ref(db, `${emailSplit()}/clubs/${id}/requests`);
-    const clubRequestsSnapshot = await get(clubRequestsRef);
+    const clubRequestsDocRef = doc(firestore, 'schools', schoolKey, 'clubRequestsData', 'clubs', id, user.id);
 
-    let clubRequestsData = {};
-    if (clubRequestsSnapshot.exists()) {
-      clubRequestsData = clubRequestsSnapshot.val();
-    }
-
-    // get user data
-    const auth = getAuth();
-    const user = auth.currentUser;
-    const userId = user.uid;
-
-    const userRef = ref(db, `${emailSplit()}/users/${userId}`);
-    const userSnapshot = await get(userRef);
-
-    if (!userSnapshot.exists()) {
-      console.error('User data not found.');
-      return;
-    }
-
-    const userData = userSnapshot.val();
-
-    // add request to club data
-    const updatedClubRequests = {
-      ...clubRequestsData,
-      [userId] : {
-        userId: userId,
-        userName: userData.userName,
-        userPhoto: userData.profileImg ? userData.profileImg : null,
-        userFirstName: userData.firstName,
-        userLastName: userData.lastName,
-      }
+    let clubRequest = {
+      userName: user.userName,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      expoPushToken: user.expoPushToken,
     };
+    if (user.profileImg) {
+      clubRequest.profileImg = user.profileImg;
+    }
 
-    await set(clubRequestsRef, updatedClubRequests);
+    await setDoc(clubRequestsDocRef, clubRequest);
   }
 }
 
 const acceptRequest = async (clubId, clubName, userId) => {
 
   // join club
-  joinClub(clubId, clubName, userId, 'member');
+  joinClub(clubId, 'member', userId);
+
+  const schoolKey = await emailSplit();
 
   // remove request
-  const requestRef = ref(db, `${emailSplit()}/clubs/${clubId}/requests/${userId}`);
-  await set(requestRef, null); 
+  await deleteDoc(doc(firestore, 'schools', schoolKey, 'clubRequestsData', 'clubs', clubId, userId));
 }
 
 const declineRequest = async (clubId, userId) => {
-  const requestRef = ref(db, `${emailSplit()}/clubs/${clubId}/requests/${userId}`);
-  await set(requestRef, null);
+  const schoolKey = await emailSplit();
+
+  // remove request
+  await deleteDoc(doc(firestore, 'schools', schoolKey, 'clubRequestsData', 'clubs', clubId, userId));
+}
+
+const getSetRequestsData = async (setter, clubId) => {
+  const schoolKey = await emailSplit();
+
+  // get requests from firestore
+  const clubRequestsDocRef = collection(firestore, 'schools', schoolKey, 'clubRequestsData', clubId);
+  const clubRequestsSnapshot = await getDocs(clubRequestsDocRef);
+
+  if (clubRequestsSnapshot.empty) {
+    console.log('No requests found.');
+    return;
+  }
+
+  const requests = clubRequestsSnapshot.docs.map(doc => doc.data());
+  setter(requests);
 }
 
 const leaveClubConfirmed = async (id) => {
   try {
-    /*// get user id
-    const auth = getAuth();
-    const user = auth.currentUser;
-    const userId = user.uid;
-
-    // remove user from club members
-    const clubRef = ref(db, `${emailSplit()}/clubs/${id}/clubMembers/${userId}`);*/
+    const schoolKey = await emailSplit();
 
     // get user id from async storage
     const userData = await AsyncStorage.getItem('user');
     const user = JSON.parse(userData);
     const userId = user.id;
 
-    // get club members
-    const clubMembersDoc = doc(firestore, `${emailSplit()}/clubMemberData/${id}/${userId}`);
+    // get current club status
+    const clubMembersDoc = doc(firestore, 'schools', schoolKey, 'clubMemberData', 'clubs', id, userId);
 
     let wasOwner = false;
 
     // check if user is owner
-    const clubSnapshot = await get(clubMembersDoc);
-    const clubData = clubSnapshot.val();
-    if (clubData.privilege === 'owner') {
-      wasOwner = true;
+    const clubMembersSnapshot = await getDoc(clubMembersDoc);
+    if (clubMembersSnapshot.exists()) {
+      const clubMember = clubMembersSnapshot.data();
+      if (clubMember.privilege === 'owner') {
+        wasOwner = true;
+      }
     }
+
     // then remove user from club
     await deleteDoc(clubMembersDoc);
 
     // remove club from user data
-    const userRef = ref(db, `${emailSplit()}/users/${userId}/clubs/${id}`);
-    await set(userRef, null);
+    const userClubsDocRef = doc(firestore, 'schools', schoolKey, 'userData', userId);
+    const userClubsSnapshot = await getDoc(userClubsDocRef);
+    const userClubs = userClubsSnapshot.data().clubs;
+    const updatedUserClubs = userClubs.filter(club => club !== id);
 
-    // delete club if no members
-    const clubMembersRef = ref(db, `${emailSplit()}/clubs/${id}/clubMembers`);
-    const clubMembersSnapshot = await get(clubMembersRef);
+    await updateDoc(userClubsDocRef, {
+      clubs: updatedUserClubs,
+    });
 
-    if (!clubMembersSnapshot.exists()) {
-      const clubDeleteRef = ref(db, `${emailSplit()}/clubs/${id}`);
-      await set(clubDeleteRef, null);
-      return;
-    }
+    // update async storage
+    // create object of user data with updated clubs
+    user.clubs = updatedUserClubs;
+    await AsyncStorage.setItem('user', JSON.stringify(user));
+
+    // subtract club members
+    const clubDocRef = doc(firestore, 'schools', schoolKey, 'clubSearchData', 'clubs', id);
+    const clubDocSnapshot = await getDoc(clubDocRef);
+    let clubMembers = clubDocSnapshot.data().clubMembers;
+    clubMembers--;
+
+    await updateDoc(clubDocRef, {
+      clubMembers: clubMembers,
+    });
+
+    // delete club if no members **not implemented yet**
 
     // transfer ownership if user was owner
     if (wasOwner) {
-      const clubMembersRef = ref(db, `${emailSplit()}/clubs/${id}/clubMembers`);
-      const clubMembersSnapshot = await get(clubMembersRef);
-      const clubMembers = clubMembersSnapshot.val();
-      const newOwner = Object.keys(clubMembers)[0];
+      // query for a random admin
+      const clubMembersRef = collection(firestore, 'schools', schoolKey, 'clubMemberData', 'clubs', id);
+      const adminQuery = query(clubMembersRef, where('privilege', '==', 'admin'), limit(1));
 
-      const newOwnerRef = ref(db, `${emailSplit()}/clubs/${id}/clubMembers/${newOwner}`);
-      await update(newOwnerRef, {
-        privilege: 'owner',
-      });
+      const adminSnapshot = await getDoc(adminQuery);
+      if (adminSnapshot.exists()) {
+        const adminData = adminSnapshot.data();
+        // update new owner
+        await updateDoc(doc(firestore, 'schools', schoolKey, 'clubMemberData', 'clubs', id, adminData.id), {
+          privilege: 'owner',
+        });
+      }
     }
 
     alert('You have left the club');
@@ -344,51 +492,42 @@ const leaveClubConfirmed = async (id) => {
 };
 
 const getSetSchoolData = async (setter) => {
+  const schoolKey = await emailSplit();
   // return school data from macros
-  await setter(SCHOOLS[emailSplit()]);
+  await setter(SCHOOLS[schoolKey]);
 }
 
 const checkMembership = async (clubId, setPrivilege, setIsRequestSent) => {
-  const auth = getAuth();
-  const user = auth.currentUser;
+  // get user id from async storage
+  const userData = await AsyncStorage.getItem('user');
+  const user = JSON.parse(userData);
+  const userId = user.id;
 
-  if (user) {
-    const userId = user.uid;
-    const clubRef = ref(db, `${emailSplit()}/clubs/${clubId}/clubMembers`);
+  const schoolKey = await emailSplit();
 
-    // check permissions
-    const snapshot = await get(clubRef);
-    if (snapshot.exists()) {
-      const clubMembers = snapshot.val();
-      if (clubMembers[userId] === undefined) {
-        setPrivilege('none');
-      } else if (clubMembers[userId].privilege === 'member') {
-        setPrivilege('member');
-      } else if (clubMembers[userId].privilege === 'admin') {
-        setPrivilege('admin');
-      } else if (clubMembers[userId].privilege === 'owner') {
-        setPrivilege('owner');
-      }
+  const clubMemberDocRef = doc(firestore, 'schools', schoolKey, 'clubMemberData', 'clubs', clubId, userId);
+  const snapshot = await getDoc(clubMemberDocRef);
+
+  // check permissions
+  if (snapshot.exists()) {
+    const clubMember = snapshot.data();
+    if (clubMember.privilege === 'member') {
+      setPrivilege('member');
+    } else if (clubMember.privilege === 'admin') {
+      setPrivilege('admin');
+    } else if (clubMember.privilege === 'owner') {
+      setPrivilege('owner');
     }
-
-    // check if user has requested to join
-    if (setIsRequestSent !== undefined) {
-      const requestsRef = ref(db, `${emailSplit()}/clubs/${clubId}/requests`);
-      const requestsSnapshot = await get(requestsRef);
-
-      if (requestsSnapshot.exists()) {
-        const requests = requestsSnapshot.val();
-        if (requests[userId] !== undefined) {
-          setIsRequestSent(true);
-        }
-      }
-    }
+  } else {
+    setPrivilege('none');
   }
+
+  // check if user has requested to join **not implemented yet**
 };
 
 const fetchMessages = async (querySnapshot, setMessages, setPinnedMessageCount) => {
   const fetchedMessages = querySnapshot.docs.map(doc => ({
-    _id: doc.id,
+    id: doc.id,
     createdAt: doc.data().createdAt.toDate(),
     text: doc.data().text,
     user: doc.data().user,
@@ -400,11 +539,13 @@ const fetchMessages = async (querySnapshot, setMessages, setPinnedMessageCount) 
     replyTo: doc.data().replyTo,
   }));
 
-  // Since we fetch messages in descending order, we set them directly.
+  // invert the order of messages
+  fetchedMessages.reverse();
+
   setMessages(fetchedMessages);
 
   // Calculate and update the count of pinned messages.
-  setPinnedMessageCount(fetchedMessages.filter(message => message.pinned).length);
+  if(setPinnedMessageCount) setPinnedMessageCount(fetchedMessages.filter(message => message.pinned).length);
 };
 
 // Define the function to handle camera press
@@ -421,7 +562,6 @@ const handleCameraPress = async (setImageUrl, closeModal, setTempImageUrl) => {
   const result = await ImagePicker.launchCameraAsync({
     mediaTypes: ImagePicker.MediaTypeOptions.Images,
     allowsEditing: true,
-    aspect: [4, 3],
     quality: 1,
   });
 
@@ -437,13 +577,39 @@ const handleCameraPress = async (setImageUrl, closeModal, setTempImageUrl) => {
   }
 };
 
-const handlePressMessage = (likes, setLikedUserNames, setIsLikesModalVisible) => {
+const handlePressMessage = (likes, setLikedProfileImages, setIsLikesModalVisible) => {
   if (!likes || likes.length === 0) {
-    setLikedUserNames([]); // Corrected to use setLikedUserNames
+    setLikedProfileImages(new Set());
     return;
   }
 
-  setLikedUserNames(likes);
+  // get user names and profile pictures based on ids from firestore
+  const setLikesUserDataById = async () => {
+    const schoolKey = await emailSplit();
+
+    let userNames = new Set();
+    let profilePics = new Set();
+    for (let i = 0; i < likes.length; i++) {
+      let userId = likes[i];
+      const userDocRef = doc(firestore, 'schools', schoolKey, 'userData', userId);
+      const userDocSnapshot = await getDoc(userDocRef);
+
+      if (userDocSnapshot.exists()) {
+        const userData = userDocSnapshot.data();
+        userNames.add(userData.userName);
+        if (userData.profileImg) {
+          profilePics.add(userData.profileImg);
+        } else {
+          profilePics.add(null);
+        }
+      }
+    }
+
+    //setLikedUserNames(userNames);
+    setLikedProfileImages(profilePics);
+  }
+
+  setLikesUserDataById();
   setIsLikesModalVisible(true);
   console.log('Likes:', likes);
 };
@@ -455,7 +621,7 @@ const deleteMessage = async (messageId, chatType) => {
 };
 
 // Define the function to handle long press
-const handleLongPress = async (message, currentUserPrivilege, setReplyingToMessage, chatType) => {
+const handleLongPress = async (message, currentUserPrivilege, setReplyingToMessage, messageRef) => {
 
   // get user id
   const auth = getAuth();
@@ -471,7 +637,7 @@ const handleLongPress = async (message, currentUserPrivilege, setReplyingToMessa
         onPress: async () => {
           // Assuming this part remains unchanged as it likely updates Firestore
           const newPinStatus = !message.pinned;
-          await updateDoc(doc(firestore, chatType, message._id), { pinned: newPinStatus });
+          await updateDoc(messageRef, { pinned: newPinStatus });
         },
       },
       {
@@ -528,18 +694,11 @@ const handleImageUploadAndSend = async (chatType, setImageUrl, closeModal, setTe
 };
 
 const deleteAccount = async () => {
-  const auth = getAuth();
-  const user = auth.currentUser;
-  const id = user.uid;
-
-  // get user's clubs
-  const userRef = ref(db, `${emailSplit()}/users/${id}`);
-  const userSnapshot = await get(userRef);
-  const userData = userSnapshot.val();
-  const userClubs = userData.clubs;
-
-  // turn clubs into array
-  const clubArray = Object.keys(userClubs);
+  // get user id from async storage
+  const userData = await AsyncStorage.getItem('user');
+  const user = JSON.parse(userData);
+  const id = user.id;
+  const clubArray = userData.clubs;
 
   // remove user from all clubs
   clubArray.forEach(club => {
@@ -547,16 +706,22 @@ const deleteAccount = async () => {
   });
 
   // remove user from database
-  await set(userRef, null);
+  const schoolKey = await emailSplit();
+  const userDocRef = doc(firestore, 'schools', schoolKey, 'userData', id);
+  await deleteDoc(userDocRef);
 
   // delete user from auth
-  deleteUser(user).then(() => {
+  const auth = getAuth();
+  const authUser = auth.currentUser;
+  deleteUser(authUser).then(() => {
   }).catch((error) => {
     Alert.alert('Error deleting user:', error);
   });
 
+  // clear async storage
+  await AsyncStorage.clear();
 }
 
-export { getSetUserData, updateProfileData, getSetAllClubsData, getSetAllClubsDataObject, getSetClubData, getSetAllEventsData, getSetEventData, joinClub, 
-  requestToJoinClub, acceptRequest, declineRequest, leaveClubConfirmed, emailSplit, getSetSchoolData, checkMembership, 
-  fetchMessages, handleCameraPress, handleLongPress, handlePressMessage, handleImageUploadAndSend, deleteAccount};
+export { getSetUserData, getProfileData, updateProfileData, getSetClubData, getSetMyClubsData, getSetEventData, getClubCategoryData, fetchClubs, getSetCalendarData,
+  joinClub, requestToJoinClub, acceptRequest, declineRequest, leaveClubConfirmed, emailSplit, getSetSchoolData, checkMembership, getSetClubCalendarData,
+  fetchMessages, handleCameraPress, handleLongPress, handlePressMessage, handleImageUploadAndSend, deleteAccount, deleteEvent, fetchClubMembers, getSetRequestsData};

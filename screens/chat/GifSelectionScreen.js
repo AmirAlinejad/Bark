@@ -16,7 +16,7 @@ const GifSelectionScreen = ({ navigation, route }) => {
   const [gifs, setGifs] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   // get club name from previous screen
-  const { clubName, screenName, clubId } = route.params;
+  const { chatName, clubId, clubName, clubImg, schoolKey } = route.params;
 
   const fetchGifs = async () => {
     // Example API call (replace with actual API call to Giphy or Tenor)
@@ -30,11 +30,7 @@ const GifSelectionScreen = ({ navigation, route }) => {
   }, [searchTerm]);
 
   const handleSelectGif = (gifUrl) => {
-    if (screenName == "AdminChat") {
-      navigation.navigate("AdminChat", { selectedGifUrl: gifUrl, name: clubName, id : clubId });
-    } else {
-      navigation.navigate("Chat", { selectedGifUrl: gifUrl, name: clubName, id: clubId });
-    }
+    navigation.navigate("Chat", { gif: gifUrl, chatName, id: clubId, name: clubName, img: clubImg, schoolKey});
   };
 
   return (

@@ -1,11 +1,10 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { TouchableOpacity, View, Text, TextInput, FlatList, StyleSheet, KeyboardAvoidingView, Keyboard, TouchableWithoutFeedback, Platform, Dimensions } from 'react-native';
+import { TouchableOpacity, View, Text, TextInput, FlatList, StyleSheet, KeyboardAvoidingView, Keyboard, TouchableWithoutFeedback, Platform, Dimensions, RefreshControl } from 'react-native';
 // keyboard listener
 import KeyboardListener from 'react-native-keyboard-listener';
 // firebase
-import { collection, addDoc, orderBy, query, onSnapshot, where, getDocs } from 'firebase/firestore';
-import { ref, get, set } from 'firebase/database';
-import { auth, firestore, db } from '../../backend/FirebaseConfig';
+import { collection, addDoc, orderBy, query, onSnapshot, where, getDocs, getDoc, setDoc, updateDoc, limit, doc } from 'firebase/firestore';
+import { auth, firestore } from '../../backend/FirebaseConfig';
 // icons
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -16,14 +15,14 @@ import { Image } from 'expo-image';
 // my components
 import BottomSheetModal from '../../components/chat/BottomSheetModal';
 import ChatMessage from '../../components/chat/ChatMessage';
-import LikesBottomModal from '../../components/chat/LikesBottomModal';
+import LikesModal from '../../components/chat/LikesModal';
 import Header from '../../components/display/Header';
 import ProfileOverlay from '../../components/overlays/ProfileOverlay';
 import CustomText from '../../components/display/CustomText';
 import ReplyPreview from '../../components/chat/ReplyPreview';
 import IconButton from '../../components/buttons/IconButton';
 // functions
-import { checkMembership, fetchMessages, handleCameraPress, handleImageUploadAndSend, emailSplit } from '../../functions/backendFunctions';
+import { checkMembership, fetchMessages, handleCameraPress, handleImageUploadAndSend, emailSplit, getSetUserData } from '../../functions/backendFunctions';
 import { deleteImageFromStorage } from '../../functions/chatFunctions';
 import { isSameDay } from '../../functions/timeFunctions';
 import { goToClubScreen } from '../../functions/navigationFunctions';
@@ -35,7 +34,7 @@ async function sendPushNotification(expoPushToken, message, firstName, lastName,
     to: expoPushToken,
     sound: 'default',
     title: clubName,
-    body: `${firstName} ${lastName}: ${message}`,
+    body: `${firstName} ${lastName}: ${text}`,
     data: { someData: 'goes here' },
   };
 
@@ -55,6 +54,12 @@ export default function Chat({ route, navigation }) {
   // keyboard state
   const [keyboardIsOpen, setKeyboardIsOpen] = useState(false);
 
+  // Define state for refreshing the messages
+  const [fetchLimit, setFetchLimit] = useState(20);
+  const [refreshing, setRefreshing] = useState(false);
+
+  console.log(route.params)
+
   // Define states for message text, messages, image URL, and pinned message count
   const [messageText, setMessageText] = useState('');
   const [messages, setMessages] = useState([]);
@@ -63,27 +68,30 @@ export default function Chat({ route, navigation }) {
   const [pinnedMessageCount, setPinnedMessageCount] = useState(0);
   const [isAtBottom, setIsAtBottom] = useState(true); // Initially assume the user is at the bottom
   const [likedMessages, setLikedMessages] = useState(new Set());
-  const [gifUrl, setGifUrl] = useState(null); 
+  const [gifUrl, setGifUrl] = useState(null); // Define gifUrl state
 
   // Define states for the liked messages modal
   const [isLikesModalVisible, setIsLikesModalVisible] = useState(false);
-  const [likedUsernames, setLikedUsernames] = useState(new Set()); // user ids instead of usernames
+  //const [likedUsernames, setLikedUsernames] = useState(new Set()); // user ids instead of usernames
+  const [likedProfileImages, setLikedProfileImages] = useState(new Set());
 
   // replying state
   const [replyingToMessage, setReplyingToMessage] = useState(null);
 
   // user state
+  const userId = auth.currentUser.uid;
+  const [userData, setUserData] = useState(null);
   const [currentUserPrivilege, setCurrentUserPrivilege] = useState(''); // Define currentUserPrivilege state
 
   // overlay state
   const [overlayVisible, setOverlayVisible] = useState(false);
   const [overlayUserData, setOverlayUserData] = useState(null);
 
-  const chatName = "chats";
-  const screenName = "Chat";
+  const chatName = route?.params?.chatName || 'chat';
   const clubId = route?.params?.id;
   const clubName = route?.params?.name;
   const clubImg = route?.params?.img;
+  const schoolKey = route?.params?.schoolKey;
   
   const flatListRef = useRef(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
@@ -91,6 +99,8 @@ export default function Chat({ route, navigation }) {
   // Define functions to handle modal open and close0
   const openModal = () => {
     setIsModalVisible(true);
+
+    scrollToBottom();
   };
   
   // Define function to close the modal
@@ -100,8 +110,9 @@ export default function Chat({ route, navigation }) {
   
   // Fetch messages on initial render
   useEffect(() => {  
+  
     // Fetching messages in descending order to suit the inverted list.
-    const messagesQuery = query(collection(firestore, 'chats'), where('clubId', '==', clubId), orderBy('createdAt', 'desc')); // called clubName instead of clubId
+    const messagesQuery = query(collection(firestore, 'schools', schoolKey, 'chatData', 'clubs', clubId, 'chats', chatName), orderBy('createdAt', 'desc'), limit(fetchLimit));
   
     const unsubscribe = onSnapshot(messagesQuery, querySnapshot => {
 
@@ -111,23 +122,30 @@ export default function Chat({ route, navigation }) {
       console.error("Error fetching messages: ", error);
     });
 
-    // Check the user's membership status
-    checkMembership(clubId, setCurrentUserPrivilege, clubId);
+    // Get the user data from AsyncStorage
+    getSetUserData(setUserData);
 
-    // clear unread messages
-    const unreadRef = ref(db, `${emailSplit()}/users/${auth.currentUser.uid}/clubs/${clubId}/unreadMessages`);
-    set(unreadRef, 0);
+    // Check the user's membership status
+    checkMembership(clubId, setCurrentUserPrivilege);
   
     // Cleanup subscription on component unmount
     return () => unsubscribe();
-  }, []);
+  }, [fetchLimit]);
+
+  // clear unread messages once user data is fetched
+  useEffect(() => {
+    if (userData) {
+      const clubMemberRef = doc(firestore, 'schools', schoolKey, 'clubMemberData', 'clubs', clubId, userId);
+      updateDoc(clubMemberRef, { unreadMessages: 0 });
+    }
+  }, [userData]);
   
-  // Fetch liked messages on initial render after messages are fetched
+  // Fetch liked messages on initial render after messages are fetched and scroll to bottom
   useEffect(() => {
     // Function to fetch liked messages and update the local state
     const fetchLikedMessages = async () => {
       const userId = auth.currentUser.uid;
-      const messagesRef = collection(firestore, 'chats');
+      const messagesRef = collection(firestore, 'schools', schoolKey, 'chatData', 'clubs', clubId, 'chats', chatName);
       const q = query(messagesRef, where('likes', 'array-contains', userId));
 
       const querySnapshot = await getDocs(q);
@@ -139,157 +157,128 @@ export default function Chat({ route, navigation }) {
     };
 
     fetchLikedMessages();
+
+    setTimeout(() => {
+      // scroll to bottom unanimated
+      flatListRef.current.scrollToEnd({ animated: false });
+    }, 500);
+
   }, [messages]); 
 
   // Use the route params to set the selected GIF URL
   useEffect(() => {
-    const { selectedGifUrl } = route.params;
-    if (selectedGifUrl) {
-      setGifUrl(selectedGifUrl); // Set the selected GIF URL for sending
-      // Clear the selectedGifUrl from params after setting
-      navigation.setParams({ selectedGifUrl: undefined });
-    }
+    setGifUrl(route.params.gif);
   }, [route.params]);
   
   // Function to navigate to the message search screen
   const navigateToMessageSearchScreen = (pin) => {
-    navigation.navigate('MessageSearchScreen', { clubId, chatName: 'chats', pin });
-  };
-  
-  const renderMessage = ({ item, index }) => {
-    const isLastMessageOfTheDay = index === messages.length - 1 || !isSameDay(item.createdAt, messages[index + 1]?.createdAt);
-    const isLikedByUser = likedMessages.has(item._id);
-
-    return (
-      
-      <ChatMessage 
-        item={item} 
-        chatType='chats'
-        isLastMessageOfTheDay={isLastMessageOfTheDay} 
-        isLikedByUser={isLikedByUser} 
-        likedMessages={likedMessages}
-        setLikedMessages={setLikedMessages} 
-        currentUserPrivilege={currentUserPrivilege}
-        setLikedUsernames={setLikedUsernames}
-        setIsLikesModalVisible={setIsLikesModalVisible}
-        setReplyingToMessage={setReplyingToMessage}
-        setOverlayUserData={setOverlayUserData}
-        setOverlayVisible={setOverlayVisible}
-        navigation={navigation}
-      />
-    );
+    navigation.navigate('MessageSearchScreen', { clubId, chatName, pin, schoolKey });
   };
 
-  const isCloseToTop = ({ contentOffset }) => {
-    const paddingTop = 20; // Distance from the top to consider "at the top"
-    return contentOffset.y <= paddingTop;
+  // checks id user is not at the bottom of the chat
+  const isCloseToBottom = ({ layoutMeasurement, contentOffset, contentSize }) => {
+    const paddingToBottom = 20;
+    return layoutMeasurement.height + contentOffset.y >= contentSize.height - paddingToBottom;
   };
     
-  const navigateToInClubView = () => {
-    goToClubScreen(route.params.club, navigation); // Pass the image URLs to the next screen
+  // fix to only pass in the clubId
+  const navigateToClubScreen = () => {
+    goToClubScreen(clubId, navigation); // Pass the image URLs to the next screen
   };
   
-  const scrollToTop = () => {
+  // scrolls to bottom of chat
+  const scrollToBottom = () => {
     if (flatListRef.current) {
-      flatListRef.current.scrollToOffset({ offset: 0, animated: true });
+      flatListRef.current.scrollToEnd({ animated: true });
     }
   };
   
-  const handleTextInputFocus = () => {
-    if (flatListRef.current) {
-      scrollToTop();
-    }
-  };
-  
+  // go to gif selection screen
   const handleGifSend = () => {
     // Example: Navigate to a new screen for selecting a GIF
-    navigation.navigate('GifSelectionScreen', {clubId, clubName, screenName});
+    navigation.navigate('GifSelectionScreen', {chatName, clubId, clubName, clubImg, schoolKey, setGifUrl});
     closeModal();
   };
-  
 
+  // send message
   const sendMessage = useCallback(async () => {
+
+    // Clear the message input field, image URL, and gifUrl
     setMessageText('');
     setImageUrl(null);
     setTempImageUrl(null);
-    setGifUrl(null);
-    const userId = auth.currentUser.uid;
-
-    // Adjust the reference path to include `userName` at the end
-    const userRef = ref(db, `${emailSplit()}/users/${userId}`);
-    const userSnapshot = await get(userRef);
-    // Since you're now directly accessing the userName, you can directly use `.val()` to get the userName value
-    const userData = userSnapshot.val();
-    const userName = userData.userName;
-    const firstName = userData.firstName;
-    const lastName = userData.lastName;
+    setGifUrl(null); // Reset the gifUrl after sending the message
+    setReplyingToMessage(null);
 
     // Check if there's either text, an image URL, or a gifUrl
-    if (messageText.trim() || tempImageUrl || gifUrl) {
+    if (messageText.trim() != '' || tempImageUrl || gifUrl) { // Include gifUrl in the condition (figure out how tempImageUrl works)
       try {
+        // Create the sender object
+        const sender = {
+          _id: auth.currentUser.uid,
+          name: userData.userName,
+          first:  userData.firstName,
+          last: userData.lastName,
+        };
+        if (userData.profileImg) {
+          sender.avatar = userData.profileImg;
+        }
+
+        // Create the message object
         const message = {
-          id: Date.now().toString(),
+          id: new Date().getTime().toString(),
           createdAt: new Date(),
-          text: messageText.trim(),
-          user: {
-            _id: auth.currentUser.uid,
-            name: userName,
-            avatar: userData.profileImg,
-            first: firstName,
-            last: lastName,
-          },
+          user: sender,
           likeCount: 0,
           pinned: false,
-          image: imageUrl,
-          gifUrl: gifUrl, // Add the gifUrl to the message
           likes: [],
           userId: auth.currentUser.uid,
           replyTo: replyingToMessage,
         };
+        if (messageText.trim() != '') {
+          message.text = messageText.trim();
+        }
+        if (imageUrl) {
+          message.image = imageUrl;
+        }
+        if (gifUrl) {
+          message.gif = gifUrl;
+        }
 
         // Add the message to Firestore
-        await addDoc(collection(firestore, 'chats'), {
-          ...message,
-          clubId: clubId,
-        });
+        await addDoc(collection(firestore, 'schools', schoolKey, 'chatData', 'clubs', clubId, 'chats', chatName), message);
 
         // say "sent an image" if no text
-        if (message.text === '') {
+        let notificationText = messageText.trim();
+        if (messageText.trim() === '') {
           if (imageUrl) {
-            message.text = 'sent an image.';
+            notificationText = 'sent an image.';
           } else if (gifUrl) {
-            message.text = 'sent a gif.';
+            notificationText = 'sent a gif.';
           }
         }
 
         // do for all members in club (if not muted)
-        const clubMembersRef = ref(db, `${emailSplit()}/clubs/${clubId}/clubMembers`);
-        const clubMembersSnapshot = await get(clubMembersRef);
-        const clubMembers = clubMembersSnapshot.val();
-        for (const member in clubMembers) {
-          if (!clubMembers[member].muted && member !== auth.currentUser.uid) {
-            const memberRef = ref(db, `${emailSplit()}/users/${member}`);
-            const memberSnapshot = await get(memberRef);
-            const memberData = memberSnapshot.val();
-            sendPushNotification(memberData.expoPushToken, messageText, userData.firstName, userData.lastName, clubName);
-          }
+        const clubMembersCollection = collection(firestore, 'schools', schoolKey, 'clubMemberData', 'clubs', clubId);
+        const clubMembers = await getDocs(clubMembersCollection);
+        // loop through all members in the club
+        for (const member of clubMembers.docs) {
+          /*if (!member.data().muted && member.id !== auth.currentUser.uid) {
+            // get the member's data
+            const memberData = await getDoc(doc(firestore, 'schools', schoolKey, 'chatData', 'clubs', clubId, 'members', member.id));
+            const memberDataVal = memberData.data();
+            // send the push notification
+            sendPushNotification(memberDataVal.expoPushToken, notificationText, userData.firstName, userData.lastName, clubName);
+          }*/
 
-          // increment unread messages
-          const unreadRef = ref(db, `${emailSplit()}/users/${member}/clubs/${clubId}/unreadMessages`);
-          const unreadSnapshot = await get(unreadRef);
-          const unread = unreadSnapshot.val();
-          await set(unreadRef, unread + 1);
+          // increment unread messages in club member's data
+          const memberRef = doc(firestore, 'schools', schoolKey, 'clubMemberData', 'clubs', clubId, member.id);
+          const memberSnapshot = await getDoc(memberRef);
+          const memberData = memberSnapshot.data();
+          const unreadMessages = memberData.unreadMessages + 1;
+
+          await updateDoc(memberRef, { unreadMessages });
         }
-
-        // set most recent message in club to current time
-        const clubRef = ref(db, `${emailSplit()}/clubs/${clubId}/mostRecentMessage`);
-        set(clubRef, Date.now());
-
-        // Clear the message input field, image URL, and gifUrl
-        setImageUrl(null);
-        setTempImageUrl(null);
-        setGifUrl(null); // Reset the gifUrl after sending the message
-        setReplyingToMessage(null);
 
       } catch (error) {
         console.error('Error sending message:', error);
@@ -297,33 +286,79 @@ export default function Chat({ route, navigation }) {
     }
   }, [messageText, imageUrl, gifUrl]); // Include gifUrl in the dependency array
 
+  // open and close keyboard
   const openKeyboard = () => {
     setKeyboardIsOpen(true);
-  }
 
+    // set delay and then scroll to bottom
+    setTimeout(() => {
+      scrollToBottom();
+    }, 10);
+  }
   const closeKeyboard = () => {
     setKeyboardIsOpen(false);
   }
 
+  // refresh messages
+  const onRefresh = React.useCallback(() => {
+    setRefreshing(true);
+    setFetchLimit(fetchLimit + 20);
+
+    setTimeout(() => {
+      setRefreshing(false);
+    }, 1000);
+  }, []);
+
+  // go to home screen and clear unread messages
   const goToHomeScreen = () => {
     navigation.navigate("HomeScreen");
 
-    // clear unread messages
-    const unreadRef = ref(db, `${emailSplit()}/users/${auth.currentUser.uid}/clubs/${clubId}/unreadMessages`);
-    set(unreadRef, 0);
+    // Clear unread messages
+    const clubMemberRef = doc(firestore, 'schools', schoolKey, 'clubMemberData', 'clubs', clubId, userId);
+    updateDoc(clubMemberRef, { unreadMessages: 0 });
   }
   
-  
+  // go to message search screen
   const goToMessageSearchScreen = () => {
     navigateToMessageSearchScreen(false);
   }
 
+  // delete image preview
   const deleteImagePreview = () => () => {
     deleteImageFromStorage(imageUrl);
 
     setImageUrl(null)
     setTempImageUrl(null);
   }
+
+  // render message
+  const renderMessage = ({ item, index }) => {
+    const isFirstMessageOfTheDay = index === 0 || !isSameDay(item.createdAt, messages[index - 1].createdAt);
+    const isLikedByUser = likedMessages.has(item.id);
+
+    // Create a reference to the message document
+    const messageRef = doc(firestore, 'schools', schoolKey, 'chatData', 'clubs', clubId, 'chats', chatName, item.id);
+
+    return (
+      
+      <ChatMessage 
+        message={item} 
+        isFirstMessageOfTheDay={isFirstMessageOfTheDay}
+        likedMessages={likedMessages}
+        isLikedByUser={isLikedByUser}
+        setLikedMessages={setLikedMessages} 
+        currentUserPrivilege={currentUserPrivilege}
+        //setLikedUsernames={setLikedUsernames}
+        setLikedProfileImages={setLikedProfileImages}
+        setIsLikesModalVisible={setIsLikesModalVisible}
+        setReplyingToMessage={setReplyingToMessage}
+        setOverlayUserData={setOverlayUserData}
+        setOverlayVisible={setOverlayVisible}
+        messageRef={messageRef}
+        navigation={navigation}
+      />
+    );
+  };
 
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
@@ -335,7 +370,7 @@ export default function Chat({ route, navigation }) {
           onWillHide={closeKeyboard}
         />
 
-        <Header text={clubName} navigation={navigation} back onBack={goToHomeScreen} useClubImg clubImg={clubImg} onTextPress={navigateToInClubView} />
+        <Header text={clubName} navigation={navigation} back onBack={goToHomeScreen} useClubImg clubImg={clubImg} onTextPress={navigateToClubScreen} />
 
         <IconButton icon="search" text="" onPress={goToMessageSearchScreen} style={styles.searchButton} />
         <View style={{ height: 15}} />
@@ -347,7 +382,7 @@ export default function Chat({ route, navigation }) {
           <CustomText style={styles.pinnedMessagesText} text={`Pinned Messages: ${pinnedMessageCount}`} />
         </TouchableOpacity>)}
 
-        {/* Scroll to top button */}
+        {/* Scroll to bottom button */}
         {!isAtBottom && (
           <TouchableOpacity
             style={{
@@ -359,7 +394,7 @@ export default function Chat({ route, navigation }) {
             padding: 10, // Increasing padding can help with touchability.
             zIndex: 1, // Only if necessary, to ensure it's above other components.
           }}
-          onPress={scrollToTop}
+          onPress={scrollToBottom}
         >
           <Ionicons name="arrow-down" size={24} color="black" />
         </TouchableOpacity>)}
@@ -373,25 +408,32 @@ export default function Chat({ route, navigation }) {
             </View>
           </View>
         )}
-
+      
         {/* Messages */}
         <FlatList
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+            />
+          }
           ref={flatListRef}
           renderItem={renderMessage}
           keyExtractor={(item) => item._id}
-          inverted
           data={messages} 
           onScroll={({nativeEvent}) => {
-            const isAtBottom = isCloseToTop(nativeEvent);
+            const isAtBottom = isCloseToBottom(nativeEvent);
             setIsAtBottom(isAtBottom);
           }}
+          contentContainerStyle={{justifyContent: 'flex-end', flexGrow: 1}}
         />
 
         {/* Likes Bottom Modal */}
-        <LikesBottomModal
+        <LikesModal
           isVisible={isLikesModalVisible}
           onClose={() => setIsLikesModalVisible(false)}
-          userIDs={likedUsernames} // This prop now contains userids instead of usernames
+          //userNames={likedUsernames} // This prop now contains userids instead of usernames
+          profileImages={likedProfileImages}
         />
       
         {/* Toolbar */}
@@ -413,11 +455,13 @@ export default function Chat({ route, navigation }) {
               <TouchableOpacity style={styles.toolbarButton} onPress={openModal}>
                 <Ionicons name='add' size={30} color={Colors.darkGray} />
               </TouchableOpacity>
+
+              {/* Modal for toolbar buttons*/}
               <BottomSheetModal
                 isVisible={isModalVisible}
                 onClose={closeModal}
                 onUploadImage={() => handleImageUploadAndSend("chat", setImageUrl, closeModal, setTempImageUrl)}
-                onUploadGif={handleGifSend}
+                onUploadGif={() => handleGifSend(setGifUrl)}
                 onOpenCamera={() => handleCameraPress(setImageUrl, closeModal, setTempImageUrl)}
               />
 
@@ -446,7 +490,6 @@ export default function Chat({ route, navigation }) {
                   placeholder={tempImageUrl ? "Add a message or send." : "Type a message..."}
                   multiline={true}
                   maxHeight={120}
-                  onFocus={handleTextInputFocus} // Add this line
                   returnKeyType="done" // Prevents new lines
                   placeholderTextColor="#888888"
                 />
@@ -478,6 +521,7 @@ export default function Chat({ route, navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    justifyContent: 'flex-end',
     backgroundColor: Colors.lightGray,
   },
   header: {

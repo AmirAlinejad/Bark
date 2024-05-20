@@ -44,7 +44,7 @@ const styles = StyleSheet.create({
   },
   image: {
     width: '90%', // Adjust
-    height: '80%', // Adjust
+    height: '90%', // Adjust
     resizeMode: 'contain',
   },
   closeButton: {

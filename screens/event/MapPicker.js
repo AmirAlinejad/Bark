@@ -12,13 +12,13 @@ import { Ionicons } from '@expo/vector-icons';
 // styles
 import { Colors } from '../../styles/Colors';
 // initialize geocoder
-Geocoder.init('AIzaSyAoX4MTi2eAw2b_W3RzA35Cy5yjpwQYV3E');
+//Geocoder.init('AIzaSyAoX4MTi2eAw2b_W3RzA35Cy5yjpwQYV3E');
 
 const MapPicker = ({ route, navigation }) => {
   // get club name from previous screen
   const { event, fromEdit } = route.params;
   // create states for event info
-  const [myLocation, setLocation] = useState(event.location);
+  //const [myLocation, setLocation] = useState(event.location);
   const [myAddress, setAddress] = useState(event.address); // address of the event
 
   // submit the form
@@ -26,7 +26,7 @@ const MapPicker = ({ route, navigation }) => {
     // create event with updated location and address
     const newEvent = {
       ...event,
-      location: myLocation,
+      //location: myLocation,
       address: myAddress,
     };
     if (fromEdit) {
@@ -41,6 +41,7 @@ const MapPicker = ({ route, navigation }) => {
         event: newEvent,
         
         clubId: event.clubId,
+        clubName: event.clubName,
         clubCategories: event.categories,
         fromMap: true,
       });
@@ -53,7 +54,7 @@ const MapPicker = ({ route, navigation }) => {
     setAddress(data.description);
     console.log(data.description);
 
-    // geo code the address
+    /*// geo code the address
     Geocoder.from(data.description)
       .then(json => {
       var location = json.results[0].geometry.location;
@@ -67,22 +68,22 @@ const MapPicker = ({ route, navigation }) => {
       })
       .catch(error => console.warn(error));
 
-    console.log(data, details);
+    console.log(data, details);*/
   }
 
   return (
     <View style={styles.container}>
       <TouchableOpacity style={styles.backButton} onPress={onSubmitPressed}>
-        <Ionicons name="chevron-back" size={40} color={Colors.black} />
+        <Ionicons name="chevron-back" size={30} color={Colors.black} />
       </TouchableOpacity>
-      <MapView
+      {/*<MapView
         style={styles.biggerMapStyle}
         region={myLocation}
       > 
         <Marker coordinate={myLocation} />
-      </MapView>
+      </MapView>*/}
       <GooglePlacesAutocomplete
-        placeholder='Search'
+        placeholder='Where is the event?'
         styles={styles.googleAutocomplete}
         onPress={onLocationSelected}
         query={{
@@ -110,35 +111,27 @@ const styles = StyleSheet.create({
   },
   googleAutocomplete: {
     container: {
-      position: 'absolute',
-      top: 60,
-      left: 60,
-      right: 40,
-      backgroundColor: 'transparent',
-      zIndex: 1000,
+      flex: 1,
+      marginTop: 70,
     },
     textInputContainer: {
-      backgroundColor: 'white',
-      borderTopWidth: 10,
-      borderBottomWidth: 10,
-      borderLeftWidth: 10,
-      borderRightWidth: 10,
-      borderRadius: 30,
-      borderColor: 'white',
+      borderBottomWidth: 1,
+      borderColor: Colors.inputBorder,
+      paddingBottom: 10,
     },
     textInput: {
+      marginLeft: 60, 
+      marginRight: 20, 
       height: 30,
       color: '#5d5d5d',
-      fontSize: 16,
+      fontSize: 18,
       textAlignVertical: 'center',
     },
     predefinedPlacesDescription: {
       color: '#1faadb',
     },
     listView: {
-      marginTop: 10,
-      backgroundColor: 'white',
-      borderRadius: 20,
+      marginRight: 20,
     },
     separator: {
       backgroundColor: '#e0e0e0',
@@ -153,7 +146,7 @@ const styles = StyleSheet.create({
     flex: 1,
     position: 'absolute',
     top: 70,
-    left: 20,
+    left: 25,
     zIndex: 1,
   },
   submitButton: {

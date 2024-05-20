@@ -14,7 +14,7 @@ import { emailSplit } from '../../functions/backendFunctions';
 import { handleImageUploadAndSend } from '../../functions/backendFunctions';
 // backend
 import { ref, update } from 'firebase/database';
-import { db } from '../../backend/FirebaseConfig';
+import { db, firestore } from '../../backend/FirebaseConfig';
 import { updateDoc, doc } from 'firebase/firestore';
 // colors
 import { Colors } from '../../styles/Colors';
@@ -23,7 +23,9 @@ import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scrollview'
 
 const EditClubScreen = ({ route, navigation }) => {
   // get user data from previous screen
-  const { name, id, img, description, publicClub } = route.params;
+  const { name, id, img, description, categories, publicClub } = route.params;
+
+  console.log(route.params);
 
   // state variables
   const [clubName, setClubName] = useState(name);
@@ -48,31 +50,36 @@ const EditClubScreen = ({ route, navigation }) => {
 
     // try to submit the edit profile request
     try {
-        /*// update old club info
-        const clubRef = ref(db, `${emailSplit()}/clubs/${id}`);
-        await update(clubRef, {
-            clubName: clubName,
-            clubImg: clubImg ? clubImg : null,
-            clubDescription: clubDescription,
-            publicClub: publicClubState,
-        });*/
 
-        // update clubData
-        await updateDoc(doc(db, 'clubData', id), {
+        const schoolKey = await emailSplit();
+
+        const newClubData = {
           clubName: clubName,
-          clubImg: clubImg ? clubImg : null,
           clubDescription: clubDescription,
           publicClub: publicClubState,
-        });
+        };
+        if (clubImg) newClubData.clubImg = clubImg;
 
-        // update clubSearch data
-        await updateDoc(doc(db, 'clubSearchData', id), {
-          clubName: clubName,
-          clubImg: clubImg ? clubImg : null,
-          publicClub: publicClubState,
-        });
+        // update clubData
+        await updateDoc(doc(firestore, 'schools', schoolKey, 'clubData', id), newClubData);
 
-        navigation.navigate("InClubView", { clubId: id });
+        // update clubSearch data for each category
+        for (let i = 0; i < categories.length; i++) {
+          const category = categories[i];
+          const categoryDoc = doc(firestore, 'schools', schoolKey, 'clubSearchData', category, 'clubs', id);
+          const updatedClub = {
+            clubName: clubName,
+            clubDescription: clubDescription,
+            publicClub: publicClubState,
+          }
+          if (clubImg) updatedClub.clubImg = clubImg;
+
+          await updateDoc(categoryDoc, updatedClub);
+        }
+
+        navigation.navigate('ClubScreen', {
+          clubId: id,
+        });
     } catch (error) {
       console.log(error);
       alert('Edit Club failed: ' + error.message);

@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 // react native components
 import { View, StyleSheet, ScrollView, TouchableWithoutFeedback, TouchableOpacity } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
+// storage
+import AsyncStorage from '@react-native-async-storage/async-storage';
 // my components
 import Header from '../../components/display/Header';
 import UpcomingEvents from '../../components/event/UpcomingEvents';
@@ -12,7 +15,7 @@ import IconButton from '../../components/buttons/IconButton';
 // calendar
 import { LocaleConfig, Calendar } from 'react-native-calendars';
 // functions
-import { getSetAllEventsData, getSetUserData, getSetAllClubsDataObject } from '../../functions/backendFunctions';
+import { getSetCalendarData, getSetUserData, getSetMyClubsData } from '../../functions/backendFunctions';
 import { formatDate, formatStartEndTime } from '../../functions/timeFunctions';
 // modal
 import SwipeUpDownModal from 'react-native-swipe-modal-up-down';
@@ -22,6 +25,7 @@ import { CLUBCATEGORIES, DAYSOFTHEWEEK } from '../../macros/macros';
 import { Colors } from '../../styles/Colors';
 // scroll view
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+import { set } from 'firebase/database';
 
 // calendar config
 LocaleConfig.locales['eng'] = {
@@ -42,14 +46,17 @@ const CalendarScreen = ({ navigation }) => {
   const [eventData, setEventData] = useState([]);
   // state for user data
   const [userData, setUserData] = useState(null);
-  // state for clubs data
-  const [clubsData, setClubsData] = useState([]);
+  // my clubs data
+  const [myClubsData, setMyClubsData] = useState([]);
   // state for loading
   const [loading, setLoading] = useState(true);
 
   // state for calendar
+  const [filteredEvents, setFilteredEvents] = useState([]); // filtered events
+  const [markedDates, setMarkedDates] = useState({}); // marked dates on calendar
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().slice(0,10)); // selected date, default today
   const [specificDateSelected, setSpecificDateSelected] = useState(false); // whether a specific date is selected or not
+  const [currenMonth, setCurrentMonth] = useState(new Date().getMonth());
   // overlay
   let [showFilter, setShowFilter] = useState(false);
   let [animateModal, setanimateModal] = useState(false);
@@ -59,31 +66,40 @@ const CalendarScreen = ({ navigation }) => {
   const [myClubsSelected, setMySelectedClubs] = React.useState([]); // clubs selected if calendar setting is 'myClubs'
   const [clubCategoriesSelected, setClubCategoriesSelected] = React.useState([]); // club categories selected if calendar setting is 'newClubs'
   const [startEndTime, setStartEndTime] = React.useState([0, 24]); // filter by time of day
+  const [clubList, setClubList] = useState([]);
+
+
+  const getDataAsync = async () => {
+    setLoading(true);
+
+    await getSetUserData(setUserData);
+    await getSetCalendarData(setEventData);
+    await getSetMyClubsData(setMyClubsData);
+
+    setLoading(false);
+  }
 
   // get data from firebase
-  useEffect (() => {
-    const getDataAsync = async () => {
-      setLoading(true);
+  useFocusEffect(
+    React.useCallback(() => {
+      getDataAsync();
+    }, [])
+  );
 
-      await getSetUserData(setUserData);
-      await getSetAllEventsData(setEventData);
-      await getSetAllClubsDataObject(setClubsData);
+  // set club list (names of clubs) after clubs data is loaded
+  useEffect(() => {
+    if (userData && userData.clubs) {
+      // get names of all clubs
+      const clubList = myClubsData.map((club) => {
+        return {
+          key: club.clubId,
+          value: club.clubName,
+        }
+      });
+      setClubList(clubList);
 
-      setLoading(false);
     }
-    getDataAsync();
-  }, []);
-
-  // club list
-  let clubList = []; // club list for filter list in 'myClubs' setting
-  if (userData && userData.clubs) {
-    clubList = Object.keys(userData.clubs).map((id) => {
-      return {
-        key: id,
-        value: userData.clubs[id].clubName,
-      }
-    });
-  }
+  }, [userData]);
 
   // toggle overlay
   const toggleFilter = () => {
@@ -98,6 +114,14 @@ const CalendarScreen = ({ navigation }) => {
 
   // filter for events
   const filterFunct = (event) => {
+
+    // if not same month as calendar
+    console.log('event month: ', new Date(event.date).getMonth());
+    console.log('calendar month: ', currenMonth);
+    if (new Date(event.date).getMonth() != currenMonth) {
+      return false;
+    }
+
     // filter by specific date
     if (specificDateSelected) {
       if (formatDate(event.date) != selectedDate) {
@@ -108,7 +132,7 @@ const CalendarScreen = ({ navigation }) => {
     // filter by calendar setting
     if (calendarSetting == 'newClubs') {
       // if already in my clubs
-      if (userData.clubs[event.clubId] != null) {
+      if (!userData || userData.clubs == null || userData.clubs.includes(event.clubId)) {
         return false;
       }
 
@@ -117,10 +141,11 @@ const CalendarScreen = ({ navigation }) => {
         return false;
       }
     }
+
     if (calendarSetting == 'myClubs' && userData != null) {
       // if not in my clubs
       if (userData.clubs != null) {
-        if (userData.clubs[event.clubId] == null) {
+        if (!userData.clubs.includes(event.clubId)) {
           return false;
         } 
       }
@@ -150,25 +175,17 @@ const CalendarScreen = ({ navigation }) => {
 
     // filter by my clubs if setting is 'myClubs'
     if (calendarSetting == 'myClubs' && myClubsSelected.length > 0) {
-      // get clubName from clubID
-      const clubName = userData.clubs[event.clubId].clubName;
-      
-      // create list of club names from myClubsSelected
-      const clubNames = myClubsSelected.map((club) => userData.clubs[club].clubName);
 
-      if (!clubNames.includes(clubName)) {
+      if (!myClubsSelected.includes(club.clubId)) {
         return false;
       }
     }
 
     // filter by club categories if setting is 'newClubs'
     if (calendarSetting == 'newClubs' && clubCategoriesSelected.length > 0) {
-      if (clubsData == null || clubsData[event.clubId] == null) {
-        return false;
-      }
       
       // get club categories from event's club
-      const clubCategories = clubsData[event.clubId].clubCategories;
+      const clubCategories = event.clubCategories;
 
       // if event's club's category is not in the selected categories
       if (!clubCategories.some((category) => clubCategoriesSelected.includes(category))) {
@@ -180,66 +197,71 @@ const CalendarScreen = ({ navigation }) => {
     return true;
   }
 
-  // filtered events
-  let filteredEvents = [];
-  if (eventData) {
-    filteredEvents = eventData.filter((event) => filterFunct(event));
-  }
+  // filtered events (filter when data changes)
+  useEffect(() => {
+    if (eventData) {
+      const filteredEvents = eventData.filter(filterFunct);
+      
+      setFilteredEvents(filteredEvents);
 
-  // add filtered events to marked dates
-  let markedDates = {};
-  filteredEvents.forEach((event) => {
-    // reformat date to form 'YYYY-MM-DD'
-    const formattedDate = formatDate(event.date);
+      // mark dates on calendar (try to make this more efficient)
+      let markedDates = {...markedDates};
+      filteredEvents.forEach((event) => {
+        // reformat date to form 'YYYY-MM-DD'
+        const formattedDate = formatDate(event.date);
 
-    // add dates to marked dates (calendar)
-    if (markedDates[formattedDate] == null) {
-      markedDates[formattedDate] = {
-        marked: true, 
-      };
-    }
+        // add dates to marked dates (calendar)
+        if (markedDates[formattedDate] == null) {
+          markedDates[formattedDate] = {
+            marked: true, 
+          };
+        }
 
-    // get dot colors for this event from club categories
-    let dotColors = [];
-    if (clubsData && clubsData[event.clubId]) {
-      const thisEventClubCategories = clubsData[event.clubId].clubCategories;
-      dotColors = thisEventClubCategories.map((category) => {
-        return {
-          key: category,
-          color: CLUBCATEGORIES.find((item) => item.value == category).color,
+        // get dot colors for this event from club categories
+        let dotColors = [];
+
+        const thisEventClubCategories = event.categories;
+        dotColors = thisEventClubCategories.map((category) => {
+          return {
+            key: category,
+            color: CLUBCATEGORIES.find((item) => item.value == category).color,
+          }
+        });
+      
+      
+        // add dots with dot color to marked dates if not already there
+        if (markedDates[formattedDate].dots == null) {
+          // add all dot colors
+          markedDates[formattedDate].dots = dotColors.map((dotColor) => {
+            return {
+              key: dotColor.key,
+              color: dotColor.color,
+              selectedDotColor: dotColor.color,
+            }
+          });
+        } else {
+          // if dots already there
+          dotColors.forEach((dotColor) => {
+            // if dot color not already there
+            if (!markedDates[formattedDate].dots.some((item) => item.color == dotColor.color)) {
+              // add dot color
+              markedDates[formattedDate].dots.push({
+                key: dotColor.key,
+                color: dotColor.color,
+                selectedDotColor: dotColor.color,
+              })
+            }
+          });
         }
       });
+      // add specific date if selected
+      if (specificDateSelected) {
+        markedDates = {[selectedDate]: {selected: true, selectedColor: Colors.red, dotColor: Colors.red}};
+      }
+
+      setMarkedDates(markedDates);
     }
-  
-    // add dots with dot color to marked dates if not already there
-    if (markedDates[formattedDate].dots == null) {
-      // add all dot colors
-      markedDates[formattedDate].dots = dotColors.map((dotColor) => {
-        return {
-          key: dotColor.key,
-          color: dotColor.color,
-          selectedDotColor: dotColor.color,
-        }
-      });
-    } else {
-      // if dots already there
-      dotColors.forEach((dotColor) => {
-        // if dot color not already there
-        if (!markedDates[formattedDate].dots.some((item) => item.color == dotColor.color)) {
-          // add dot color
-          markedDates[formattedDate].dots.push({
-            key: dotColor.key,
-            color: dotColor.color,
-            selectedDotColor: dotColor.color,
-          })
-        }
-      });
-    }
-  });
-  // add specific date if selected
-  if (specificDateSelected) {
-    markedDates = {[selectedDate]: {selected: true, selectedColor: Colors.red, dotColor: Colors.red}};
-  }
+  }, [eventData, calendarSetting, daySelected, startEndTime, myClubsSelected, clubCategoriesSelected, specificDateSelected, selectedDate, currenMonth]);
 
   return (
     <View style={styles.container}>
@@ -256,6 +278,7 @@ const CalendarScreen = ({ navigation }) => {
             markedDates={markedDates}
             theme={styles.calendarTheme}
             onDayPress={(day) => selectSpecificDate(day)}
+            onMonthChange={(month) => setCurrentMonth(month.month - 1)}
           />
         </View>
 
@@ -323,7 +346,6 @@ const CalendarScreen = ({ navigation }) => {
                       setSelectedDay([...daySelected, day.key]);
                     }
                     setSpecificDateSelected(false);
-                    console.log("daySelected: ", daySelected)
                   }
 
                   return (

@@ -3,7 +3,7 @@ import { View, StyleSheet, ScrollView, Alert } from 'react-native';
 // fade
 import Fade from 'react-native-fade';
 // functions
-import { requestToJoinClub, getSetAllEventsData, checkMembership, getSetClubData } from '../../functions/backendFunctions';
+import { requestToJoinClub, checkMembership, getSetClubData, getSetClubCalendarData, emailSplit } from '../../functions/backendFunctions';
 import { goToChatScreen, goToAdminChatScreen } from '../../functions/navigationFunctions';
 // my components
 import Header from '../../components/display/Header';
@@ -23,7 +23,7 @@ import { Colors } from '../../styles/Colors';
 
 const ClubScreen = ({ route, navigation }) => {
   //  get club data
-  const { club } = route.params; // just use clubId to get club data
+  const { clubId } = route.params; // just use clubId to get club data
   // membership
   const [currentUserPrivilege, setCurrentUserPrivilege] = useState('none');
   // club data
@@ -44,12 +44,12 @@ const ClubScreen = ({ route, navigation }) => {
     const asyncFunction = async () => {
       setLoading(true);
 
-      await getSetAllEventsData(setEventData);
-      await getSetClubData(club.clubId, setClubData);
+      await getSetClubData(clubId, setClubData);
+      await getSetClubCalendarData(clubId, setEventData);
 
       setLoading(false);
 
-      checkMembership(club.clubId, setCurrentUserPrivilege, setIsRequestSent);
+      checkMembership(clubId, setCurrentUserPrivilege, setIsRequestSent);
     };
 
     asyncFunction();
@@ -77,13 +77,13 @@ const ClubScreen = ({ route, navigation }) => {
       return;
     } 
     // change modal
-    requestToJoinClub(clubData.clubId, clubData.clubName, clubData.publicClub);
+    requestToJoinClub(clubId, clubData.clubName, clubData.publicClub);
     if (clubData.publicClub) {
       setJoinClubModalVisible(true);
 
       // start timer for checking membership
       const timer = setTimeout(() => {
-        checkMembership(club.clubId, setCurrentUserPrivilege, setIsRequestSent);
+        checkMembership(clubId, setCurrentUserPrivilege, setIsRequestSent);
       }, 1000);
     } else {
       setRequestClubModalVisible(true);
@@ -92,17 +92,19 @@ const ClubScreen = ({ route, navigation }) => {
 
   // goto UserList
   const gotoUserList = () => {
-    navigation.navigate('UserList', { clubId : club.clubId, members: clubData.clubMembers, clubName: clubData.clubName });
+    navigation.navigate('UserList', { clubId : clubId, members: clubData.clubMembers, clubName: clubData.clubName });
   }
 
   // goto message search
-  const gotoMessageSearch = () => {
-    navigation.navigate('MessageSearchScreen', { clubId: club.clubId, chatName: "chats", pin: false });
+  const gotoMessageSearch = async () => {
+    const schoolKey = await emailSplit();
+
+    navigation.navigate('MessageSearchScreen', { clubId: clubId, chatName: "chat", pin: false, schoolKey: schoolKey});
   }
 
   // goto image gallery
   const gotoImageGallery = () => {
-    navigation.navigate('ImageGalleryScreen', { clubId: club.clubId });
+    navigation.navigate('ImageGalleryScreen', { clubId: clubId });
   }
 
   // goto admin chat (fix later)
@@ -112,31 +114,23 @@ const ClubScreen = ({ route, navigation }) => {
 
   // go to manage club
   const goToManageClub = () => {
-    navigation.navigate('InClubView', { clubId: club.clubId });
+    navigation.navigate('InClubView', { 
+      clubData: clubData,
+     });
   }
 
   // add event button
   const onAddEventPress = () => {
     navigation.navigate("NewEvent", {
-      clubId: club.clubId,
-      clubCategories: club.clubCategories,
-      fromMap: false,
+      clubId: clubId,
+      clubCategories: clubData.clubCategories,
+      clubName: clubData.clubName,
     });
-  }
-
-  // get member count from members object (not used currently)
-  const memberCount = () => {
-    if (clubData.clubMembers) {
-      const memberCount = Object.keys(clubData.clubMembers).length;
-      return memberCount;
-    } else {
-      return 0;
-    }
   }
 
   // filter events by club
   const filterFunct = (event) => {
-    if (event.clubId !== club.clubId) {
+    if (event.clubId !== clubId) {
       return false;
     }
     
@@ -166,8 +160,8 @@ const ClubScreen = ({ route, navigation }) => {
 
             {/* categories */}
             <View style={styles.categoriesContent}>
-              {club.clubCategories.length !== 0 &&
-                club.clubCategories.map((item) => {
+              {clubData.clubCategories.length !== 0 &&
+                clubData.clubCategories.map((item) => {
                   // get corresponding club category
                   const category = CLUBCATEGORIES.find((clubCategory) => clubCategory.value === item);
 
@@ -202,7 +196,7 @@ const ClubScreen = ({ route, navigation }) => {
               <View>
                 <IconText icon="hammer-outline" iconColor={Colors.lightGray} text="Tools" />
                 <View style={{ height: 15 }} />
-                <IconButton onPress={gotoUserList} text={`Members (${memberCount()})`} icon="people-outline" />
+                <IconButton onPress={gotoUserList} text={`Members`} icon="people-outline" />
                 <View style={styles.separator} />
                 <IconButton onPress={gotoMessageSearch} text="Search Messages" icon="search-outline" />
                 <View style={styles.separator} />
@@ -219,7 +213,7 @@ const ClubScreen = ({ route, navigation }) => {
             )}
 
             <IconText icon="calendar-outline" iconColor={Colors.lightGray} text="Upcoming Events" />
-            <UpcomingEvents filteredEvents={filteredEvents} navigation={navigation} screenName={"ClubScreen"}/>
+            <UpcomingEvents filteredEvents={filteredEvents} screenName={"ClubScreen"} navigation={navigation} />
 
             {/* extra space at the bottom of the screen */}
             <View style={{height: 50}}/>

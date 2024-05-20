@@ -4,7 +4,8 @@ import { View, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import Fade from 'react-native-fade';
 // backend
 import { ref, get, set } from 'firebase/database';
-import { db } from '../../backend/FirebaseConfig';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { db, firestore } from '../../backend/FirebaseConfig';
 import { getAuth } from 'firebase/auth';
 // my components
 import Header from '../../components/display/Header';
@@ -15,7 +16,7 @@ import ToggleButton from '../../components/buttons/ToggleButton';
 // icons
 import { Ionicons } from '@expo/vector-icons';
 // functions
-import { emailSplit, checkMembership } from '../../functions/backendFunctions';
+import { emailSplit, checkMembership, getSetEventData, getSetUserData } from '../../functions/backendFunctions';
 import { timeToString, reformatDate } from '../../functions/timeFunctions';
 import { goToClubScreen } from '../../functions/navigationFunctions';
 // map
@@ -26,13 +27,14 @@ import { Colors } from '../../styles/Colors';
 import * as Clipboard from 'expo-clipboard'; 
 
 const EventScreen = ({ route, navigation }) => {
-  const { event, fromScreen } = route.params;
+  const { eventId, fromScreen } = route.params;
+
+  // event data
+  const [event, setEvent] = useState(undefined)
   const [currentUserPrivilege, setCurrentUserPrivilege] = useState('none');
   const [RSVPList, setRSVPList] = useState([]); // list of users who RSVP'd
-  const [userRSVP, setUserRSVP] = useState(false); // if the user has RSVP'd
-  const [clubData, setClubData] = useState(null);
-  const [userId, setUserId] = useState(null);
-  const [clubName, setClubName] = useState(null);
+  const [userData, setUserData] = useState(null);
+  const [userId, setUserId] = useState(''); // user id
   const [addressCopied, setAddressCopied] = useState(false);
   const [showText, setShowText] = useState(true);
   // loading
@@ -44,48 +46,40 @@ const EventScreen = ({ route, navigation }) => {
     setAddressCopied(true);
   }
 
-  // add rsvp data to state
+  // get event data
   useEffect(() => {
 
     const asyncFunc = async () => {
-      setLoading(true);
+      console.log('getting event data for', eventId);
+      await getSetEventData(eventId, setEvent, setRSVPList);
 
-      // set user id
-      const auth = getAuth();
-      setUserId(auth.currentUser.uid);
-
-      const rsvpRef = ref(db, `${emailSplit()}/events/${event.id}/rsvp`);
-      get(rsvpRef).then((snapshot) => {
-        if (snapshot.exists()) {
-          setRSVPList(snapshot.val());
-        }
-      });
-
-      // check if user is a member of the club
-      await checkMembership(event.clubId, setCurrentUserPrivilege);
-
-      // get club data
-      const clubRef = ref(db, `${emailSplit()}/clubs/${event.clubId}`);
-      get(clubRef).then((snapshot) => {
-        if (snapshot.exists()) {
-          setClubData(snapshot.val());
-        }
-      });
-
-      setLoading(false);
+      // get user id
+      getSetUserData(setUserData);
     }
 
     asyncFunc();
+
   }, []);
 
-  // set rsvp status once rsvp list is loaded
+  // check user privilege after event data is loaded
   useEffect(() => {
 
-    if (RSVPList.includes(userId)) {
-      setUserRSVP(true);
+    if (event != undefined) {
+      const asyncFunc = async () => {
+        await checkMembership(event.clubId, setCurrentUserPrivilege);
+      }
+
+      asyncFunc();
     }
 
-  }, [RSVPList]);
+  }, [event]);
+
+  // set user id
+  useEffect(() => {
+    if (userData != null) {
+      setUserId(userData.id);
+    }
+  }, [userData]);
 
   // fade out text after 2 seconds
   useEffect(() => {
@@ -111,90 +105,114 @@ const EventScreen = ({ route, navigation }) => {
   }
 
   // toggle RSVP
-  const toggleRSVP = () => {
+  const toggleRSVP = async () => {
     let newRSVPList = RSVPList;
 
-    if (userRSVP) {
+    if (RSVPList.includes(userId)) {
       // remove user from rsvp list
       newRSVPList = RSVPList.filter((id) => id != userId);
       setRSVPList(newRSVPList);
-      setUserRSVP(false);
     } else {
       // add user to rsvp list
       newRSVPList.push(userId);
       setRSVPList(newRSVPList);
-      setUserRSVP(true);
     }
 
-    // update backend
-    const rsvpRef = ref(db, `${emailSplit()}/events/${event.id}/rsvp`);
-    set(rsvpRef, newRSVPList);
+    console.log('new rsvp list', newRSVPList);
 
-    navigation.goBack();
+    // update backend
+    const schoolKey = await emailSplit();
+    const eventRef = doc(firestore, 'schools', schoolKey, 'eventData', eventId);
+    updateDoc(eventRef, { rsvps: newRSVPList });
   }
 
   return (
     <View style={styles.container}>
-      <Header text={''} back navigation={navigation} />
-      <ScrollView contentContainerStyle={styles.eventContent}>
+      {event == {} && <CustomText text="Loading..." />}
+      {event != undefined && (
+      <View style={styles.container}>
+        <Header text={''} back navigation={navigation} />
+        <ScrollView contentContainerStyle={styles.eventContent}>
 
-        <CustomText style={styles.title} text={event.name} font='black' />
+          <CustomText style={styles.title} text={event.name} font='black' />
 
-        <CustomText style={styles.textNormal} font='bold' text={clubData?.clubName} />
-        
-        <CustomText style={styles.textNormal} text={event.description.trim()} />
+          <CustomText style={styles.textNormal} text={event.clubName} />
+          
+          <CustomText style={styles.textNormal} text={event?.description?.trim()} />
 
-        <View>
-          <CustomText style={styles.textNormal} text={reformatDate(event.date)} font="bold"/>
-          <CustomText style={styles.textNormal} text={timeToString(event.time)} />
-        </View>
+          <View>
+            <CustomText style={styles.textNormal} text={reformatDate(event.date)} font="bold"/>
+            <CustomText style={styles.textNormal} text={timeToString(event.time)} />
+          </View>
 
-        <MapView
-          style={styles.mapStyle}
-          region={event.location}
-        >
-          <Marker coordinate={event.location} />
-        </MapView>
+         {/*} <MapView
+            style={styles.mapStyle}
+            region={event.location}
+          >
+            <Marker coordinate={event.location} />
+          </MapView>*/}
 
-        <View style={{marginTop: -10}}>
-        {event.address ? (        
-          <View style={{flexDirection: 'row'}}>
-            <View>
-              <CustomText style={styles.textSmall} text={splitAddress(event.address)[0]} />
-              <CustomText style={styles.textSmall} text={splitAddress(event.address)[1]} />
+          <View>
+          {event.address ? (        
+            <View style={{flexDirection: 'row'}}>
+              <View>
+                <CustomText style={styles.textNormal} text={splitAddress(event.address)[0]} />
+                <CustomText style={styles.textNormal} text={splitAddress(event.address)[1]} />
+              </View>
+              <TouchableOpacity style={{marginLeft: 20, marginTop: 15}} onPress={copyAddressToClipboard} >
+                <Ionicons name={!addressCopied ? 'copy-outline' : 'checkmark'} size={20} color="black"/>
+              </TouchableOpacity>
             </View>
-            <TouchableOpacity style={{marginLeft: 15, marginTop: 8}} onPress={copyAddressToClipboard} >
-              <Ionicons name={!addressCopied ? 'copy-outline' : 'checkmark'} size={20} color="black"/>
-            </TouchableOpacity>
+          ) : (
+            <View style={{flexDirection: 'row'}}>
+              <CustomText style={styles.textNormal} text="No address provided" />
+              <View style={{marginLeft: 8}} >
+                <Ionicons name={'location-outline'} size={20} color="black"/>
+              </View>
+            </View>
+          )}
           </View>
-        ) : (
-          <CustomText style={styles.textSmall} text="No address provided" />
+
+          {/* duration */}
+          {event.duration && (
+            <CustomText style={styles.textNormal} text={`Duration: ${event.duration} min`} />
+          )}
+
+          {/* instructions */}
+          {event.instructions && (
+            <CustomText style={styles.textNormal} text={`Instructions: ${event.instructions}`} />
+          )}
+
+          {/* room number */}
+          {event.room && (
+            <CustomText style={styles.textNormal} text={`Room: ${event.roomNumber}`} />
+          )}
+
+          <ToggleButton 
+            toggled={RSVPList.includes(userId)} icon={RSVPList.includes(userId) ? 'checkmark' : 'people'} toggledCol={Colors.red} 
+            untoggledCol={Colors.lightRed} text={`RSVP (${RSVPList.length})`} onPress={toggleRSVP} 
+          />
+
+        </ScrollView>
+
+        {/* go to clubs screen */}
+        {fromScreen != 'ClubScreen' &&
+          <View style={styles.button}>
+            <IconButton icon={'enter-outline'} text="Club" onPress={() => goToClubScreen(event.clubId, navigation)} color={Colors.buttonBlue}/>
+          </View>
+        }
+
+        {(currentUserPrivilege == 'admin' || currentUserPrivilege == 'owner') && (
+          <View>
+            <View style={{position: 'absolute', bottom: 5, right: 75, margin: 30}}>
+              <Fade visible={showText}>
+                <CustomText style={styles.popUpText} text="Edit the Event." font='bold' />
+              </Fade>
+            </View>
+            <CircleButton icon="create-outline" onPress={onEditButtonPress} position={{ bottom: 0, right: 0 }} size={80} />
+          </View>
         )}
-        </View>
-
-        <ToggleButton 
-          toggled={userRSVP} icon={userRSVP ? 'checkmark' : 'people'} toggledCol={Colors.red} 
-          untoggledCol={Colors.lightRed} text={`RSVP (${RSVPList.length})`} onPress={toggleRSVP} 
-        />
-
-      </ScrollView>
-
-      {/* go to clubs screen */}
-      {fromScreen != 'ClubScreen' &&
-        <View style={styles.button}>
-          <IconButton icon={'enter-outline'} text="Club" onPress={() => goToClubScreen(clubData, navigation)} color={Colors.buttonBlue}/>
-        </View>
-      }
-
-      {(currentUserPrivilege == 'admin' || currentUserPrivilege == 'owner') && (
-        <View>
-          <View style={{position: 'absolute', bottom: 5, right: 75, margin: 30}}>
-            <Fade visible={showText}>
-              <CustomText style={styles.popUpText} text="Edit the Event." font='bold' />
-            </Fade>
-          </View>
-          <CircleButton icon="create-outline" onPress={onEditButtonPress} position={{ bottom: 0, right: 0 }} size={80} />
-        </View>
+      </View>
       )}
     </View>
   );

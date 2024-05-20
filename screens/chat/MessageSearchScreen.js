@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { View, FlatList, StyleSheet, Alert, TouchableOpacity } from 'react-native';
 // Firebase
-import { query, collection, where, onSnapshot } from 'firebase/firestore';
+import { query, collection, where, onSnapshot, orderBy } from 'firebase/firestore';
 import { firestore } from '../../backend/FirebaseConfig'; // Update this path according to your project structure
+// functions
+import { fetchMessages } from '../../functions/backendFunctions';
 // icons
 import { Ionicons } from '@expo/vector-icons';
 // my components
@@ -17,7 +19,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Colors } from '../../styles/Colors'
 
 const MessageSearchScreen = ({ route, navigation }) => {
-  const { clubId, chatName, pin } = route.params;
+  const { clubId, chatName, pin, schoolKey } = route.params;
   // states
   const [searchQuery, setSearchQuery] = useState('');
   const [searchPinned, setSearchPinned] = useState(pin);
@@ -29,26 +31,25 @@ const MessageSearchScreen = ({ route, navigation }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchMessages = () => {
-      const messagesQuery = query(collection(firestore, chatName), where('clubId', '==', clubId), where('pinned', '==', searchPinned)); // [2
+    // Fetching messages in descending order to suit the inverted list.
+    let messagesQuery;
+    if (searchPinned) {
+      messagesQuery = query(collection(firestore, 'schools', schoolKey, 'chatData', 'clubs', clubId, 'chats', chatName), where('pinned', '==', searchPinned), orderBy('createdAt'));
+    } else {
+      messagesQuery = query(collection(firestore, 'schools', schoolKey, 'chatData', 'clubs', clubId, 'chats', chatName), orderBy('createdAt'));
+    }
+  
+    const unsubscribe = onSnapshot(messagesQuery, querySnapshot => {
 
-      const unsubscribe = onSnapshot(messagesQuery, (querySnapshot) => {
-        const fetchedMessages = querySnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data(),
-          createdAt: doc.data().createdAt.toDate(),
-        }));
-        setMessages(fetchedMessages);
-      }, (error) => {
-        Alert.alert("Error fetching messages", error.message);
-      });
+      fetchMessages(querySnapshot, setMessages);
+      
+    }, error => {
+      console.error("Error fetching messages: ", error);
+    });
 
-      setLoading(false);
-
-      return unsubscribe;
-    };
-    return fetchMessages();
-  }, [ searchPinned]);
+    // Cleanup subscription on component unmount
+    return () => unsubscribe();
+  }, [searchPinned]);
 
   const filteredMessages = messages.filter(message =>
     message.text.toLowerCase().includes(searchQuery.toLowerCase())

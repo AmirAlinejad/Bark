@@ -1,20 +1,63 @@
-import React from "react";
-import { View, ScrollView, ActivityIndicator, StyleSheet } from "react-native";
+import React, { useEffect, useState } from "react";
+import { View, ScrollView, ActivityIndicator, StyleSheet, FlatList, RefreshControl } from "react-native";
+// firebase
+import { collection, query, limit, onSnapshot, orderBy } from "firebase/firestore";
+import { firestore } from "../../backend/FirebaseConfig";
 // my components
 import Header from "../../components/display/Header";
 import SearchBar from "../../components/input/SearchBar";
 import ClubCardVertical from "../../components/club/ClubCardVertical";
+import CustomText from "../../components/display/CustomText";
+// functions
+import { fetchClubs } from "../../functions/backendFunctions";
+// icons
+import Ionicon from "react-native-vector-icons/Ionicons";
 // styles
 import { Colors } from "../../styles/Colors";
 // functions
 import { goToClubScreen } from "../../functions/navigationFunctions";
 
 const ClubCategoryScreen = ({ route, navigation }) => {
-    const { clubCategory } = route.params;
+    // get club category from route
+    const { clubCategory, schoolKey } = route.params;
+    console.log(clubCategory);
 
-    // state for seatch
+    // states
     const [searchText, setSearchText] = React.useState("");
+    const [clubCategoryData, setClubCategoryData] = useState([]);
 
+    // Define state for refreshing the screen
+    const [fetchLimit, setFetchLimit] = useState(10);
+    const [refreshing, setRefreshing] = useState(false);
+
+    // get club data on initial render
+    useEffect(() => {
+
+        // Fetching club data
+        const clubsQuery = query(collection(firestore, 'schools', schoolKey, 'clubSearchData', clubCategory.slice(2), 'clubs'), orderBy('clubMembers', 'desc'), limit(fetchLimit)); // order by club members eventually
+        
+        const unsubscribe = onSnapshot(clubsQuery, querySnapshot => {
+
+            fetchClubs(querySnapshot, setClubCategoryData);
+
+        }, error => {
+            console.error("Error fetching messages: ", error);
+        });
+
+        // Cleanup subscription on component unmount
+        return () => unsubscribe();
+    }, [fetchLimit]);
+
+    // refresh messages
+    const onRefresh = React.useCallback(() => {
+        setRefreshing(true);
+        setFetchLimit(fetchLimit + 20);
+
+        setTimeout(() => {
+        setRefreshing(false);
+        }, 1000);
+    }, []);
+    
     // filter for clubs
     const filterFunct = (club) => {
         // filter by search text
@@ -27,39 +70,59 @@ const ClubCategoryScreen = ({ route, navigation }) => {
         return true;
     };
 
-    const filteredClubs = clubCategory.filter(filterFunct);
+    const filteredClubs = clubCategoryData.filter(filterFunct);
 
     return (
         <View style={styles.container}>
-            <Header text="Clubs" navigation={navigation} back />
+            <Header text={clubCategory} navigation={navigation} back />
 
             <View style={styles.searchBarView}>
-                <SearchBar
-                    value={searchText}
-                    onChangeText={(text) => setSearchText(text)}
-                    placeholder="Search Clubs"
-                />
+                <SearchBar placeholder='Search' value={searchText} setValue={setSearchText}/>
             </View>
 
-            <ScrollView style={styles.clubScrollView} contentContainerStyle={styles.clubContent}>
+            <FlatList
+                data={filteredClubs}
+                refreshControl={
+                    <RefreshControl
+                    refreshing={refreshing}
+                    onRefresh={onRefresh}
+                    />
+                }
+                refreshing={refreshing}
+                renderItem={({item}) => (
+                    <ClubCardVertical
+                        onPress={() => goToClubScreen(item.clubId, navigation)}
+                        name={item.clubName}
+                        description={item.clubDescription}
+                        img={item.clubImg || null}
+                    />
+                )}
+                keyExtractor={item => item.clubId}
+                contentContainerStyle={styles.clubContent}
+                style={styles.clubScrollView}
+                onEndReached={onRefresh}
+            />
+
+            {/*<ScrollView style={styles.clubScrollView} contentContainerStyle={styles.clubContent}> 
                 {filteredClubs.length == 0 ? (
-                    <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-                        <ActivityIndicator size="large" color={Colors.black} />
+                    // if no clubs found
+                    <View style={styles.noClubsView}>
+                        <Ionicon name="megaphone" size={100} color={Colors.lightGray} />
+                        <CustomText style={styles.noClubsText} text="No clubs found." font='bold' />
                     </View>
                 ) : (
-                    filteredClubs.slice(0, 6) // only show a few clubs
-                    .map((club, index) => (
+                    filteredClubs.map((club, index) => (
                         <ClubCardVertical
                             key={index}
-                            onPress={() => goToClubScreen(club, navigation)}
+                            onPress={() => goToClubScreen(club.clubId, navigation)}
                             name={club.clubName}
                             description={club.clubDescription}
-                            img={club.clubImg}
-                            memberCount={Object.keys(club.clubMembers).length}
+                            img={club.clubImg || null}
+                            //memberCount={Object.keys(club.clubMembers).length}
                         />
                     ))
                 )}
-            </ScrollView>
+            </ScrollView>*/}
         </View>
     );
 }
@@ -70,6 +133,16 @@ const styles = StyleSheet.create({
         width: '100%',
         backgroundColor: Colors.lightGray,
     },
+    basicView: { flex: 1, 
+        justifyContent: "center", 
+        alignItems: "center",
+    },
+    noClubsView: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: '100%',
+        marginTop: 180,
+      },
     clubScrollView: {
         paddingTop: 15,
         paddingHorizontal: 15,
@@ -82,9 +155,14 @@ const styles = StyleSheet.create({
         margin: 20,
     },
     clubContent: {
-        justifyContent: 'center',
+        justifyContent: 'flex-start',
         alignItems: 'flex-start',
         gap: 15,
+    },
+    noClubsText: {
+        fontSize: 25,
+        color: Colors.darkGray,
+        marginTop: 10,
     },
 });
 

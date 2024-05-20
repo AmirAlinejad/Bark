@@ -1,0 +1,1 @@
+// accept or decline an event invitation

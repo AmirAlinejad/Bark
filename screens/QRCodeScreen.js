@@ -1,0 +1,1 @@
+// shareable qr code that you can use for events, clubs, etc.

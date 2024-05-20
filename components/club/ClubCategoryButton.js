@@ -6,7 +6,9 @@ import CustomText from '../CustomText';
 // styles
 import { Colors } from '../../styles/Colors';
 
-const clubCategoryButton = ({ text, onPress, toggled }) => {
+/////////////////////////////////////////////   maybe delete this file   /////////////////////////////////////////////////
+
+const clubCategoryButton = ({ text, onPress, toggled }) => { 
   const containerStyle = [
     styles.container,
     // set color to red if toggled, light red if not

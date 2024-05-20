@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { View, StyleSheet, ScrollView } from 'react-native';
 // modal
 import Modal from 'react-native-modal';
@@ -13,26 +13,22 @@ import { useFocusEffect } from '@react-navigation/native';
 import { Colors } from '../../styles/Colors';
 // functions
 import { getSetClubData, checkMembership, leaveClubConfirmed } from '../../functions/backendFunctions';
+import { get } from 'firebase/database';
 
 const InClubView = ({ navigation, route }) => {
-  const { clubId } = route.params;
-  const [clubData, setClubData] = useState(null);
-  const [currentUserPrivilege, setCurrentUserPrivilege] = useState('');
+  const { clubData } = route.params;
+  const [currentUserPrivilege, setCurrentUserPrivilege] = useState(''); // not used
   const [isLeaveClubModalVisible, setLeaveClubModalVisible] = useState(false);
 
+  console.log(clubData);
+
   // refresh states when you come back to this screen
-  useFocusEffect(
-    useCallback(() => {
-      const updateState = async () => {
-        await checkMembership(clubId, setCurrentUserPrivilege);
-        
-        // get club data
-        getSetClubData(clubId, setClubData);
-      };
-  
-      updateState();
-    }, [clubId])
-  );
+  useEffect(() => {
+    // some way to get request data
+
+    // check membership
+    checkMembership(clubData.clubId, setCurrentUserPrivilege);
+  });
 
   // go to edit club screen
   const onEditButtonPress = () => {
@@ -42,8 +38,7 @@ const InClubView = ({ navigation, route }) => {
       img: clubData.clubImg,
       publicClub: clubData.publicClub,
       description: clubData.clubDescription,
-      
-      navigation: navigation, // take out?
+      categories: clubData.clubCategories,
     });
   };
 
@@ -92,7 +87,7 @@ const InClubView = ({ navigation, route }) => {
                   icon="create-outline"
                   onPress={onEditButtonPress}
                 />
-                {getNumRequests() > 0 && (
+                {/*getNumRequests() > 0 && (currentUserPrivilege == 'admin' || currentUserPrivilege == 'owner') (
                   <View>
                     <View style={styles.separator} />
                     <IconButton
@@ -101,7 +96,7 @@ const InClubView = ({ navigation, route }) => {
                       onPress={onRequestsButtonPress}
                     />
                   </View>
-                )}
+                )*/}
                 <View style={styles.separator} />
                 <IconButton icon={'log-out-outline'} text="Leave Club" onPress={toggleLeaveClubModal} color={Colors.red} />
               </View>

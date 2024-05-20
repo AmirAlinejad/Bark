@@ -43,9 +43,7 @@ import FeedbackScreen from "./screens/profile/FeedbackScreen";
 // stack navigator
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { NavigationContainer } from '@react-navigation/native';
-// firebase
-import { getAuth } from 'firebase/auth';
-import app from './backend/FirebaseConfig';
+// firebase authetication and firestore
 
 async function registerForPushNotificationsAsync() {
   let token;
@@ -98,18 +96,7 @@ export default App = () => {
     }),
   });
 
-  // start screen
-  const [startScreen, setStartScreen] = useState('SignIn');
-
   useEffect(() => {
-      // check if user is already signed in
-      const auth = getAuth();
-      auth.onAuthStateChanged((user) => {
-        if (user) {
-          setStartScreen('HomeScreen');
-        }
-      });
-
       // notifications
       registerForPushNotificationsAsync().then(token => setExpoPushToken(token));
 
@@ -128,7 +115,7 @@ export default App = () => {
 
   return (
     <NavigationContainer >
-      <Stack.Navigator initialRouteName={startScreen}>
+      <Stack.Navigator initialRouteName={'SignIn'}>
         <Stack.Screen name="SignIn" component={SignIn} options={{ headerShown: false, gestureEnabled: false}} />
         <Stack.Screen name="SignUp" component={SignUp} options={{ headerShown: false, gestureEnabled: false }} initialParams={{expoPushToken}}/>
         <Stack.Screen name="VerifyEmail" component={VerifyEmail} options={{ headerShown: false, gestureEnabled: false }} />

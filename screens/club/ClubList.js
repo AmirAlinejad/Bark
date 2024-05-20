@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from 'react';
 // react native components
-import { View, StyleSheet, ScrollView } from 'react-native';
+import { View, StyleSheet, ScrollView, FlatList } from 'react-native';
+// use focus effect
+import { useFocusEffect } from '@react-navigation/native';
+// async storage
+import AsyncStorage from '@react-native-async-storage/async-storage';
 // fade
 import Fade from 'react-native-fade';
 // my components
@@ -9,42 +13,77 @@ import Header from '../../components/display/Header';
 import SearchBar from '../../components/input/SearchBar';
 import ToggleButton from '../../components/buttons/ToggleButton';
 import CircleButton from '../../components/buttons/CircleButton';
+import CustomText from '../../components/display/CustomText';
+// icons
+import Ionicon from 'react-native-vector-icons/Ionicons';
 // macros
 import { CLUBCATEGORIES } from '../../macros/macros';
 // functions
-import { getSetAllClubsData } from '../../functions/backendFunctions';
+import { getClubCategoryData, emailSplit } from '../../functions/backendFunctions';
 // styles
 import { Colors } from '../../styles/Colors';
-import CustomText from '../../components/display/CustomText';
 
 const ClubList = ({ navigation }) => {
   // state for club data
-  const [clubData, setClubData] = useState([]);
+  const [clubData, setClubData] = useState({});
+  const [sortedClubs, setSortedClubs] = useState([]);
   const [searchText, setSearchText] = useState('');
   const [categoriesSelected, setSelectedCategories] = useState([]);
   // fading text
   const [showText, setShowText] = useState(true);
   // loading
   const [loading, setLoading] = useState(true);
+  // school key to pass to club category screen
+  const [schoolKey, setSchoolKey] = useState('');
 
   // go to add club screen
   const onAddClubPress = () => {
     navigation.navigate("NewClub");
   }
 
-  // get data from firebase
-  useEffect(() => {
-    const asyncFunc = async () => {
-      setLoading(true);
+  const asyncFunc = async () => {
+    setLoading(true);
 
-      // get club data and set state
-      await getSetAllClubsData(setClubData);
+    // get data for each club category
+    let data = {};
+    for (let i = 0; i < CLUBCATEGORIES.length; i++) {
+      const category = CLUBCATEGORIES[i].value;
+      const clubData = await getClubCategoryData(category);
 
-      setLoading(false);
+      data[category] = clubData;
     }
+    console.log(data);
 
-    asyncFunc();
-  }, []);
+    // update async storage
+    await AsyncStorage.setItem('clubSearchData', JSON.stringify(data));
+
+    setClubData(data);
+    setLoading(false);
+  }
+
+  // get club data from async storage
+  const loadClubSearchData = async () => {
+    const clubSearchData = await AsyncStorage.getItem('clubSearchData');
+    if (clubSearchData) {
+      setClubData(JSON.parse(clubSearchData));
+    }
+  }
+
+  // get data from firebase
+  useFocusEffect(
+    React.useCallback(() => {
+      loadClubSearchData();
+      asyncFunc();
+
+      // get school key
+      const getSetSchoolKey = async () => {
+        const schoolkey = await emailSplit();
+        setSchoolKey(schoolkey);
+      }
+      getSetSchoolKey();
+      
+    }, [])
+  );
 
   // fade out text after 2 seconds
   useEffect(() => {
@@ -63,33 +102,45 @@ const ClubList = ({ navigation }) => {
         return false;
       }
     }
-  
-    // filter by categories selected
-    if (categoriesSelected.length > 0) { 
-      if (!categoriesSelected.some(category => club.clubCategories.includes(category))) { // make sure at least one category is in the club's categories
-        return false;
-      }
-    }
 
     return true;
   }
 
-  // filter clubs by category and sort into sortedClubs
-  const sortedClubs = CLUBCATEGORIES.map((category) => {
+  // sort categories into sortedClubs whenever categoriesSelected changes
+  useEffect(() => {
+    const sortedClubs = [];
+    for (let i = 0; i < CLUBCATEGORIES.length; i++) {
 
-    // only have data if category is selected
-    if (categoriesSelected.length > 0 && !categoriesSelected.includes(category.value)) {
-      return {
-        categoryName: category.emoji + ' ' + category.value,
-        data: []
-      };
+      const emoji = CLUBCATEGORIES[i].emoji;
+      const category = CLUBCATEGORIES[i].value;
+      const data = clubData[category];
+
+      if (!data) {
+        continue;
+      }
+      const filteredData = data.filter(filterFunct);
+
+      if (filteredData.length > 0) {
+        sortedClubs.push({
+          categoryName: emoji + category,
+          data: filteredData,
+        });
+      }
     }
 
-    return {
-      categoryName: category.emoji + ' ' + category.value,
-      data: clubData?.filter(filterFunct).filter((club) => club.clubCategories.includes(category.value))
-    };
-  });
+    setSortedClubs(sortedClubs);
+  }, [categoriesSelected, searchText, clubData]);
+
+  // toggle button
+  const toggleButton = (text) => {
+    const newCategories = categoriesSelected.slice();
+    if (newCategories.includes(text)) {
+      newCategories.splice(newCategories.indexOf(text), 1);
+    } else {
+      newCategories.push(text);
+    }
+    setSelectedCategories(newCategories);
+  }
 
   return (
     <View style={styles.container}>
@@ -101,60 +152,54 @@ const ClubList = ({ navigation }) => {
 
       <View style={styles.upperContent}>
         {/* categories selected */}
-        <ScrollView style={{marginHorizontal: 20}} contentContainerStyle={styles.categoriesButtonRow} horizontal>
-        { 
-          // create a club category component for each category
-          CLUBCATEGORIES.map((category) => {
 
-            // toggle button to update categories selected
-            const toggleButton = () => {
-              if (categoriesSelected.includes(category.value)) {
-                setSelectedCategories(categoriesSelected.filter((item) => item !== category.value));
-              } else {
-                setSelectedCategories([...categoriesSelected, category.value]);
-              }
-            }
+        <FlatList
+          data={CLUBCATEGORIES}
+          renderItem={({ item }) => (
+            <ToggleButton
+              text={item.emoji + " " + item.value}
+              onPress={() => toggleButton(item.value)}
+              toggled={categoriesSelected.includes(item.value)}
+              toggledCol={item.color}
+              untoggledCol={Colors.lightGray}
+            />
+          )}
+          keyExtractor={item => item.value}
+          horizontal={true}
+          contentContainerStyle={styles.categoriesButtonRow}
+          style={{marginHorizontal: 20}}
+        />
 
-            return (
-              <ToggleButton 
-                text={category.emoji + " " + category.value} 
-                onPress={toggleButton} 
-                toggled={categoriesSelected.includes(category.value)} 
-                toggledCol={category.color}
-                untoggledCol={Colors.lightGray}
-              />
-            )
-          })
-        }
-        </ScrollView>
         <View style={styles.separator} />
       </View>
       
-      <ScrollView style={styles.clubCategoriesView} contentContainerStyle={styles.clubCategoriesContent} nestedScrollEnabled={true}>
-      {
+      <View style={styles.lowerContent}>     
+      { 
+        // if no clubs found
+        sortedClubs.length === 0 ? (
+          <View style={styles.noClubsView}>
+            <Ionicon name="megaphone" size={100} color={Colors.lightGray} />
+            <CustomText style={styles.noClubsText} text="No clubs found." font='bold' />
+          </View>
+        ) : (
           // create a club category component for each category
-          sortedClubs?.map((category, index) => {
-            if (category.data.length != 0) {
-              return (
-                <View style={{flex: 1, width: '100%', alignItems: 'flex-start'}}>
-                  <View style={{height: 10}} />
-                  <ClubCategory name={category.categoryName} data={category.data} navigation={navigation} />
-                  <CustomText 
-                    text="Load more..." 
-                    style={styles.loadMoreText} 
-                    onPress={() => {
-                      navigation.navigate('ClubCategoryScreen', { 
-                        clubCategory: category.data,
-                        navigation: navigation,  
-                      })
-                    }}
-                  />
-                </View>
-              )
-            }
-          })
+          <ScrollView style={styles.clubCategoriesView} contentContainerStyle={styles.clubCategoriesContent} nestedScrollEnabled={true}>
+          {
+            sortedClubs?.map((category, index) => {
+              if (category.data.length != 0  && (categoriesSelected.length == 0 || categoriesSelected.includes(category.categoryName.slice(2)))) {
+                return (
+                  <View index={index} style={styles.categoryView}>  
+                    <ClubCategory name={category.categoryName} data={category.data} schoolKey={schoolKey} navigation={navigation} />
+                  </View>
+                )
+              }
+            })
+          }
+          </ScrollView>
+        )
       }
-      </ScrollView>
+      </View>
+      
 
       <View style={styles.fadeView}>
         <Fade visible={showText}>
@@ -180,6 +225,17 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 30,
     borderTopRightRadius: 30,
   },
+  lowerContent: {
+    justifyContent: 'flex-start',
+    backgroundColor: Colors.white,
+    flex: 1,
+  },
+  noClubsView: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%',
+    marginTop: 155,
+  },
   clubCategoriesView: {
     paddingLeft: 15,
     backgroundColor: Colors.white,
@@ -196,6 +252,11 @@ const styles = StyleSheet.create({
   categoriesButtonRow: {
     marginBottom: 10,
     gap: 10,
+  },
+  categoryView: {
+    flex: 1, 
+    width: '100%', 
+    alignItems: 'flex-start'
   },
   separator: {
     height: 1,
@@ -222,6 +283,11 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 20,
+  },
+  noClubsText: {
+    fontSize: 25,
+    color: Colors.darkGray,
+    marginTop: 10,
   },
   popUpText: {
     color: Colors.black,

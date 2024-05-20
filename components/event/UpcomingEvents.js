@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 // react native components
 import { View, StyleSheet } from 'react-native';
 // my components
@@ -12,33 +12,38 @@ import { CLUBCATEGORIES } from '../../macros/macros';
 import { Colors } from '../../styles/Colors';
 
 const UpcomingEvents = ({ filteredEvents, screenName, navigation }) => {
+  const [categorizedEvents, setCategorizedEvents] = useState({});
 
-  // sort events by time
-  let sortedEvents = [];
-  if (filteredEvents != []) {
-    sortedEvents = filteredEvents.sort((a, b) => {
-      return new Date(a.date + 'T' + a.time) - new Date(b.date + 'T' + b.time);
-    });
-  }
-  console.log(sortedEvents);
+  useEffect(() => {
 
-  // categorize events by date
-  let categorizedEvents = {};
-  sortedEvents.forEach((event) => {
-    // change date to format 'Jan 01, 2022'
-    let date = new Date(event.date).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric'
-    });
-    
-    // add event to the date
-    if (!categorizedEvents[date]) {
-      categorizedEvents[date] = [];
+    // sort events by time
+    let sortedEvents = [];
+    if (filteredEvents != []) {
+      sortedEvents = filteredEvents.sort((a, b) => {
+        return new Date(a.date + 'T' + a.time) - new Date(b.date + 'T' + b.time);
+      });
     }
-    categorizedEvents[date].push(event);
-  });
-  console.log(categorizedEvents);
+
+    // categorize events by date
+    let categorizedEvents = {};
+    sortedEvents.forEach((event) => {
+      // change date to format 'Jan 01, 2022'
+      let date = new Date(event.date).toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric'
+      });
+      
+      // add event to the date
+      if (!categorizedEvents[date]) {
+        categorizedEvents[date] = [];
+      }
+      categorizedEvents[date].push(event);
+    });
+    console.log(categorizedEvents);
+
+    setCategorizedEvents(categorizedEvents);
+  }, [filteredEvents]);
 
   return ( 
     <View style={styles.eventsContent}>
@@ -68,14 +73,13 @@ const UpcomingEvents = ({ filteredEvents, screenName, navigation }) => {
                       <View style={styles.separator} />
                       <EventCard 
                         key={index}
-                        screenName={screenName}
+                        id={item.id}
                         name={item.name}
-                        description={item.description} 
-                        date={item.date}
                         time={item.time}
-                        clubId={item.clubId}
                         icon={icon}
                         iconColor={iconColor}
+                        screenName={screenName}
+                        navigation={navigation}
                       />
                     </View>
                   )
@@ -85,7 +89,7 @@ const UpcomingEvents = ({ filteredEvents, screenName, navigation }) => {
           )
         })
       } 
-      {sortedEvents.length == 0 &&
+      {filteredEvents.length == 0 &&
         <View style ={styles.message} >
           <Ionicon name="calendar" size={100} color={Colors.lightGray} />
           <CustomText text="No upcoming events." font='bold' style={styles.messageText}/>

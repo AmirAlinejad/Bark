@@ -33,9 +33,15 @@ const ToggleButton = ({ text, onPress, toggled, toggledCol, untoggledCol, icon }
     toggled ? { color: Colors.white } : { color: Colors.darkGray }, 
   ];
 
+  // icon type
+  const iconType = toggled ? icon : icon + '-outline';
+
+  // icon color
+  const iconColor = toggled ? Colors.white : Colors.darkGray;
+
   return (
     <Pressable style={containerStyle} onPress={onPress} >
-      {icon && <Ionicons name={toggled ? icon : icon  + '-outline' } size={20} color={toggled ? Colors.white : Colors.darkGray} />}
+      {icon && <Ionicons name={iconType} size={20} color={iconColor} />}
       <CustomText style={textStyle} font="bold" text={text} />
     </Pressable>
   );
@@ -44,11 +50,11 @@ const ToggleButton = ({ text, onPress, toggled, toggledCol, untoggledCol, icon }
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 30,
     padding: 10,
     paddingHorizontal: 15,
-    alignItems: 'center',
     gap: 8,
-    borderRadius: 30,
   },
   text: {
     fontWeight: 'bold',

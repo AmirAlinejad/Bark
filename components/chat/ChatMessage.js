@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, TouchableOpacity } from 'react-native';
 // components
 import MessageItem from './MessageItem';
 import CustomText from '../display/CustomText';
@@ -15,33 +15,35 @@ import { handleLongPress, handlePressMessage } from '../../functions/backendFunc
 import { chatFormatDate } from '../../functions/timeFunctions';
 
 const ChatMessage = ({ 
-  item, 
-  isLastMessageOfTheDay, 
+  message,
+  isFirstMessageOfTheDay, 
   isLikedByUser, 
   likedMessages, 
   setLikedMessages, 
   currentUserPrivilege,
-  setLikedUsernames,
+  //setLikedUsernames,
+  setLikedProfileImages,
   setIsLikesModalVisible,
   setReplyingToMessage,
   setOverlayVisible,
   setOverlayUserData,
-  chatType,
+  messageRef,
   navigation,
 }) => {
 
-  const toggleLike = async (message) => {
+  const toggleLike = async () => {
     const userId = auth.currentUser.uid;
-    const messageRef = doc(firestore, chatType, message._id);
   
+    // compares by id
     let newLikedMessages = new Set(likedMessages);
-    const isCurrentlyLiked = likedMessages.has(message._id);
+    const isCurrentlyLiked = likedMessages.has(message.id);
     if (isCurrentlyLiked) {
-      newLikedMessages.delete(message._id);
+      newLikedMessages.delete(message.id);
     } else {
-      newLikedMessages.add(message._id);
+      newLikedMessages.add(message.id);
     }
     setLikedMessages(newLikedMessages);
+    console.log('newLikedMessages:', newLikedMessages);
   
     try {
       const messageDoc = await getDoc(messageRef);
@@ -57,13 +59,9 @@ const ChatMessage = ({
       const newLikesArray = isLikedByUser
         ? likesArray.filter(id => id !== userId)
         : [...likesArray, userId];
-      const newLikeCount = isLikedByUser
-        ? (data.likeCount || 0) - 1
-        : (data.likeCount || 0) + 1;
   
       await updateDoc(messageRef, {
         likes: newLikesArray,
-        likeCount: newLikeCount
       });
     } catch (error) {
       console.error('Error updating like:', error);
@@ -74,32 +72,39 @@ const ChatMessage = ({
 
   // get background color based on pinned and user id
   const getBackgroundColor = () => {
-    if (item.pinned) {
+    if (message.pinned) {
       return Colors.chatBubblePinned;
-    } else if (item.user._id == auth.currentUser.uid) {
+    } else if (message.user._id == auth.currentUser.uid) {
       return Colors.lightGray;
     } else {
       return Colors.lightGray;
     }
   }
 
+  // like count
+  const likeCount = message.likes ? message.likes.length : 0;
+
+  // heart icon color
+  const heartColor = isLikedByUser ? 'red' : 'black';
+  const heartIcon = isLikedByUser ? 'heart' : 'heart-outline';
+
   return (
     <View>
-        {isLastMessageOfTheDay && (
+        {isFirstMessageOfTheDay && (
         <View style={styles.dateContainer}>
           <View style={styles.dateWrapper}>
-            <CustomText style={styles.dateText} text={chatFormatDate(item.createdAt)} />
+            <CustomText style={styles.dateText} text={chatFormatDate(message.createdAt)} />
           </View>
         </View>
         )}
         <TouchableOpacity 
-          onPress={() => handlePressMessage(item.likes, setLikedUsernames, setIsLikesModalVisible)}
-          onLongPress={() => handleLongPress(item, currentUserPrivilege, setReplyingToMessage, chatType)} 
-          style={[styles.messageContainer, {backgroundColor : getBackgroundColor()}, item.pinned && styles.pinnedMessage]}>
-          <MessageItem item={item} navigation={navigation} setOverlayVisible={setOverlayVisible} setOverlayUserData={setOverlayUserData}/>
-          <TouchableOpacity onPress={() => toggleLike(item)} style={styles.likeButton}>
-            <Ionicons name={isLikedByUser ? "heart" : "heart-outline"} size={24} color={isLikedByUser ? "red" : "black"} />
-            <CustomText style={styles.likeCountText} text={item.likeCount || 0} />
+          onPress={() => handlePressMessage(message.likes, setLikedProfileImages, setIsLikesModalVisible)}
+          onLongPress={() => handleLongPress(message, currentUserPrivilege, setReplyingToMessage, messageRef)} 
+          style={[styles.messageContainer, {backgroundColor : getBackgroundColor()}]}>
+          <MessageItem item={message} navigation={navigation} setOverlayVisible={setOverlayVisible} setOverlayUserData={setOverlayUserData}/>
+          <TouchableOpacity onPress={toggleLike} style={styles.likeButton}>
+            <Ionicons name={heartIcon} size={24} color={heartColor} />
+            <CustomText style={styles.likeCountText} text={likeCount} />
           </TouchableOpacity>
         </TouchableOpacity>
     </View>

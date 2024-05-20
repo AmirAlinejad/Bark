@@ -8,8 +8,10 @@ import { Colors } from '../../styles/Colors';
 
 const CustomButton = ({ onPress, text, color}) => {
 
+  const backgroundColor = color ? color : Colors.buttonBlue;
+
   return (
-    <TouchableOpacity onPress={onPress} style={[styles.container, {backgroundColor : color ? color : Colors.buttonBlue}]}>
+    <TouchableOpacity onPress={onPress} style={[styles.container, {backgroundColor : backgroundColor}]}>
       <CustomText style={styles.text} text={text} font="bold" />
     </TouchableOpacity>
   );

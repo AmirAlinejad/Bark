@@ -16,7 +16,7 @@ import { Image } from 'expo-image';
 // my components
 import BottomSheetModal from '../../components/chat/BottomSheetModal';
 import ChatMessage from '../../components/chat/ChatMessage';
-import LikesBottomModal from '../../components/chat/LikesBottomModal';
+import LikesModal from '../../components/chat/LikesModal';
 import Header from '../../components/display/Header';
 import ProfileOverlay from '../../components/overlays/ProfileOverlay';
 import CustomText from '../../components/display/CustomText';
@@ -371,7 +371,7 @@ export default function Chat({ route, navigation }) {
         />
 
         {/* Likes Bottom Modal */}
-        <LikesBottomModal
+        <LikesModal
           isVisible={isLikesModalVisible}
           onClose={() => setIsLikesModalVisible(false)}
           userIDs={likedUsernames} // This prop now contains userids instead of usernames

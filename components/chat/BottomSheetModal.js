@@ -1,31 +1,51 @@
 import React from 'react';
-import { View, TouchableOpacity, TouchableWithoutFeedback, StyleSheet, Modal, Text } from 'react-native';
+import { View, TouchableOpacity, TouchableWithoutFeedback, StyleSheet, Modal, Text, FlatList } from 'react-native';
+// swipe up down modal
+import SwipeUpDownModal from 'react-native-swipe-modal-up-down';
+// colors
+import { Colors } from '../../styles/Colors';
 
 const BottomSheetModal = ({ isVisible, onClose, onUploadImage, onOpenCamera, onUploadGif }) => {
+
+  const renderItem = ({ item }) => {
+    return (
+      item.cancel ? (
+        <TouchableOpacity style={styles.cancelButton} onPress={item.onPress}>
+          <Text style={styles.cancelButtonText}>{item.key}</Text>
+        </TouchableOpacity>
+      ) : (
+        <TouchableOpacity style={styles.option} onPress={item.onPress}>
+          <Text style={styles.optionText}>{item.key}</Text>
+        </TouchableOpacity>
+      )
+    );
+  }
+
   return (
-    <Modal
-      animationType="slide"
-      transparent={true}
-      visible={isVisible}
-      onRequestClose={onClose}
-    >
+    <SwipeUpDownModal
+      modalVisible={isVisible} 
+      pressToanimate={isVisible}
+      onClose={onClose}
+      ContentModal={
       <TouchableWithoutFeedback style={styles.overlay} onPress={onClose}>
         <View style={styles.modal}>
-          <TouchableOpacity style={styles.option} onPress={onUploadImage}>
-            <Text style={styles.optionText}>Upload Picture</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.option} onPress={onUploadGif}>
-            <Text style={styles.optionText}>Upload GIF</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.option} onPress={onOpenCamera}>
-            <Text style={styles.optionText}>Use Camera</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.cancelButton} onPress={onClose}>
-            <Text style={styles.cancelButtonText}>Cancel</Text>
-          </TouchableOpacity>
+          <View style={styles.bar} />
+          <FlatList
+            scrollEnabled={false}
+            data={[
+              { key: 'Upload Picture', onPress: onUploadImage },
+              { key: 'Upload GIF', onPress: onUploadGif },
+              { key: 'Use Camera', onPress: onOpenCamera },
+              { key: 'Upload a file', onPress: () => {} },
+              { key: 'Send a poll', onPress: () => {} },
+              { key: 'Cancel', onPress: onClose, cancel: true },
+            ]}
+            renderItem={renderItem}
+          />
         </View>
       </TouchableWithoutFeedback>
-    </Modal>
+    }
+    />
   );
 };
 
@@ -36,28 +56,36 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   modal: {
-    backgroundColor: 'white',
+    backgroundColor: Colors.white,
+    width: '100%',
+    marginTop: '135%',
     borderTopLeftRadius: 25,
     borderTopRightRadius: 25,
     padding: 20,
-    width: '100%',
-    marginTop: '152%'
+  },
+  bar: {
+    width: 50,
+    height: 5,
+    backgroundColor: Colors.lightGray,
+    borderRadius: 5,
+    alignSelf: 'center',
+    marginBottom: 10,
   },
   option: {
     padding: 15,
     borderBottomWidth: 1,
-    borderBottomColor: '#EEEEEE',
+    borderBottomColor: Colors.lightGray,
   },
   optionText: {
     fontSize: 18,
   },
   cancelButton: {
-    padding: 15,
     alignItems: 'center',
+    padding: 15,
   },
   cancelButtonText: {
     fontSize: 18,
-    color: 'red',
+    color: Colors.red,
   },
 });
 

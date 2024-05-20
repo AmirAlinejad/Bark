@@ -11,12 +11,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../styles/Colors';
 
 // club card displayed on the club list screen
-const EventCard = ({ name, time, icon, iconColor, screenName }) => { // description and time are not used yet
+const EventCard = ({ id, name, time, icon, iconColor, screenName, navigation }) => { // description and time are not used yet
 
   const onPress = () => {
     // Navigate to the event screen
     navigation.navigate("EventScreen", {
-      event: item,
+      eventId: id,
       fromScreen: screenName? screenName : null,
     });
   }

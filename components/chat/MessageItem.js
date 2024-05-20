@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { View, StyleSheet, TouchableOpacity } from "react-native";
 // functions
 import { updateProfileData } from "../../functions/backendFunctions";
-import { getAuth } from "firebase/auth";
+import { auth } from "../../backend/FirebaseConfig";
 // my components
 import ProfileImg from "../display/ProfileImg";
 import CustomText from "../display/CustomText";
@@ -12,12 +12,15 @@ import { Colors } from "../../styles/Colors";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 // image
 import { Image } from "expo-image";
-import { onMessage } from "firebase/messaging";
 
 const MessageItem = ({ item, navigation, setOverlayVisible, setOverlayUserData }) => {
+
     // states
     const [userId, setUserId] = useState(null);
 
+    const maxReplyToTextLength = 20; // Maximum length of the reply to text
+
+    // format date time
     formatDateTime = (date) => {
         const options = { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' };
         return new Date(date).toLocaleDateString(undefined, options);
@@ -25,7 +28,6 @@ const MessageItem = ({ item, navigation, setOverlayVisible, setOverlayUserData }
 
     // use effect
     useEffect(() => {
-        const auth = getAuth();
         setUserId(auth.currentUser.uid);
     }, []);
 
@@ -44,12 +46,21 @@ const MessageItem = ({ item, navigation, setOverlayVisible, setOverlayUserData }
         navigation.navigate('ImageViewerScreen', { imageUri: item.gifUrl });
     }
 
+    // message time
+    const messageTime = formatDateTime(item.createdAt).split(" ")[4];
+
+    // reply to text
+    let replyToText = '';
+    if (item.replyTo) {
+        replyToText = item.replyTo.text.length > maxReplyToTextLength ? `${item.replyTo.text.substring(0, 20)}...` : item.replyTo.text
+    }
+
     return (
         <View style={styles.messageItem}>
             <TouchableOpacity style={styles.avatarContainer} onPress={onMessagePress}>
                 <ProfileImg profileImg={item.user.avatar} width={40} />
             </TouchableOpacity>
-            <View style={styles.messageContent}>
+            <View>
                 {item.user._id != userId && (
                     <CustomText style={styles.senderName} text={item.user.first + ' ' + item.user.last} font="bold"/>
                 )}
@@ -71,8 +82,7 @@ const MessageItem = ({ item, navigation, setOverlayVisible, setOverlayUserData }
                 <View style={styles.replyContextContainer}>
                     <View style={styles.arrowIcon}>
                         <MaterialCommunityIcons name="arrow-left-top" size={24} color={Colors.darkGray} />
-                    </View>
-          
+                    </View>          
                     <CustomText style={styles.replyContextLabel} text={`${item.replyTo.user.first} ${item.replyTo.user.last}`} font="bold"/>
                     {item.replyTo.image && (
                     <TouchableOpacity style={styles.replyContent}>
@@ -85,13 +95,11 @@ const MessageItem = ({ item, navigation, setOverlayVisible, setOverlayUserData }
                     </TouchableOpacity>
                     )}
                     {item.replyTo.text && (
-                    <CustomText style={styles.replyContextText} text={
-                        item.replyTo.text.length > 20 ? `${item.replyTo.text.substring(0, 20)}...` : item.replyTo.text
-                    } />
+                    <CustomText style={styles.replyContextText} text={replyToText} />
                     )}
                 </View>
                 )}
-                <CustomText style={styles.dateTime} text={formatDateTime(item.createdAt).split(" ")[4]} font="light"/>
+                <CustomText style={styles.dateTime} text={messageTime} font="light"/>
             </View>
         </View>
     )

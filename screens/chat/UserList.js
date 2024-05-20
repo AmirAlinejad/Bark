@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, FlatList, Text, TouchableOpacity, Alert, ScrollView } from 'react-native';
+// storage
+import AsyncStorage from '@react-native-async-storage/async-storage';
 // my components
 import Header from '../../components/display/Header';
 import SearchBar from '../../components/input/SearchBar';
@@ -8,13 +10,14 @@ import CustomText from '../../components/display/CustomText';
 import ToggleButton from '../../components/buttons/ToggleButton';
 import ProfileOverlay from '../../components/overlays/ProfileOverlay';
 // Firebase
-import { ref, get, remove, update } from 'firebase/database';
+import { ref, get, remove, update, set } from 'firebase/database';
 import { getAuth } from 'firebase/auth';
-import { db } from '../../backend/FirebaseConfig';
+import { doc, getDoc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { db, firestore } from '../../backend/FirebaseConfig';
 // icons
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons'; // Ensure react-native-vector-icons is installed
 // functions
-import { emailSplit, checkMembership, updateProfileData } from '../../functions/backendFunctions';
+import { emailSplit, checkMembership, fetchClubMembers } from '../../functions/backendFunctions';
 // styles
 import { Colors } from '../../styles/Colors';
 
@@ -26,6 +29,7 @@ const UserList = ({ route, navigation }) => {
   const [selectedPrivilege, setSelectedPrivilege] = useState('all');
   const [currentUserId, setCurrentUserId] = useState(null);
   const [currentUserPrivilege, setCurrentUserPrivilege] = useState('');
+  const [filteredMembers, setFilteredMembers] = useState([]);
   // overlay
   const [overlayVisible, setOverlayVisible] = useState(false);
   const [overlayUserData, setOverlayUserData] = useState({});
@@ -34,11 +38,12 @@ const UserList = ({ route, navigation }) => {
   
   useEffect(() => {
 
-    fetchClubMembers();
+    fetchClubMembers(clubId, setClubMembers);
 
     const asyncFunc = async () => {
-      const auth = getAuth();
-      const user = auth.currentUser;
+      // get current user id from async storage
+      const user = await AsyncStorage.getItem('user');
+
       setCurrentUserId(user.uid);
       checkMembership(clubId, setCurrentUserPrivilege);
       setLoading(false);
@@ -68,29 +73,10 @@ const UserList = ({ route, navigation }) => {
     return true;
   };
 
-  const filteredMembers = clubMembers.filter(filterMembers);
-
-  // fetch club members
-  const fetchClubMembers = async () => {
-    // have to do this because club members changes during user promotion/demotion/deletion
-    const user = getAuth().currentUser;
-    
-    if (user) {
-      const clubMembersRef = ref(db, `${emailSplit()}/clubs/${clubId}/clubMembers`);
-      const snapshot = await get(clubMembersRef);
-      if (snapshot.exists()) {
-        const members = snapshot.val();
-        setClubMembers(Object.keys(members).map((member) => {
-          return {
-            ...members[member],
-            id: member,
-          };
-        }));
-      } else {
-        console.log("No members found.");
-      }
-    }
-  };
+  // update filtered members when club members change
+  useEffect(() => {
+    setFilteredMembers(clubMembers.filter(filterMembers));
+  }, [clubMembers, searchQuery, selectedPrivilege]);
 
   // sets buttons for editing members
   const actionButtonPressed = (member) => {
@@ -121,26 +107,24 @@ const UserList = ({ route, navigation }) => {
     // Assuming memberId is the ID of the member being promoted.
     if (memberPrivilege !== 'owner') {
       let newPrivilege = memberPrivilege === 'member' ? 'admin' : 'owner';
-      const memberRef = ref(db, `${emailSplit()}/clubs/${clubId}/clubMembers/${memberId}`);
-      const snapshot = await get(memberRef);
-      
-      if (snapshot.exists()) {
-        const member = snapshot.val();
-        // Promote the member
-        await update(memberRef, { privilege: newPrivilege });
+
+      const schoolKey = await emailSplit();
+
+      // Update the member's privilege in the clubMemberData collection
+      const memberDocRef = doc(firestore, 'schools', schoolKey, 'clubMemberData', 'clubs', clubId, memberId);
+      await updateDoc(memberDocRef, { privilege: newPrivilege });
         
-        // If promoting to owner, demote the current owner to admin
-        if (newPrivilege === 'owner') {
-          await update(ref(db, `${emailSplit()}/clubs/${clubId}/clubMembers/${currentUserId}`), { privilege: 'admin' });
-          setCurrentUserPrivilege('admin');
-          Alert.alert("Ownership Transferred", `You are now an admin. ${member.userName} is the new owner.`);
-        } else {
-          Alert.alert("Promotion Success", `Member has been promoted to ${newPrivilege}.`);
-        }
+      // If promoting to owner, demote the current owner to admin
+      if (newPrivilege === 'owner') {
+        const currentMemberDocRef = doc(firestore, 'schools', schoolKey, 'clubMemberData', 'clubs', clubId, currentUserId);
+        await updateDoc(currentMemberDocRef, { privilege: 'admin' });
+        setCurrentUserPrivilege('admin');
+        Alert.alert("Ownership Transferred", `You are now an admin. ${member.userName} is the new owner.`);
       } else {
-        Alert.alert("Error", "Member not found.");
+        Alert.alert("Promotion Success", `Member has been promoted to ${newPrivilege}.`);
       }
-      fetchClubMembers();
+
+      fetchClubMembers(clubId, setClubMembers);
     } else {
       Alert.alert("Error", "This member is already an owner.");
     }
@@ -149,26 +133,34 @@ const UserList = ({ route, navigation }) => {
   const demoteMember = async (memberId, memberPrivilege) => {
 
     let newPrivilege = memberPrivilege === 'admin' ? 'member' : 'admin'; // Simplify for this context
-    await update(ref(db, `${emailSplit()}/clubs/${clubId}/clubMembers/${memberId}`), { privilege: newPrivilege });
-    fetchClubMembers();
+
+    const schoolKey = await emailSplit();
+    const memberDocRef = doc(firestore, 'schools', schoolKey, 'clubMemberData', 'clubs', clubId, memberId);
+    await updateDoc(memberDocRef, { privilege: newPrivilege });
+
+    fetchClubMembers(clubId, setClubMembers);
     Alert.alert("Demotion Success", `Member has been demoted to ${newPrivilege}.`);
   };
 
   const removeMemberConfirmed = async (memberId) => {
-
-    await remove(ref(db, `${emailSplit()}/clubs/${clubId}/clubMembers/${memberId}`));
-    fetchClubMembers();
+    // Assuming memberId is the ID of the member being removed.
+    const schoolKey = await emailSplit();
+    const memberDocRef = doc(firestore, 'schools', schoolKey, 'clubMemberData', 'clubs', clubId, memberId);
+    await deleteDoc(memberDocRef);
+    
+    fetchClubMembers(clubId, setClubMembers);
     Alert.alert("Removal Success", "Member has been successfully removed from the club.");
   };
 
   const renderMember = ({ item }) => {
+    console.log(item);
     return (
       <View style={styles.memberContainer}>
       
         <View style={styles.memberInfo}>
           <TouchableOpacity onPress={() => {
             setOverlayVisible(true);
-            updateProfileData(item.id, setOverlayUserData);
+            setOverlayUserData(item);
           }} style={styles.avatarContainer}>
             <ProfileImg profileImg={item.profileImg} width={50} />
           </TouchableOpacity>

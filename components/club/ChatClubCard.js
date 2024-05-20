@@ -1,19 +1,23 @@
-import React from 'react';
+import React, { memo } from 'react';
 // react native components
 import { View, StyleSheet, TouchableOpacity, Image } from 'react-native';
 // my components
 import CustomText from '../display/CustomText';
 import ClubImg from './ClubImg';
+// functions
+import { goToChatScreen } from '../../functions/navigationFunctions';
 // icons
 import { Ionicons } from '@expo/vector-icons';
 // colors
 import { Colors } from '../../styles/Colors';
 
 // club card displayed on the club list screen
-const ClubCard = ({ onPress, name, description, img, muted, toggleMute, unreadMessages }) => {
-
-  console.log('unreadMessages', unreadMessages)
+const ChatClubCard = ({ name, description, img, clubId, muted, toggleMute, unreadMessages, lastMessage, lastMessageTime, navigation }) => {
   
+  onPress = () => {
+    goToChatScreen(clubId, navigation);
+  }
+
   return (
     <View style={styles.clubCard} >   
       <View style={styles.container}>
@@ -23,18 +27,19 @@ const ClubCard = ({ onPress, name, description, img, muted, toggleMute, unreadMe
         
         <View style={styles.cardText}>
           <TouchableOpacity style={styles.nameAndDesc} onPress={onPress}>
-            <View >
               {/* club name and description */}
-              <CustomText style={styles.textName} text={name} numberOfLines={1} font='bold'/>
-              <CustomText style={styles.textNormal} text={description} numberOfLines={3} />
-            </View> 
+              <View>
+                <CustomText style={styles.textName} text={name} numberOfLines={1} font='bold'/>
+                <CustomText style={styles.textNormal} text={lastMessage} numberOfLines={3} />
+              </View>
+              <CustomText style={styles.timeText} text={lastMessageTime} numberOfLines={1} />
           </TouchableOpacity>
 
           <View style={styles.cardRight}>
             {/* notification counter */}
             {unreadMessages > 0 &&
               <View style={styles.unreadMessageCircle}>
-                <CustomText text={unreadMessages} font='bold' style={{color: Colors.white}} />
+                <CustomText text={unreadMessages} font='bold' style={styles.notificationCounterText} />
               </View>
             }
             {/* mute button */}
@@ -69,6 +74,8 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'column',
     height: 100,
+    marginVertical: 2, 
+    justifyContent: 'space-between',
   },
   cardRight: {
     flexDirection: 'row',
@@ -95,6 +102,14 @@ const styles = StyleSheet.create({
   textNormal: {
     fontSize: 15,
   },
+  timeText: {
+    fontSize: 15,
+    color: Colors.darkGray,
+  },
+  notificationCounterText: {
+    fontSize: 15,
+    color: Colors.white,
+  }, 
 });
 
-export default ClubCard;
+export default memo(ChatClubCard);

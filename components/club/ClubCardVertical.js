@@ -10,8 +10,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../styles/Colors';
 
 // club card displayed on the club list screen
-const ClubCardVertical
- = ({ onPress, name, description, img, memberCount }) => {
+const ClubCardVertical = ({ onPress, name, description, img, memberCount }) => {
   
   return (
     <TouchableOpacity style={styles.clubCard} onPress={onPress} >   
@@ -24,11 +23,11 @@ const ClubCardVertical
             <CustomText style={styles.textName} text={name} numberOfLines={1} font='bold'/>
             <CustomText style={styles.textNormal} text={description} numberOfLines={3} />
           </View> 
-          <View style={styles.cardRight}>
+          {/*<View style={styles.cardRight}>
             {/* member count */}
-            <CustomText style={styles.numberText} text={`${memberCount}  `} numberOfLines={1} />
+            {/*<CustomText style={styles.numberText} text={`${memberCount}  `} numberOfLines={1} />
             <Ionicons name="people-outline" size={25} color={Colors.black} />   
-          </View>
+          </View>*/}
         </View>
       </View>
     </TouchableOpacity>
@@ -37,8 +36,8 @@ const ClubCardVertical
 
 const styles = StyleSheet.create({
   clubCard: {
-    flex: 1,
-    width: '100%',
+    width: 300,
+    height: 100,
   },
   container: {
     flexDirection: 'row',

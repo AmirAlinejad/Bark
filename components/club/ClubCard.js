@@ -1,12 +1,19 @@
-import React from 'react';
+import React, { memo } from 'react';
 // react native components
 import { View, StyleSheet, TouchableOpacity } from 'react-native';
+// functions
+import { goToClubScreen } from '../../functions/navigationFunctions';
 // my components
 import CustomText from '../display/CustomText';
 import ClubImg from './ClubImg';
 
 // club card displayed on the club list screen
-const ClubCard = ({ onPress, name, description, img }) => {
+const ClubCard = ({ clubId, onPress, name, description, img, navigation }) => {
+
+  // navigate to the club screen
+  onPress = () => {
+    goToClubScreen(clubId, navigation);
+  }
   
   return (
     <TouchableOpacity style={styles.clubCard} onPress={onPress} >   
@@ -18,13 +25,13 @@ const ClubCard = ({ onPress, name, description, img }) => {
 
 const styles = StyleSheet.create({
   clubCard: {
-    borderRadius: 10,
-    width: 100,
     justifyContent: 'flex-start',
     alignItems: 'flex-start',
+    borderRadius: 10,
+    width: 100,
     gap: 5,
-    marginBottom: 10,
+    marginBottom: 5,
   },
 });
 
-export default ClubCard;
+export default memo(ClubCard);

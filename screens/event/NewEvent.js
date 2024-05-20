@@ -10,13 +10,15 @@ import CustomText from '../../components/display/CustomText';
 import Header from '../../components/display/Header';
 import IconOverlay from '../../components/overlays/IconOverlay';
 import PrivacySwitch from '../../components/input/PrivacySwitch';
+// google places autocomplete
+import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete';
 // functions
 import { emailSplit } from '../../functions/backendFunctions';
 // backend
-import { db } from '../../backend/FirebaseConfig';
+import { db, firestore } from '../../backend/FirebaseConfig';
 // date time picker
 import { ref, set } from "firebase/database";
-import { doc, updateDoc } from "firebase/firestore"; // firestore
+import { doc, setDoc } from "firebase/firestore"; // firestore
 import DateTimePicker from '@react-native-community/datetimepicker';
 // maps
 import MapView, { Marker } from 'react-native-maps';
@@ -34,7 +36,7 @@ Geocoder.init('AIzaSyAoX4MTi2eAw2b_W3RzA35Cy5yjpwQYV3E');
 const NewEvent = ({ route, navigation }) => { 
 
   // get club name from previous screen
-  const { clubId, clubCategories, event } = route.params;
+  const { clubId, clubCategories, clubName, event } = route.params;
 
   // create states for event info
   const [eventName, setName] = useState(event ? event.name : "");
@@ -49,14 +51,14 @@ const NewEvent = ({ route, navigation }) => {
   // overlay
   const [overlayVisible, setOverlayVisible] = useState(false);
 
-  // location and address are const
+  /*// location and address are const (not implemented currently)
   const location = event ? event.location : {
     // university of georgia by default
     latitude: 33.9562,
     longitude: -83.3740,
     latitudeDelta: 0.0922,
     longitudeDelta: 0.0421,
-  };
+  };*/
   const address = event ? event.address : "";
 
   // submit the form
@@ -64,7 +66,7 @@ const NewEvent = ({ route, navigation }) => {
     setLoading(true);
 
     // name, desc, address, and time are required
-    if (!eventName || !eventDescription || !date || !time) {
+    if (!eventName || !eventDescription) {
       alert("Please fill out all required fields.");
       setLoading(false);
       return;
@@ -76,54 +78,40 @@ const NewEvent = ({ route, navigation }) => {
       const eventId = Math.random().toString(36).substring(7);
 
       // get school key from async storage
-      const schoolKey = await AsyncStorage.getItem('school').key;
-
-      /*set(ref(db,  `${emailSplit()}/events/${eventId}`), {
-        id: eventId,
-        clubId: clubId,
-        categories: clubCategories,
-        name: eventName,
-        description: eventDescription,
-        date: date.toDateString(),
-        time: time.toTimeString(),
-        duration: duration,
-        location: location,
-        address: address,
-        instructions: instructions,
-        roomNumber: roomNumber,
-        public: publicEvent,
-      });*/
+      const schoolKey = await emailSplit();
 
       try {
-        const docRef = await updateDoc(doc(db, `${emailSplit()}/eventData/${eventId}`), {
+
+        const newEvent = {
           id: eventId,
           clubId: clubId,
+          clubName: clubName,
           categories: clubCategories,
           name: eventName,
           description: eventDescription,
           date: date.toDateString(),
           time: time.toTimeString(),
-          duration: duration,
-          location: location,
-          address: address,
-          instructions: instructions,
-          roomNumber: roomNumber,
-          public: publicEvent,
-        });
+          publicEvent: publicEvent,
+        }
+        if (duration) newEvent.duration = duration
+        //if (location) newEvent.location = location
+        if (address) newEvent.address = address
+        if (instructions) newEvent.instructions = instructions
+        if (roomNumber) newEvent.roomNumber = roomNumber
+        
+        await setDoc(doc(firestore, 'schools', schoolKey, 'eventData', eventId), newEvent);
 
-        // update calendar data
-        await updateDoc(doc(db, `${emailSplit()}/calendarData/${eventId}`), {
+        // set calendar event
+        await setDoc(doc(firestore, 'schools', schoolKey, 'calendarData', eventId), {
+          clubId: clubId,
           id: eventId,
-          categories: clubCategories,
           name: eventName,
           date: date.toDateString(),
           time: time.toTimeString(),
-          duration: duration,
-          public: publicEvent,
+          categories: clubCategories,
+          publicEvent: publicEvent,
         });
 
-
-        console.log("Document written with ID: ", docRef.id);
       } catch (e) {
         console.error("Error adding document: ", e);
       }
@@ -143,7 +131,7 @@ const NewEvent = ({ route, navigation }) => {
       event: {
         eventName: eventName,
         description: eventDescription,
-        location: location,
+        //location: location,
         address: address,
         date: date.toDateString(),
         time: time.toTimeString(),
@@ -151,8 +139,10 @@ const NewEvent = ({ route, navigation }) => {
         roomNumber: roomNumber,
         instructions: instructions,
         clubId: clubId,
-        public: publicEvent,
+        clubName: clubName,
         categories: clubCategories,
+        publicEvent: publicEvent,
+        rsvps: [],
       }
     });
   }
@@ -201,6 +191,19 @@ const NewEvent = ({ route, navigation }) => {
           onChange={(event, selectedTime) => setTime(selectedTime)}
         />
 
+        <CustomText style={styles.textNormal} font="bold" text="Location" />
+        {
+          address ? (
+            <TouchableOpacity onPress={onMapPressed}>
+              <CustomText style={styles.textPressableSmall} text={splitAddress(address)[0] + "\n" + splitAddress(address)[1]} />
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity onPress={onMapPressed}>
+              <CustomText style={styles.textPressable} text="Select a location" />
+            </TouchableOpacity>
+          )
+        }
+
         <CustomText style={styles.textNormal} font="bold" text="Duration" />
         <CustomInput
           placeholder="Duration (in minutes)"
@@ -210,7 +213,7 @@ const NewEvent = ({ route, navigation }) => {
           width={190}
         />
 
-        <CustomText style={styles.textNormal} font="bold" text="Location" /> 
+        {/*<CustomText style={styles.textNormal} font="bold" text="Location" /> 
         <TouchableOpacity style={styles.mapStyle} onPress={onMapPressed}>
           <MapView
             style={styles.mapStyle}
@@ -221,12 +224,7 @@ const NewEvent = ({ route, navigation }) => {
           <View style={{position: 'absolute', top: 40, left: 40, right: 40, down: 40}}>
             <Ionicons name="location" size={70} color='rgba(0,0,0,0.5)' />
           </View>
-        </TouchableOpacity>
-        {address ? (
-            <CustomText style={styles.textSmall} text={splitAddress(address)[0] + "\n" + splitAddress(address)[1]} />
-          ) : (
-            <CustomText style={styles.textSmall} text="No location selected" />
-          )}
+        </TouchableOpacity>*/}
 
         <CustomText style={styles.textNormal} font="bold" text="Room Number" />
         <CustomInput
@@ -318,6 +316,18 @@ const styles = StyleSheet.create({
     fontSize: 20,
     marginLeft: 5,
     marginTop: 10,
+  },
+  textPressable: {
+    fontSize: 18,
+    marginLeft: 5,
+    marginTop: 10,
+    color: Colors.buttonBlue,
+  },
+  textPressableSmall: {
+    fontSize: 16,
+    marginLeft: 5,
+    marginTop: 10,
+    color: Colors.buttonBlue,
   },
   textSmall: {
     fontSize: 12,

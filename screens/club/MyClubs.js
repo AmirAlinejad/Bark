@@ -1,19 +1,21 @@
 import React, { useState, useEffect } from 'react';
 // react native components
 import { View, StyleSheet, ScrollView } from 'react-native';
+// use focus effect
+import { useFocusEffect } from '@react-navigation/native';
+// async storage
+import AsyncStorage from '@react-native-async-storage/async-storage';
+// storage
 // my components
 import ChatClubCard from '../../components/club/ChatClubCard';
 import Header from '../../components/display/Header';
 import SearchBar from '../../components/input/SearchBar';
 import CustomText from '../../components/display/CustomText';
 // functions
-import { getSetAllClubsData, getSetUserData, emailSplit } from '../../functions/backendFunctions';
-import { goToChatScreen } from '../../functions/navigationFunctions';
-// firebase auth
-import { getAuth } from 'firebase/auth';
+import { emailSplit, getSetMyClubsData, getSetUserData } from '../../functions/backendFunctions';
 // backend
-import { set, ref } from 'firebase/database';
-import { db } from '../../backend/FirebaseConfig';
+import { firestore } from '../../backend/FirebaseConfig';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
 // icons
 import Ionicon from 'react-native-vector-icons/Ionicons';
 // colors
@@ -22,89 +24,74 @@ import { Colors } from '../../styles/Colors';
 const MyClubs = ({ navigation }) => {
   // user data
   const [userData, setUserData] = useState(null);
-  // user id
-  const [userId, setUserId] = useState('');
   // club data
   const [clubData, setClubData] = useState([]);
   // muted clubs
   const [mutedClubs, setMutedClubs] = useState([]);
+  // unread messages
+  //const [unreadMessages, setUnreadMessages] = useState({});
   // search text
   const [searchText, setSearchText] = useState('');
   // loading
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  const asyncFunc = async () => {
+    setLoading(true);
 
-    const asyncFunc = async () => {
-      setLoading(true);
+    // get user data
+    getSetUserData(setUserData);
+    
+    // get all club data from db
+    getSetMyClubsData(setClubData, setMutedClubs);
+    
+    setLoading(false);
+  }
 
-      // get user id from auth
-      const auth = getAuth(); 
-      const user = auth.currentUser;
-
-      if (user) {
-        await getSetUserData(setUserData);
-        setUserId(user.uid);
-      }
-      
-      // get all club data from db
-      getSetAllClubsData(setClubData);
-
-      setLoading(false);
+  // load myClubs data from async storage
+  const loadMyClubsData = async () => {
+    const myClubsData = await AsyncStorage.getItem('myClubs');
+    if (myClubsData) {
+      setClubData(JSON.parse(myClubsData));
     }
+  }
 
-    asyncFunc();
-  }, []);
+  // get data from firebase
+  useFocusEffect(
 
-  useEffect(() => {
-    const intervalId = setInterval(() => {  //assign interval to a variable to clear it.
-      getSetUserData(setUserData);
-    }, 1000)
-  
-    return () => clearInterval(intervalId); //This is important
-   
-  }, [])
+    React.useCallback(() => {
+      loadMyClubsData();
+      asyncFunc();
 
-  // update muted clubs once userData is updated
-  useEffect(() => {
-    if (userData) {
-      setMutedClubs(userData.mutedClubs);
-    } else {
-      setMutedClubs([]);
-    }
-  }, [userData]);
+    }, [])
+  );
 
   // toggle mute
-  const toggleMute = (clubId) => {
+  const toggleMute = async (clubId) => {
+    
+    // get school key
+    const schoolKey = await emailSplit();
 
-    if (mutedClubs == undefined) {
-      // add club to muted clubs
-      setMutedClubs([clubId]);
-      set(ref(db, `${emailSplit()}/users/${userId}/mutedClubs`), [clubId]);
-    } else if (mutedClubs.includes(clubId)) {
-      const updatedMutedClubs = mutedClubs.filter((id) => id !== clubId);
-      setMutedClubs(updatedMutedClubs);
-      // update user data
-      set(ref(db, `${emailSplit()}/users/${userId}/mutedClubs`), updatedMutedClubs);
-      // update club data
-      set(ref(db, `${emailSplit()}/clubs/${clubId}/clubMembers/${userId}/muted`), false)
-    } else {
-      const updatedMutedClubs = [...mutedClubs, clubId];
-      setMutedClubs(updatedMutedClubs);
-      // update user data
-      set(ref(db, `${emailSplit()}/users/${userId}/mutedClubs`), updatedMutedClubs);
-      // update club data
-      set(ref(db, `${emailSplit()}/clubs/${clubId}/clubMembers/${userId}/muted`), true)
-    }
+    // get club member data
+    const clubMemberRef = doc(firestore, 'schools', schoolKey, 'clubMemberData', 'clubs', clubId, userData.id);
+    getDoc(clubMemberRef).then((clubMemberSnapshot) => {
+      const clubMemberData = clubMemberSnapshot.data();
+
+      // if club member data exists
+      if (clubMemberData) {
+        // toggle mute
+        const muted = clubMemberData.muted;
+        updateDoc(clubMemberRef, { muted: !muted });
+        if (muted) {
+          setMutedClubs(mutedClubs.filter((item) => item !== clubId));
+        } else {
+          setMutedClubs([...mutedClubs, clubId]);
+        }
+      }
+    });
   };
 
   // filter function
   const filterFunct = (club) => {
-
-    // filter by my clubs
-    if (!club.clubMembers || !Object.keys(club.clubMembers).includes(userId)) {
-      return false;
-    }
 
     // filter by search text
     if (searchText.length > 0) {
@@ -120,13 +107,9 @@ const MyClubs = ({ navigation }) => {
   const filteredClubs = clubData.filter(filterFunct);
 
   // sort clubs by most recent message
-  let sortedClubs = [];
-  if (filteredClubs.length > 0) {
-    sortedClubs = filteredClubs.sort((a, b) => {
-      console.log(a.mostRecentMessage, b.mostRecentMessage);
-      return a.mostRecentMessage > b.mostRecentMessage? -1 : 1;
-    });
-  }
+  const sortedClubs = filteredClubs.sort((a, b) => {
+    return a.lastMessageTime > b.lastMessageTime ? -1 : 1;
+  });
 
   return (
     <View style={styles.container}>
@@ -140,24 +123,18 @@ const MyClubs = ({ navigation }) => {
       { 
         // if no clubs found
         sortedClubs.length === 0 ? (
-          <View style={{alignItems: 'center', justifyContent: 'center', width: '100%', marginTop: 200 }}>
+          <View style={styles.noClubsView}>
             <Ionicon name="chatbubbles" size={100} color={Colors.lightGray} />
             <CustomText style={styles.title} text="No clubs found." font='bold' />
           </View>
         ) : 
           // create a chat club card for each club
           sortedClubs.map((item, index) => {
-
-            let unreadMessages = 0;
-            if (userData && userData.clubs && userData.clubs[item.clubId] && userData.clubs[item.clubId].unreadMessages) {
-              unreadMessages = userData.clubs[item.clubId].unreadMessages;
-            }
-
             return (
               <View key={index} style={{width: '100%'}}>
-                <ChatClubCard onPress={() => goToChatScreen(item, navigation)} name={item.clubName} description={item.clubDescription} img={item.clubImg} 
-                  muted={mutedClubs !== undefined ? mutedClubs.includes(item.clubId) : false} toggleMute={() => toggleMute(item.clubId)} 
-                  unreadMessages={unreadMessages} />
+                <ChatClubCard name={item.clubName} description={item.clubDescription} img={item.clubImg} 
+                  muted={mutedClubs !== undefined ? mutedClubs.includes(item.clubId) : false} toggleMute={() => toggleMute(item.clubId)}
+                  unreadMessages={item.unreadMessages} lastMessage={item.lastMessage} lastMessageTime={item.lastMessageTime} clubId={item.clubId}/>
                 {
                   index === sortedClubs.length - 1 ? null : <View style={styles.separator}></View>
                 }
@@ -192,6 +169,12 @@ const styles = StyleSheet.create({
   clubContent: {
     justifyContent: 'flex-start',
     alignItems: 'flex-start',
+  },
+  noClubsView: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%',
+    marginTop: 200,
   },
   title: {
     fontSize: 25,
