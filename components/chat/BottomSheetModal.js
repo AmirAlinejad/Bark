@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, TouchableOpacity, TouchableWithoutFeedback, StyleSheet, Modal, Text, FlatList } from 'react-native';
+import { View, TouchableOpacity, TouchableWithoutFeedback, StyleSheet, Text, FlatList } from 'react-native';
 // swipe up down modal
 import SwipeUpDownModal from 'react-native-swipe-modal-up-down';
 // colors

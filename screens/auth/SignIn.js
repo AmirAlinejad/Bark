@@ -31,40 +31,6 @@ const SignIn = ({ route, navigation }) => {
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
-  // see if user is already signed in
-  const checkUser = async () => {
-    const user = await AsyncStorage.getItem('user');
-    if (user) {
-      // try to submit the sign-in request
-      try {
-        // Navigate to the home screen
-        navigation.navigate('HomeScreen');
-
-        const schoolKey = response.user.email.split('@')[1].split('.')[0];
-
-        // get user data from firestore
-        const userData = await getDoc(doc(firestore, 'schools', schoolKey, 'userData', response.user.uid));
-        console.log('user data from firestore: ', userData.data());
-        
-        // set user data in async storage
-        await AsyncStorage.setItem('user', JSON.stringify(userData.data()));
-
-        // set school key in async storage
-        await AsyncStorage.setItem('schoolKey', schoolKey);
-      } catch (error) {
-        console.log(error);
-        setErrorMessage(handleFirebaseError(error));
-      } finally {
-        setLoading(false);
-      }
-    };
-  };
-
-  // check user on initial render
-  useEffect(() => {
-    checkUser();
-  }, []);
-
   // password visibility
   const togglePasswordVisibility = () => {
     setPasswordVisible(!passwordVisible);

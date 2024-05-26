@@ -24,6 +24,7 @@ import { Colors } from '../../styles/Colors';
 const ClubScreen = ({ route, navigation }) => {
   //  get club data
   const { clubId } = route.params; // just use clubId to get club data
+  const { goToHomeScreen } = route.params;
   // membership
   const [currentUserPrivilege, setCurrentUserPrivilege] = useState('none');
   // club data
@@ -148,7 +149,7 @@ const ClubScreen = ({ route, navigation }) => {
 
   return (
     <View style={styles.container}>
-      <Header back navigation={navigation}></Header>
+      <Header back navigation={navigation} goToHomeScreen={goToHomeScreen ? true : false}/>
       {clubData &&
       <ScrollView>
         <View style={styles.content}>

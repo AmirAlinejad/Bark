@@ -7,12 +7,14 @@ import ClubImg from '../club/ClubImg';
 // icon
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
-const Header = ({ navigation, text, back, onBack, useClubImg, clubImg, onTextPress }) => {
+const Header = ({ navigation, text, back, onBack, useClubImg, clubImg, onTextPress, goToHomeScreen }) => {
 
   // go back to the previous screen
   const onBackPress = () => {
     if (onBack) {
       onBack();
+    } else if (goToHomeScreen) {
+      navigation.navigate('HomeScreen');
     } else {
       navigation.goBack();
     }

@@ -722,6 +722,8 @@ const deleteAccount = async () => {
   await AsyncStorage.clear();
 }
 
-export { getSetUserData, getProfileData, updateProfileData, getSetClubData, getSetMyClubsData, getSetEventData, getClubCategoryData, fetchClubs, getSetCalendarData,
-  joinClub, requestToJoinClub, acceptRequest, declineRequest, leaveClubConfirmed, emailSplit, getSetSchoolData, checkMembership, getSetClubCalendarData,
-  fetchMessages, handleCameraPress, handleLongPress, handlePressMessage, handleImageUploadAndSend, deleteAccount, deleteEvent, fetchClubMembers, getSetRequestsData};
+export { getSetUserData, getProfileData, updateProfileData, getSetClubData, getSetMyClubsData, getSetEventData, getClubCategoryData, 
+  fetchClubs, getSetCalendarData, joinClub, requestToJoinClub, acceptRequest, declineRequest, leaveClubConfirmed, emailSplit, 
+  getSetSchoolData, checkMembership, getSetClubCalendarData, fetchMessages, handleCameraPress, handleLongPress, handlePressMessage, 
+  handleImageUploadAndSend, deleteAccount, deleteEvent, fetchClubMembers, getSetRequestsData,
+};

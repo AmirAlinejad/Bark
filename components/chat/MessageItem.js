@@ -26,7 +26,7 @@ const MessageItem = ({ item, navigation, setOverlayVisible, setOverlayUserData }
         return new Date(date).toLocaleDateString(undefined, options);
     }
 
-    // use effect
+    // use effect (maybe instead use item.user._id)
     useEffect(() => {
         setUserId(auth.currentUser.uid);
     }, []);

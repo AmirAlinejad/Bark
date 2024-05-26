@@ -3,7 +3,7 @@ import { TouchableOpacity, View, Text, TextInput, FlatList, StyleSheet, Keyboard
 // keyboard listener
 import KeyboardListener from 'react-native-keyboard-listener';
 // firebase
-import { collection, addDoc, orderBy, query, onSnapshot, where, getDocs, getDoc, setDoc, updateDoc, limit, doc } from 'firebase/firestore';
+import { collection, addDoc, orderBy, query, onSnapshot, where, getDocs, getDoc, updateDoc, limit, doc } from 'firebase/firestore';
 import { auth, firestore } from '../../backend/FirebaseConfig';
 // icons
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -14,6 +14,7 @@ import { Colors } from '../../styles/Colors';
 import { Image } from 'expo-image';
 // my components
 import BottomSheetModal from '../../components/chat/BottomSheetModal';
+import CreatePollModal from '../../components/chat/CreatePollModal';
 import ChatMessage from '../../components/chat/ChatMessage';
 import LikesModal from '../../components/chat/LikesModal';
 import Header from '../../components/display/Header';
@@ -463,6 +464,15 @@ export default function Chat({ route, navigation }) {
                 onUploadImage={() => handleImageUploadAndSend("chat", setImageUrl, closeModal, setTempImageUrl)}
                 onUploadGif={() => handleGifSend(setGifUrl)}
                 onOpenCamera={() => handleCameraPress(setImageUrl, closeModal, setTempImageUrl)}
+              />
+
+              {/* Modal for toolbar buttons*/}
+              <CreatePollModal
+                isVisible={isModalVisible}
+                onClose={closeModal}
+                schoolKey={schoolKey}
+                clubId={clubId}
+                chatName={chatName}
               />
 
               {/* Container for TextInput and Image Preview */}
