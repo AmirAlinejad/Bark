@@ -12,14 +12,13 @@ export const goToEventScreen = (eventId, navigation) => {
     });
 }
 
-export const goToChatScreen = async (club, navigation) => {
+export const goToChatScreen = async (clubName, clubId, clubImg, navigation) => {
     const schoolKey = await emailSplit();
 
     navigation.navigate("Chat", {
-        name: club.clubName,
-        id: club.clubId,
-        img: club.clubImg,
-        club: club,
+        name: clubName,
+        id: clubId,
+        img: clubImg,
         schoolKey: schoolKey,
     });
 }

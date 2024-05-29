@@ -132,9 +132,17 @@ const MyClubs = ({ navigation }) => {
           sortedClubs.map((item, index) => {
             return (
               <View key={index} style={{width: '100%'}}>
-                <ChatClubCard name={item.clubName} description={item.clubDescription} img={item.clubImg} 
-                  muted={mutedClubs !== undefined ? mutedClubs.includes(item.clubId) : false} toggleMute={() => toggleMute(item.clubId)}
-                  unreadMessages={item.unreadMessages} lastMessage={item.lastMessage} lastMessageTime={item.lastMessageTime} clubId={item.clubId}/>
+                <ChatClubCard 
+                  name={item.clubName} 
+                  description={item.clubDescription} img={item.clubImg} 
+                  muted={mutedClubs !== undefined ? mutedClubs.includes(item.clubId) : false} 
+                  toggleMute={() => toggleMute(item.clubId)} 
+                  unreadMessages={item.unreadMessages} 
+                  lastMessage={item.lastMessage} 
+                  lastMessageTime={item.lastMessageTime} 
+                  clubId={item.clubId} 
+                  navigation={navigation}
+                />
                 {
                   index === sortedClubs.length - 1 ? null : <View style={styles.separator}></View>
                 }

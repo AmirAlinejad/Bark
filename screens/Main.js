@@ -1,5 +1,5 @@
 // parent component for main screens
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Text } from 'react-native';
 // screens
 import HomeScreen from './HomeScreen';
@@ -32,6 +32,8 @@ import Requests from './club/Requests';
 import Profile from './profile/Profile';
 import EditProfile from './profile/EditProfile';
 import FeedbackScreen from "./profile/FeedbackScreen";
+
+import QRCodeScreen from './QRCodeScreen';
 // stack navigator
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { NavigationContainer } from '@react-navigation/native';
@@ -39,7 +41,7 @@ import { NavigationContainer } from '@react-navigation/native';
 // stack navigator
 const Stack = createNativeStackNavigator();
 
-export default App = () => {
+const Main = () => {
 
   return (
       <Stack.Navigator initialRouteName={'HomeScreen'}>
@@ -70,6 +72,9 @@ export default App = () => {
         <Stack.Screen name="EditClub" component={EditClubScreen} options={{ headerShown: false, gestureEnabled: false }}/>
         <Stack.Screen name="EditEvent" component={EditEventScreen} options={{ headerShown: false, gestureEnabled: false }}/>
         <Stack.Screen name="Feedback" component={FeedbackScreen} options={{ headerShown: false, gestureEnabled: false }}/>
+        <Stack.Screen name="QRCodeScreen" component={QRCodeScreen} options={{ headerShown: false, gestureEnabled: false }}/>
       </Stack.Navigator>
   );
 }
+
+export default Main;

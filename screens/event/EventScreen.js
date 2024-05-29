@@ -34,7 +34,6 @@ const EventScreen = ({ route, navigation }) => {
   const [currentUserPrivilege, setCurrentUserPrivilege] = useState('none');
   const [RSVPList, setRSVPList] = useState([]); // list of users who RSVP'd
   const [userData, setUserData] = useState(null);
-  const [userId, setUserId] = useState(''); // user id
   const [addressCopied, setAddressCopied] = useState(false);
   const [showText, setShowText] = useState(true);
   // loading
@@ -74,13 +73,6 @@ const EventScreen = ({ route, navigation }) => {
 
   }, [event]);
 
-  // set user id
-  useEffect(() => {
-    if (userData != null) {
-      setUserId(userData.id);
-    }
-  }, [userData]);
-
   // fade out text after 2 seconds
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -108,17 +100,16 @@ const EventScreen = ({ route, navigation }) => {
   const toggleRSVP = async () => {
     let newRSVPList = RSVPList;
 
-    if (RSVPList.includes(userId)) {
+    if (RSVPList.includes(userData.id)) {
       // remove user from rsvp list
-      newRSVPList = RSVPList.filter((id) => id != userId);
-      setRSVPList(newRSVPList);
+      newRSVPList = RSVPList.filter((id) => id != userData.id);
     } else {
       // add user to rsvp list
-      newRSVPList.push(userId);
-      setRSVPList(newRSVPList);
+      newRSVPList = [...RSVPList, userData.id]
     }
 
     console.log('new rsvp list', newRSVPList);
+    setRSVPList(newRSVPList);
 
     // update backend
     const schoolKey = await emailSplit();
@@ -126,12 +117,20 @@ const EventScreen = ({ route, navigation }) => {
     updateDoc(eventRef, { rsvps: newRSVPList });
   }
 
+  // go to QR code screen
+  const onQRCodeButtonPress = () => {
+    navigation.navigate("QRCodeScreen", {
+      name: event.name,
+      qrCodeData: '?screen=event&eventId=' + eventId,
+    });
+  };
+
   return (
     <View style={styles.container}>
       {event == {} && <CustomText text="Loading..." />}
       {event != undefined && (
       <View style={styles.container}>
-        <Header text={''} back navigation={navigation} />
+        <Header text={''} back navigation={navigation} goToHomeScreen={route.params.goToHomeScreen ? true : false}/>
         <ScrollView contentContainerStyle={styles.eventContent}>
 
           <CustomText style={styles.title} text={event.name} font='black' />
@@ -188,10 +187,11 @@ const EventScreen = ({ route, navigation }) => {
             <CustomText style={styles.textNormal} text={`Room: ${event.roomNumber}`} />
           )}
 
+          {userData != null && userData.id && (
           <ToggleButton 
-            toggled={RSVPList.includes(userId)} icon={RSVPList.includes(userId) ? 'checkmark' : 'people'} toggledCol={Colors.red} 
+            toggled={RSVPList.includes(userData.id) ? true : false} icon={RSVPList.includes(userData.id) ? 'checkmark' : 'people'} toggledCol={Colors.red} 
             untoggledCol={Colors.lightRed} text={`RSVP (${RSVPList.length})`} onPress={toggleRSVP} 
-          />
+          />)}
 
         </ScrollView>
 
@@ -201,6 +201,11 @@ const EventScreen = ({ route, navigation }) => {
             <IconButton icon={'enter-outline'} text="Club" onPress={() => goToClubScreen(event.clubId, navigation)} color={Colors.buttonBlue}/>
           </View>
         }
+
+        {/* QR code button */}
+        <View style={[styles.button, { right: 100}]}>
+          <IconButton icon={'qr-code-outline'} text='' onPress={onQRCodeButtonPress} color={Colors.buttonBlue}/>
+        </View>
 
         {(currentUserPrivilege == 'admin' || currentUserPrivilege == 'owner') && (
           <View>

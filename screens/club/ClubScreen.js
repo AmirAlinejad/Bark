@@ -24,7 +24,6 @@ import { Colors } from '../../styles/Colors';
 const ClubScreen = ({ route, navigation }) => {
   //  get club data
   const { clubId } = route.params; // just use clubId to get club data
-  const { goToHomeScreen } = route.params;
   // membership
   const [currentUserPrivilege, setCurrentUserPrivilege] = useState('none');
   // club data
@@ -68,6 +67,14 @@ const ClubScreen = ({ route, navigation }) => {
   const onCalendarButtonPress = () => {
     navigation.navigate("ClubCalendar", {
       club: clubData,
+    });
+  };
+
+  // go to QR code screen
+  const onQRCodeButtonPress = () => {
+    navigation.navigate("QRCodeScreen", {
+      mame: clubData.clubName,
+      qrCodeData: '?screen=club&clubId=' + clubId,
     });
   };
 
@@ -149,7 +156,7 @@ const ClubScreen = ({ route, navigation }) => {
 
   return (
     <View style={styles.container}>
-      <Header back navigation={navigation} goToHomeScreen={goToHomeScreen ? true : false}/>
+      <Header back navigation={navigation} goToHomeScreen={route.params.goToHomeScreen ? true : false}/>
       {clubData &&
       <ScrollView>
         <View style={styles.content}>
@@ -237,6 +244,7 @@ const ClubScreen = ({ route, navigation }) => {
           <CircleButton icon="calendar-number-outline" onPress={onAddEventPress} position={{ bottom: 0, right: 0 }} size={80} />
         </View>
       )}
+      <IconButton icon='qr-code-outline' onPress={onQRCodeButtonPress} style={styles.shareButton} text="" color={Colors.buttonBlue} />
       <IconButton icon='calendar-outline' onPress={onCalendarButtonPress} style={styles.calendarButton} text="" color={Colors.buttonBlue} />
 
       {/* other modals */}
@@ -302,6 +310,11 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.lightGray,
     height: 1,
     marginVertical: 10,
+  },
+  shareButton: {
+    position: 'absolute',
+    top: 70,
+    right: 75,
   },
   calendarButton: {
     position: 'absolute',

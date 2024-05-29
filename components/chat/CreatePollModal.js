@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, TouchableOpacity, TouchableWithoutFeedback, StyleSheet } from 'react-native';
+import React, { useState, useCallback } from 'react';
+import { View, TouchableOpacity, TouchableWithoutFeedback, StyleSheet, FlatList } from 'react-native';
 // components
 import CustomInput from '../input/CustomInput';
 import CustomText from '../display/CustomText';
@@ -91,7 +91,7 @@ const CreatePollModal = ({ isVisible, onClose, schoolKey, clubId, chatName }) =>
                 console.error('Error sending message:', error);
             }
         }
-    }, [messageText, imageUrl, gifUrl]); // Include gifUrl in the dependency array
+    }, []); // Include gifUrl in the dependency array
 
     // Cancel
     const onCancel = () => {

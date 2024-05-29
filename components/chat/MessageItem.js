@@ -13,10 +13,7 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 // image
 import { Image } from "expo-image";
 
-const MessageItem = ({ item, navigation, setOverlayVisible, setOverlayUserData }) => {
-
-    // states
-    const [userId, setUserId] = useState(null);
+const MessageItem = ({ item, navigation, setOverlayVisible, setOverlayUserData, userId }) => {
 
     const maxReplyToTextLength = 20; // Maximum length of the reply to text
 
@@ -25,11 +22,6 @@ const MessageItem = ({ item, navigation, setOverlayVisible, setOverlayUserData }
         const options = { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' };
         return new Date(date).toLocaleDateString(undefined, options);
     }
-
-    // use effect (maybe instead use item.user._id)
-    useEffect(() => {
-        setUserId(auth.currentUser.uid);
-    }, []);
 
     // handle message press
     onMessagePress = () => {

@@ -28,11 +28,13 @@ const ChatMessage = ({
   setOverlayVisible,
   setOverlayUserData,
   messageRef,
+  userId,
   navigation,
 }) => {
 
+  // toggle like
   const toggleLike = async () => {
-    const userId = auth.currentUser.uid;
+  
   
     // compares by id
     let newLikedMessages = new Set(likedMessages);
@@ -74,7 +76,7 @@ const ChatMessage = ({
   const getBackgroundColor = () => {
     if (message.pinned) {
       return Colors.chatBubblePinned;
-    } else if (message.user._id == auth.currentUser.uid) {
+    } else if (message.user._id == userId) {
       return Colors.lightGray;
     } else {
       return Colors.lightGray;
@@ -101,7 +103,7 @@ const ChatMessage = ({
           onPress={() => handlePressMessage(message.likes, setLikedProfileImages, setIsLikesModalVisible)}
           onLongPress={() => handleLongPress(message, currentUserPrivilege, setReplyingToMessage, messageRef)} 
           style={[styles.messageContainer, {backgroundColor : getBackgroundColor()}]}>
-          <MessageItem item={message} navigation={navigation} setOverlayVisible={setOverlayVisible} setOverlayUserData={setOverlayUserData}/>
+          <MessageItem item={message} navigation={navigation} setOverlayVisible={setOverlayVisible} setOverlayUserData={setOverlayUserData} userId={userId}/>
           <TouchableOpacity onPress={toggleLike} style={styles.likeButton}>
             <Ionicons name={heartIcon} size={24} color={heartColor} />
             <CustomText style={styles.likeCountText} text={likeCount} />

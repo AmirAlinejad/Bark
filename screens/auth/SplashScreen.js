@@ -46,23 +46,40 @@ const SplashScreen = ({navigation}) => {
                         const clubId = queryParams.clubId;
 
                         // navigate to the club screen
+                        navigation.navigate('Main', { screen: 'HomeScreen' });
                         navigation.navigate('Main', { screen: 'ClubScreen', params: { clubId: clubId, goToHomeScreen: true} });
                     } else if (screenName == 'event') {
                         const { queryParams } = Linking.parse(URL);
                         const eventId = queryParams.eventId;
 
                         // navigate to the event screen
-                        navigation.navigate('Main', { screen: 'Event', params: { eventId: eventId } });
+                        navigation.navigate('Main', { screen: 'HomeScreen' });
+                        navigation.navigate('Main', { screen: 'EventScreen', params: { eventId: eventId, goToHomeScreen: true } });
                     } else if (screenName == 'chat') {
                         const { queryParams } = Linking.parse(URL);
                         const chatId = queryParams.chatId;
 
                         // navigate to the chat screen
+                        navigation.navigate('Main', { screen: 'HomeScreen' });
                         navigation.navigate('Main', { screen: 'Chat', params: { chatId: chatId } });
+                    } else if (screenName == 'chat') {
+                        const { queryParams } = Linking.parse(URL);
+                        const chatId = queryParams.chatId;
+
+                        // navigate to the chat screen
+                        navigation.navigate('Main', { screen: 'HomeScreen' });
+                        navigation.navigate('Main', { screen: 'Chat', params: { chatId: chatId } });
+                    } else if (screenName == 'attendance') {
+                        const { queryParams } = Linking.parse(URL);
+                        const eventId = queryParams.eventId;
+
+                        // navigate to the chat screen
+                        navigation.navigate('Main', { screen: 'HomeScreen' });
+                        navigation.navigate('Main', { screen: 'EventAttendance', params: { eventId: eventId } });
                     } else {
                         navigation.navigate('Main');
                     }
-                } else{
+                } else {
                     navigation.navigate('Onboarding');
                 }
             };

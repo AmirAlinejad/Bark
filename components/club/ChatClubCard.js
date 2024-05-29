@@ -15,7 +15,7 @@ import { Colors } from '../../styles/Colors';
 const ChatClubCard = ({ name, description, img, clubId, muted, toggleMute, unreadMessages, lastMessage, lastMessageTime, navigation }) => {
   
   onPress = () => {
-    goToChatScreen(clubId, navigation);
+    goToChatScreen(name, clubId, img, navigation);
   }
 
   return (

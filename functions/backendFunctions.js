@@ -30,11 +30,14 @@ const emailSplit = async () => {
   return user.email.split('@')[1].split('.')[0];
 }
 
-const getSetUserData = async (setter) => {
+const getSetUserData = async (setter, setUserId) => {
    // get data from async storage
     try {
       const userData = await AsyncStorage.getItem('user');
       if (userData) {
+
+        console.log('User data:', JSON.parse(userData));
+
         setter(JSON.parse(userData));
       }
      } catch (error) {
@@ -544,6 +547,8 @@ const fetchMessages = async (querySnapshot, setMessages, setPinnedMessageCount) 
 
   setMessages(fetchedMessages);
 
+  console.log('MESSAGES:', fetchedMessages);
+
   // Calculate and update the count of pinned messages.
   if(setPinnedMessageCount) setPinnedMessageCount(fetchedMessages.filter(message => message.pinned).length);
 };
@@ -722,8 +727,34 @@ const deleteAccount = async () => {
   await AsyncStorage.clear();
 }
 
+// add user to attendance for an event
+const attendEvent = async (eventId) => {
+  const schoolKey = await emailSplit();
+
+  // get user id from async storage
+  const userData = await AsyncStorage.getItem('user');
+  const user = JSON.parse(userData);
+  const userId = user.id;
+
+  // get event data
+  const eventDocRef = doc(firestore, 'schools', schoolKey, 'eventAttendance', eventId);
+  const eventDocSnapshot = await getDoc(eventDocRef);
+  const eventData = eventDocSnapshot.data();
+
+  // add user to attendance list
+  let attendanceList = eventData.attendance;
+  if (attendanceList == undefined) {
+    attendanceList = [];
+  }
+  attendanceList = [...attendanceList, userId];
+
+  await updateDoc(eventDocRef, {
+    attendance: attendanceList,
+  });
+}
+
 export { getSetUserData, getProfileData, updateProfileData, getSetClubData, getSetMyClubsData, getSetEventData, getClubCategoryData, 
   fetchClubs, getSetCalendarData, joinClub, requestToJoinClub, acceptRequest, declineRequest, leaveClubConfirmed, emailSplit, 
   getSetSchoolData, checkMembership, getSetClubCalendarData, fetchMessages, handleCameraPress, handleLongPress, handlePressMessage, 
-  handleImageUploadAndSend, deleteAccount, deleteEvent, fetchClubMembers, getSetRequestsData,
+  handleImageUploadAndSend, deleteAccount, deleteEvent, fetchClubMembers, getSetRequestsData, attendEvent,
 };

@@ -80,7 +80,6 @@ export default function Chat({ route, navigation }) {
   const [replyingToMessage, setReplyingToMessage] = useState(null);
 
   // user state
-  const userId = auth.currentUser.uid;
   const [userData, setUserData] = useState(null);
   const [currentUserPrivilege, setCurrentUserPrivilege] = useState(''); // Define currentUserPrivilege state
 
@@ -136,7 +135,7 @@ export default function Chat({ route, navigation }) {
   // clear unread messages once user data is fetched
   useEffect(() => {
     if (userData) {
-      const clubMemberRef = doc(firestore, 'schools', schoolKey, 'clubMemberData', 'clubs', clubId, userId);
+      const clubMemberRef = doc(firestore, 'schools', schoolKey, 'clubMemberData', 'clubs', clubId, userData.id);
       updateDoc(clubMemberRef, { unreadMessages: 0 });
     }
   }, [userData]);
@@ -145,9 +144,8 @@ export default function Chat({ route, navigation }) {
   useEffect(() => {
     // Function to fetch liked messages and update the local state
     const fetchLikedMessages = async () => {
-      const userId = auth.currentUser.uid;
       const messagesRef = collection(firestore, 'schools', schoolKey, 'chatData', 'clubs', clubId, 'chats', chatName);
-      const q = query(messagesRef, where('likes', 'array-contains', userId));
+      const q = query(messagesRef, where('likes', 'array-contains', userData.id));
 
       const querySnapshot = await getDocs(q);
       const likedMsgs = new Set();
@@ -216,7 +214,7 @@ export default function Chat({ route, navigation }) {
       try {
         // Create the sender object
         const sender = {
-          _id: auth.currentUser.uid,
+          _id: userData.id,
           name: userData.userName,
           first:  userData.firstName,
           last: userData.lastName,
@@ -233,7 +231,7 @@ export default function Chat({ route, navigation }) {
           likeCount: 0,
           pinned: false,
           likes: [],
-          userId: auth.currentUser.uid,
+          userId: userData.id,
           replyTo: replyingToMessage,
         };
         if (messageText.trim() != '') {
@@ -264,7 +262,7 @@ export default function Chat({ route, navigation }) {
         const clubMembers = await getDocs(clubMembersCollection);
         // loop through all members in the club
         for (const member of clubMembers.docs) {
-          /*if (!member.data().muted && member.id !== auth.currentUser.uid) {
+          /*if (!member.data().muted && member.id !== userData.id) {
             // get the member's data
             const memberData = await getDoc(doc(firestore, 'schools', schoolKey, 'chatData', 'clubs', clubId, 'members', member.id));
             const memberDataVal = memberData.data();
@@ -315,7 +313,7 @@ export default function Chat({ route, navigation }) {
     navigation.navigate("HomeScreen");
 
     // Clear unread messages
-    const clubMemberRef = doc(firestore, 'schools', schoolKey, 'clubMemberData', 'clubs', clubId, userId);
+    const clubMemberRef = doc(firestore, 'schools', schoolKey, 'clubMemberData', 'clubs', clubId, userData.id);
     updateDoc(clubMemberRef, { unreadMessages: 0 });
   }
   
@@ -356,6 +354,7 @@ export default function Chat({ route, navigation }) {
         setOverlayUserData={setOverlayUserData}
         setOverlayVisible={setOverlayVisible}
         messageRef={messageRef}
+        userId={userData.id}
         navigation={navigation}
       />
     );
@@ -433,7 +432,7 @@ export default function Chat({ route, navigation }) {
         <LikesModal
           isVisible={isLikesModalVisible}
           onClose={() => setIsLikesModalVisible(false)}
-          //userNames={likedUsernames} // This prop now contains userids instead of usernames
+          //userNames={likedUsernames} // This prop now contains ids instead of usernames
           profileImages={likedProfileImages}
         />
       
@@ -467,13 +466,13 @@ export default function Chat({ route, navigation }) {
               />
 
               {/* Modal for toolbar buttons*/}
-              <CreatePollModal
+              {/*<CreatePollModal
                 isVisible={isModalVisible}
                 onClose={closeModal}
                 schoolKey={schoolKey}
                 clubId={clubId}
                 chatName={chatName}
-              />
+              />*/}
 
               {/* Container for TextInput and Image Preview */}
               <View style={styles.inputWithPreview}>
