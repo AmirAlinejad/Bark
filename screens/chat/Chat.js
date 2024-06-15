@@ -199,51 +199,61 @@ export default function Chat({ route, navigation }) {
     closeModal();
   };
 
-  // send message
-  const sendMessage = useCallback(async () => {
+// Sample threat words list
+const threatWords = ['harm', 'kill', 'bomb']; // Add threat words here
 
-    // Clear the message input field, image URL, and gifUrl
-    setMessageText('');
-    setImageUrl(null);
-    setTempImageUrl(null);
-    setGifUrl(null); // Reset the gifUrl after sending the message
-    setReplyingToMessage(null);
+const sendMessage = useCallback(async () => {
+  // Clear the message input field, image URL, and gifUrl
+  setMessageText('');
+  setImageUrl(null);
+  setTempImageUrl(null);
+  setGifUrl(null); // Reset the gifUrl after sending the message
+  setReplyingToMessage(null);
 
-    // Check if there's either text, an image URL, or a gifUrl
-    if (messageText.trim() != '' || tempImageUrl || gifUrl) { // Include gifUrl in the condition (figure out how tempImageUrl works)
-      try {
-        // Create the sender object
-        const sender = {
-          _id: userData.id,
-          name: userData.userName,
-          first:  userData.firstName,
-          last: userData.lastName,
-        };
-        if (userData.profileImg) {
-          sender.avatar = userData.profileImg;
-        }
+  // Check if there's either text, an image URL, or a gifUrl
+  if (messageText.trim() != '' || tempImageUrl || gifUrl) { // Include gifUrl in the condition (figure out how tempImageUrl works)
+    try {
+      // Create the sender object
+      const sender = {
+        _id: userData.id,
+        name: userData.userName,
+        first: userData.firstName,
+        last: userData.lastName,
+      };
+      if (userData.profileImg) {
+        sender.avatar = userData.profileImg;
+      }
 
-        // Create the message object
-        const message = {
-          id: new Date().getTime().toString(),
-          createdAt: new Date(),
-          user: sender,
-          likeCount: 0,
-          pinned: false,
-          likes: [],
-          userId: userData.id,
-          replyTo: replyingToMessage,
-        };
-        if (messageText.trim() != '') {
-          message.text = messageText.trim();
-        }
-        if (imageUrl) {
-          message.image = imageUrl;
-        }
-        if (gifUrl) {
-          message.gif = gifUrl;
-        }
+      // Create the message object
+      const message = {
+        id: new Date().getTime().toString(),
+        createdAt: new Date(),
+        user: sender,
+        likeCount: 0,
+        pinned: false,
+        likes: [],
+        userId: userData.id,
+        replyTo: replyingToMessage,
+      };
+      if (messageText.trim() != '') {
+        message.text = messageText.trim();
+      }
+      if (imageUrl) {
+        message.image = imageUrl;
+      }
+      if (gifUrl) {
+        message.gif = gifUrl;
+      }
 
+      // Check for threat words
+      const containsThreatWords = threatWords.some(word => 
+        messageText.toLowerCase().includes(word.toLowerCase())
+      );
+    
+      if (containsThreatWords) {
+        // Add the message to flaggedmessages collection
+        await addDoc(collection(firestore, 'flaggedmessages'), message);
+      } else {
         // Add the message to Firestore
         await addDoc(collection(firestore, 'schools', schoolKey, 'chatData', 'clubs', clubId, 'chats', chatName), message);
 
@@ -262,13 +272,13 @@ export default function Chat({ route, navigation }) {
         const clubMembers = await getDocs(clubMembersCollection);
         // loop through all members in the club
         for (const member of clubMembers.docs) {
-          /*if (!member.data().muted && member.id !== userData.id) {
-            // get the member's data
-            const memberData = await getDoc(doc(firestore, 'schools', schoolKey, 'chatData', 'clubs', clubId, 'members', member.id));
-            const memberDataVal = memberData.data();
-            // send the push notification
-            sendPushNotification(memberDataVal.expoPushToken, notificationText, userData.firstName, userData.lastName, clubName);
-          }*/
+          // if (!member.data().muted && member.id !== userData.id) {
+          //   // get the member's data
+          //   const memberData = await getDoc(doc(firestore, 'schools', schoolKey, 'chatData', 'clubs', clubId, 'members', member.id));
+          //   const memberDataVal = memberData.data();
+          //   // send the push notification
+          //   sendPushNotification(memberDataVal.expoPushToken, notificationText, userData.firstName, userData.lastName, clubName);
+          // }
 
           // increment unread messages in club member's data
           const memberRef = doc(firestore, 'schools', schoolKey, 'clubMemberData', 'clubs', clubId, member.id);
@@ -278,13 +288,12 @@ export default function Chat({ route, navigation }) {
 
           await updateDoc(memberRef, { unreadMessages });
         }
-
-      } catch (error) {
-        console.error('Error sending message:', error);
       }
+    } catch (error) {
+      console.error('Error sending message:', error);
     }
-  }, [messageText, imageUrl, gifUrl]); // Include gifUrl in the dependency array
-
+  }
+}, [messageText, imageUrl, gifUrl]); // Include gifUrl in the dependency array
   // open and close keyboard
   const openKeyboard = () => {
     setKeyboardIsOpen(true);

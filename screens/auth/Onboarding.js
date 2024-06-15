@@ -15,14 +15,16 @@ import { getExpoPushTokenAsync } from 'expo-notifications';
 // stack navigator
 const Stack = createNativeStackNavigator();
 
-const Onboarding = ({expoPushToken}) => {
-
+const Onboarding = ({route}) => {
+  const { expoPushToken } = route.params;
   return (
       <Stack.Navigator initialRouteName={'SignIn'}>
 
         {/* auth */}
         <Stack.Screen name="SignIn" component={SignIn} options={{ headerShown: false, gestureEnabled: false}} />
-        <Stack.Screen name="SignUp" component={SignUp} options={{ headerShown: false, gestureEnabled: false}} initialParams={expoPushToken}/>
+        <Stack.Screen name="SignUp">
+          {props => <SignUp {...props} expoPushToken={expoPushToken} />}
+        </Stack.Screen>
         <Stack.Screen name="VerifyEmail" component={VerifyEmail} options={{ headerShown: false, gestureEnabled: false }} />
         <Stack.Screen name="VerifySchool" component={VerifySchool} options={{ headerShown: false, gestureEnabled: false }} />
         <Stack.Screen name="ForgotPassword" component={ForgotPassword} options={{ headerShown: false, gestureEnabled: false }} />

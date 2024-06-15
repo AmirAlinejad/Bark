@@ -18,10 +18,9 @@ import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view
 import { doc, setDoc } from 'firebase/firestore';
 import { FIREBASE_AUTH, firestore } from '../../backend/FirebaseConfig';
 
-const SignUp = ({ route, navigation }) => {
+const SignUp = ({ route, navigation, expoPushToken }) => {
 
-  const expoPushToken = route.params?.expoPushToken;
-  console.log(expoPushToken);
+  console.log('Received Expo Push Token:', expoPushToken);
 
   // state variables
   const [userName, setUserName] = useState('');

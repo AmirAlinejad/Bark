@@ -77,7 +77,10 @@ const SignIn = ({ route, navigation }) => {
       }
 
       // Navigate to the home screen
-      navigation.navigate('HomeScreen');
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'Main' }], // Navigate to the main stack
+      });
 
       const schoolKey = response.user.email.split('@')[1].split('.')[0];
 
