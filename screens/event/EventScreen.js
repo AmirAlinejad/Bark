@@ -88,6 +88,15 @@ const EventScreen = ({ route, navigation }) => {
     });
   };
 
+  // duplicate event button
+  const onDuplicateButtonPress = () => {
+    navigation.navigate('NewEvent', {
+      event: event,
+      clubId: event.clubId,
+      clubCategories: event.clubCategories,
+    });
+  };
+
   // split address into street and city
   const splitAddress = (address) => {
     let split = [];
@@ -215,6 +224,7 @@ const EventScreen = ({ route, navigation }) => {
               </Fade>
             </View>
             <CircleButton icon="create-outline" onPress={onEditButtonPress} position={{ bottom: 0, right: 0 }} size={80} />
+            <CircleButton icon="copy-outline" onPress={onDuplicateButtonPress} position={{ bottom: 64, right: 0 }} size={80} />
           </View>
         )}
       </View>

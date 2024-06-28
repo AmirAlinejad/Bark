@@ -10,7 +10,12 @@ import Onboarding from './screens/auth/Onboarding';
 import Main from './screens/Main';
 // navigation
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { NavigationContainer } from '@react-navigation/native';
+import {
+  DarkTheme,
+  DefaultTheme,
+  NavigationContainer,
+} from '@react-navigation/native';
+import { useColorScheme } from 'react-native';  
 // linking
 import * as Linking from 'expo-linking';
 
@@ -58,6 +63,7 @@ async function registerForPushNotificationsAsync() {
 const Stack = createNativeStackNavigator();
 
 export default App = () => {
+  const theme = useColorScheme();
 
   // notifications
   const [expoPushToken, setExpoPushToken] = useState('');
@@ -95,7 +101,7 @@ export default App = () => {
   }, []);
 
   return (
-    <NavigationContainer linking={linking} fallback={<Text>Loading...</Text>}>
+    <NavigationContainer linking={linking} fallback={<Text>Loading...</Text>} theme={theme === 'dark' ? DarkTheme : DefaultTheme}>
       <Stack.Navigator initialRouteName={'SignIn'}>
         {/* splash */}
         <Stack.Screen name="SplashScreen" component={SplashScreen} options={{ headerShown: false, gestureEnabled: false }}/>

@@ -1,5 +1,7 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { View, StyleSheet, TouchableWithoutFeedback } from "react-native";
+// functions
+import { getSetUserData } from "../../functions/backendFunctions";
 // styles
 import { Colors } from "../../styles/Colors";
 // modal
@@ -9,6 +11,14 @@ import CustomText from "../display/CustomText";
 import ProfileImg from "../display/ProfileImg";
 
 const ProfileOverlay = ({ visible, setVisible, userData }) => {
+    // get current user data
+    const [currentUserData, setCurrentUserData] = useState(null);
+
+    // get current user data
+    useEffect(() => {
+        const asyncFunc = async () => await getSetUserData(setCurrentUserData);
+        asyncFunc();
+      }, []);
 
     const graduationYear = () => {
         if (userData.graduationYear) {
@@ -29,6 +39,16 @@ const ProfileOverlay = ({ visible, setVisible, userData }) => {
     const closeOverlay = () => {
         setVisible(false);
     }
+
+    const getMutualClubs = () => {
+        // get user's clubs
+        let userClubs = userData.clubs;
+        // get current user's clubs
+        let currentUserClubs = currentUserData.clubs;
+        // find mutual clubs
+        let mutualClubs = userClubs.filter(value => currentUserClubs.includes(value));
+        return mutualClubs;
+    }                              
     
     return (
         <SwipeUpDownModal
@@ -52,6 +72,7 @@ const ProfileOverlay = ({ visible, setVisible, userData }) => {
                                         {graduationYear() != '' && <CustomText text={graduationYear()} style={styles.secondaryText} font='bold'/>}
                                         {major() != '' && <CustomText text={major()} style={styles.secondaryText} font='bold'/>}
                                     </View>
+                                    <CustomText text={`${getMutualClubs().length()} Mutual Clubs}`} style={styles.secondaryText} font='bold'/>
                             </View>}
                         </View>
                     </View>

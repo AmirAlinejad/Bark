@@ -3,10 +3,10 @@ import React from 'react';
 import { StyleSheet } from 'react-native';
 import { View } from 'react-native';
 // components
-import CustomText from '../../components/CustomText';
-import CustomButton from '../../components/CustomButton';
+import CustomText from '../../components/display/CustomText';
+import CustomButton from '../../components/buttons/CustomButton';
 // functions
-import { attendEvent } from '../../functions/eventFunctions';
+import { attendEvent } from '../../functions/backendFunctions';
 
 const AttendanceScreen = ({ eventId, navigation }) => {
 
@@ -17,8 +17,8 @@ const AttendanceScreen = ({ eventId, navigation }) => {
 
     return (
         <View style={styles.view}>
-            <CustomText>Attendance Screen</CustomText>
-            <CustomButton onPress={handleEvent} text='Here'/>
+            <CustomText style={{fontSize: 20}} font='bold' text='Present?' />
+            <CustomButton onPress={handleAttendance} text='Here!'/>
         </View>
     );
 };

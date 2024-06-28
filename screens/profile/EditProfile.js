@@ -31,6 +31,7 @@ const EditProfile = ({ route, navigation }) => {
   const [userName, setUserName] = useState(userData.userName);
   const [firstName, setFirstName] = useState(userData.firstName);
   const [lastName, setLastName] = useState(userData.lastName);
+  const [phone, setPhone] = useState(userData.phone);
   const [graduationYear, setGraduationYear] = useState(userData.graduationYear);
   const [major, setMajor] = useState(userData.major);
   const [profileImg, setProfileImg] = useState(userData.profileImg);
@@ -77,6 +78,7 @@ const EditProfile = ({ route, navigation }) => {
             email: userData.email,
             expoPushToken: userData.expoPushToken,
         }
+        if (phone) updatedUserData.phone = phone;
         if (graduationYear) updatedUserData.graduationYear = graduationYear;
         if (major) updatedUserData.major = major;
         if (profileImg) updatedUserData.profileImg = profileImg;
@@ -135,6 +137,13 @@ const EditProfile = ({ route, navigation }) => {
               width={150}
             />
           </View>
+
+          <CustomText style={styles.textNormal} font="bold" text="📱 Phone Number" />
+          <CustomInput placeholder="Phone Number"
+            value={phone}
+            setValue={setPhone}
+            keyboardType='numeric'
+          />
 
           <CustomText style={styles.textNormal} font="bold" text="🎓 Graduation Year" />
           <CustomInput placeholder="Graduation Year"

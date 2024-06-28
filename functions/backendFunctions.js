@@ -3,14 +3,20 @@ import { Alert } from 'react-native';
 import { firestore } from '../backend/FirebaseConfig';
 import { doc, collection, query, where, limit, updateDoc, deleteDoc, setDoc, getDoc, getDocs, orderBy } from 'firebase/firestore';
 import { getAuth, deleteUser } from "firebase/auth";
+import { getTimeZoneOffset } from './timeFunctions';
 // storage
 import AsyncStorage from '@react-native-async-storage/async-storage';
 // macros
 import { SCHOOLS } from '../macros/macros';
 // image
 import * as ImagePicker from 'expo-image-picker';
+// document picker
+import * as DocumentPicker from 'expo-document-picker';
 // functions
 import handleImageUpload from './uploadImage';
+// google calendar
+import { apiCalendar } from '../backend/calendarApiConfig';
+import { get } from 'firebase/database';
 
 const emailSplit = async () => {
 
@@ -553,11 +559,49 @@ const fetchMessages = async (querySnapshot, setMessages, setPinnedMessageCount) 
   if(setPinnedMessageCount) setPinnedMessageCount(fetchedMessages.filter(message => message.pinned).length);
 };
 
+const handleImageUploadAndSend = async (chatType, setImageUrl, closeModal, setTempImageUrl) => {
+
+  const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+  if (!permissionResult.granted) {
+    alert("You've refused to allow this app to access your photos!");
+    return;
+  }
+
+  let pickerResult = await ImagePicker.launchImageLibraryAsync({
+    mediaTypes: ImagePicker.MediaTypeOptions.Images,
+    allowsEditing: true,
+    aspect: [4, 3],
+    quality: 1,
+  });
+
+  if (closeModal) {
+    closeModal(); 
+  }
+
+  if (!pickerResult.canceled && pickerResult.assets && pickerResult.assets.length > 0) {
+    if (setTempImageUrl) {
+      const image = pickerResult.assets[0].uri;
+      setTempImageUrl(image);
+
+      // add image to async storage
+      const images = await AsyncStorage.getItem('userImages');
+
+      if (images) {
+        await AsyncStorage.setItem('userImages', images + ',' + image);
+      } else {
+        await AsyncStorage.setItem('userImages', image);
+      }
+    }
+
+    handleImageUpload(chatType, setImageUrl, pickerResult.assets[0].uri);
+  }
+};
+
 // Define the function to handle camera press
-const handleCameraPress = async (setImageUrl, closeModal, setTempImageUrl) => {
+const handleCameraPress = async (chatType, setImageUrl, closeModal, setTempImageUrl) => {
      
   const { status } = await ImagePicker.requestCameraPermissionsAsync();
-
 
   if (status !== 'granted') {
     alert('Permission to access camera was denied');
@@ -575,11 +619,36 @@ const handleCameraPress = async (setImageUrl, closeModal, setTempImageUrl) => {
   closeModal();
 
   if (!result.canceled) {
-    setTempImageUrl(result.assets[0].uri);
+    if (setTempImageUrl) {
+      const image = pickerResult.assets[0].uri;
+      setTempImageUrl(image);
+
+      // add image to async storage
+      const images = await AsyncStorage.getItem('userImages');
+
+      if (images) {
+        await AsyncStorage.setItem('userImages', images + ',' + image);
+      } else {
+        await AsyncStorage.setItem('userImages', image);
+      }
+    }
 
     // change to where uploads taken photo to firebase
-    handleImageUpload("chat", setImageUrl, result.assets[0].uri);
+    handleImageUpload(chatType, setImageUrl, result.assets[0].uri);
   }
+};
+
+// Define the function to handle document press
+const handleDocumentPress = async (setDocumentUrl, closeModal) => {
+
+  const { status } = await DocumentPicker.getDocumentAsync();
+
+  if (!status.canceled) {
+    console.log(status.assets[0].uri);
+    setDocumentUrl(status.assets[0].uri);
+  }
+
+  closeModal();
 };
 
 const handlePressMessage = (likes, setLikedProfileImages, setIsLikesModalVisible) => {
@@ -669,35 +738,6 @@ const handleLongPress = async (message, currentUserPrivilege, setReplyingToMessa
   }
 };
 
-const handleImageUploadAndSend = async (chatType, setImageUrl, closeModal, setTempImageUrl) => {
-
-  const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-
-  if (!permissionResult.granted) {
-    alert("You've refused to allow this app to access your photos!");
-    return;
-  }
-
-  let pickerResult = await ImagePicker.launchImageLibraryAsync({
-    mediaTypes: ImagePicker.MediaTypeOptions.Images,
-    allowsEditing: true,
-    aspect: [4, 3],
-    quality: 1,
-  });
-
-  if (closeModal) {
-    closeModal(); 
-  }
-
-  if (!pickerResult.canceled && pickerResult.assets && pickerResult.assets.length > 0) {
-    if (setTempImageUrl) {
-      setTempImageUrl(pickerResult.assets[0].uri);
-    }
-
-    handleImageUpload(chatType, setImageUrl, pickerResult.assets[0].uri);
-  }
-};
-
 const deleteAccount = async () => {
   // get user id from async storage
   const userData = await AsyncStorage.getItem('user');
@@ -753,8 +793,230 @@ const attendEvent = async (eventId) => {
   });
 }
 
-export { getSetUserData, getProfileData, updateProfileData, getSetClubData, getSetMyClubsData, getSetEventData, getClubCategoryData, 
-  fetchClubs, getSetCalendarData, joinClub, requestToJoinClub, acceptRequest, declineRequest, leaveClubConfirmed, emailSplit, 
-  getSetSchoolData, checkMembership, getSetClubCalendarData, fetchMessages, handleCameraPress, handleLongPress, handlePressMessage, 
-  handleImageUploadAndSend, deleteAccount, deleteEvent, fetchClubMembers, getSetRequestsData, attendEvent,
+// get list of users attending an event
+const getSetEventAttendance = async (eventId, setter) => {
+  const schoolKey = await emailSplit();
+
+  const eventDocRef = doc(firestore, 'schools', schoolKey, 'eventAttendance', eventId);
+  const eventDocSnapshot = await getDoc(eventDocRef);
+  setter(eventDocSnapshot.data().attendance);
+}
+
+// get attendees' data
+const getAttendeesData = async (attendees, setter) => {
+  const schoolKey = await emailSplit();
+
+  let attendeesData = [];
+  // for every user id in the attendance list, get user data
+  for (let i = 0; i < attendees.length; i++) {
+    const userId = attendees[i];
+    const userDocRef = doc(firestore, 'schools', schoolKey, 'userData', userId);
+    const userDocSnapshot = await getDoc(userDocRef);
+
+    // append user data to array
+    if (userDocSnapshot.exists()) {
+      attendeesData = [...attendeesData, userDocSnapshot.data()];
+    }
+  }
+
+  setter(attendeesData);
+}
+
+const getClubCalendarData = async (clubId) => {
+  const schoolKey = await emailSplit();
+
+  const eventsDocRef = collection(firestore, 'schools', schoolKey, 'calendarData');
+  const eventsQuery = query(eventsDocRef, where('clubId', '==', clubId));
+  const eventsSnapshot = await getDocs(eventsQuery);
+
+  if (eventsSnapshot.empty) {
+    console.log('No events found.');
+    return;
+  }
+
+  return eventsSnapshot.docs.map(doc => doc.data());
+}
+
+
+// sync events to google calendar
+const syncEventsToGoogleCalendar = async () => {
+  // get events for clubs user is in
+  const userData = await AsyncStorage.getItem('user');
+
+  if (userData) {
+    const user = JSON.parse(userData);
+    const clubs = user.clubs;
+
+    // get user's events
+    let events = [];
+    for (let i = 0; i < clubs.length; i++) {
+      const clubId = clubs[i];
+      const clubEvents = await getClubCalendarData(clubId);
+
+      if (clubEvents) {
+        events = [...events, ...clubEvents];
+      }
+    }
+
+    // for each event, add to google calendar
+    for (let i = 0; i < events.length; i++) {
+      const event = events[i];
+      const eventDate = event.date.toDate();
+
+      // create event object
+      const newEvent = {
+        summary: event.name,
+        start: {
+          dateTime: (eventDate + event.time).toISOString(),
+          timeZone: getTimeZoneOffset(), // change to user's timezone
+        },
+        end: {
+          dateTime: event.duration ? (eventDate + event.time + duration).toISOString() : (eventDate + event.time + 30).toISOString(),
+          timeZone: getTimeZoneOffset(),
+        },
+      };
+
+      // add event to google calendar
+      try {
+        await apiCalendar.createEvent({
+          calendarId: 'primary',
+          resource: newEvent,
+        });
+      } catch (error) {
+        console.error('Error adding event to Google Calendar:', error);
+      }
+    }
+  }
+}
+
+// unsync events from google calendar
+const unsyncEventsFromGoogleCalendar = async () => {
+  // get all events from google calendar
+  const events = await apiCalendar.listEvents({
+    calendarId: 'primary',
+  });
+
+  // delete all events
+  for (let i = 0; i < events.length; i++) {
+    const event = events[i];
+    await apiCalendar.deleteEvent({
+      calendarId: 'primary',
+      eventId: event.id,
+    });
+  }
+}
+
+// sign in to google calendar
+const signInToGoogleCalendar = async () => {
+  apiCalendar.handleAuthClick();
+
+  // set signed in to true in async storage
+  await AsyncStorage.setItem('googleCalendarSignedIn', 'true');
+}
+
+// sign out of google calendar
+const signOutFromGoogleCalendar = async () => {
+  apiCalendar.handleSignoutClick();
+
+  // set signed in to false in async storage
+  await AsyncStorage.setItem('googleCalendarSignedIn', 'false');
+}
+
+// check if user is signed in to google calendar
+const checkGoogleCalendarSignIn = async () => {
+  const signedIn = await AsyncStorage.getItem('googleCalendarSignedIn');
+  return signedIn === 'true';
+}
+
+// check if sync is toggled on
+const checkToggleSyncGoogleCalendar = async () => {
+  const signedIn = await AsyncStorage.getItem('syncGoogleCalendar');
+  return signedIn === 'true';
+}
+
+// toggle sync google calendar async
+const toggleSyncGoogleCalendar = async (bool) => {
+  const signedIn = await AsyncStorage.getItem('syncGoogleCalendar');
+  if (signedIn === 'true') {
+    AsyncStorage.setItem('syncGoogleCalendar', bool);
+  } else {
+    AsyncStorage.setItem('syncGoogleCalendar', bool);
+  }
+}
+
+// add new event to google calendar
+const addEventToGoogleCalendar = async (event) => {
+  // create event object
+  const newEvent = {
+    summary: event.name,
+    start: {
+      dateTime: event.date.toDate().toISOString(),
+      timeZone: getTimeZoneOffset(), // change to user's timezone
+    },
+    end: {
+      dateTime: event.duration ? (event.date.toDate() + event.time + event.duration).toISOString() : (event.date.toDate() + event.time + 30).toISOString(),
+      timeZone: getTimeZoneOffset(),
+    },
+  };
+
+  // add event to google calendar
+  try {
+    await apiCalendar.createEvent({
+      calendarId: 'primary',
+      resource: newEvent,
+    });
+  } catch (error) {
+    console.error('Error adding event to Google Calendar:', error);
+  }
+}
+
+// delete event from google calendar
+const deleteEventFromGoogleCalendar = async (event) => {
+  try {
+    await apiCalendar.deleteEvent(event.id);
+  } catch (error) {
+    console.error('Error deleting event from Google Calendar', error)
+  }
+}
+
+// update event in google calendar
+const updateEventInGoogleCalendar = async (event) => {
+  // create event object
+  const newEvent = {
+    summary: event.name,
+    start: {
+      dateTime: event.date.toDate().toISOString(),
+      timeZone: getTimeZoneOffset(), // change to user's timezone
+    },
+    end: {
+      dateTime: event.duration ? (event.date.toDate() + event.time + event.duration).toISOString() : (event.date.toDate() + event.time + 30).toISOString(),
+      timeZone: getTimeZoneOffset(),
+    },
+  };
+
+  // update event in google calendar
+  try {
+    await apiCalendar.updateEvent({
+      calendarId: 'primary',
+      eventId: event.id,
+      resource: newEvent,
+    });
+  } catch (error) {
+    console.error('Error updating event in Google Calendar:', error);
+  }
+}
+
+export { 
+  emailSplit, 
+  getSetSchoolData,
+  getSetUserData, getProfileData, updateProfileData, 
+  getSetClubData, getSetMyClubsData, fetchClubs, getClubCategoryData, fetchClubMembers,
+  joinClub, requestToJoinClub, getSetRequestsData, acceptRequest, declineRequest, leaveClubConfirmed, checkMembership,
+  getSetEventData, deleteEvent, getSetEventAttendance, getAttendeesData, attendEvent,
+  getSetCalendarData, getSetClubCalendarData, getClubCalendarData,
+  fetchMessages, handleCameraPress, handleLongPress, handlePressMessage, handleImageUploadAndSend, handleDocumentPress,
+  syncEventsToGoogleCalendar, unsyncEventsFromGoogleCalendar, signInToGoogleCalendar, signOutFromGoogleCalendar,
+  toggleSyncGoogleCalendar, checkToggleSyncGoogleCalendar, checkGoogleCalendarSignIn, 
+  addEventToGoogleCalendar, deleteEventFromGoogleCalendar, updateEventInGoogleCalendar,
+  deleteAccount,
 };

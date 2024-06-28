@@ -21,6 +21,7 @@ import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view
 import { signInWithEmailAndPassword, getAuth } from 'firebase/auth';
 // styling
 import { Colors } from '../../styles/Colors';
+import { FadeInDown } from 'react-native-reanimated';
 
 const SignIn = ({ route, navigation }) => {
   // state variables
@@ -115,7 +116,7 @@ const SignIn = ({ route, navigation }) => {
         extraHeight={-100}
       >
         <View style={styles.topElements}>
-          <Image source={Logo} style={styles.logo} />
+          <AnimatedImage entering={FadeInDown} source={Logo} style={styles.logo} />
         </View>
 
         <View style={styles.signInContainer}>

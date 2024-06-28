@@ -144,8 +144,6 @@ const ClubList = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      <Header text='Club List'></Header>
-
       <View style={styles.searchBarView}>
         <SearchBar placeholder='Search' value={searchText} setValue={setSearchText}/>
       </View>

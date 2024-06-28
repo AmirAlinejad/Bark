@@ -13,7 +13,7 @@ import PrivacySwitch from '../../components/input/PrivacySwitch';
 // google places autocomplete
 import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete';
 // functions
-import { emailSplit } from '../../functions/backendFunctions';
+import { emailSplit, addEventToGoogleCalendar } from '../../functions/backendFunctions';
 // backend
 import { db, firestore } from '../../backend/FirebaseConfig';
 // date time picker
@@ -36,7 +36,7 @@ Geocoder.init('AIzaSyAoX4MTi2eAw2b_W3RzA35Cy5yjpwQYV3E');
 const NewEvent = ({ route, navigation }) => { 
 
   // get club name from previous screen
-  const { clubId, clubCategories, clubName, event } = route.params;
+  const { clubId, clubCategories, event } = route.params;
 
   // create states for event info
   const [eventName, setName] = useState(event ? event.name : "");
@@ -85,7 +85,6 @@ const NewEvent = ({ route, navigation }) => {
         const newEvent = {
           id: eventId,
           clubId: clubId,
-          clubName: clubName,
           categories: clubCategories,
           name: eventName,
           description: eventDescription,
@@ -111,6 +110,8 @@ const NewEvent = ({ route, navigation }) => {
           categories: clubCategories,
           publicEvent: publicEvent,
         });
+
+        addEventToGoogleCalendar(newEvent);
 
       } catch (e) {
         console.error("Error adding document: ", e);
@@ -139,7 +140,6 @@ const NewEvent = ({ route, navigation }) => {
         roomNumber: roomNumber,
         instructions: instructions,
         clubId: clubId,
-        clubName: clubName,
         categories: clubCategories,
         publicEvent: publicEvent,
         rsvps: [],

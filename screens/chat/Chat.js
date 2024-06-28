@@ -23,7 +23,7 @@ import CustomText from '../../components/display/CustomText';
 import ReplyPreview from '../../components/chat/ReplyPreview';
 import IconButton from '../../components/buttons/IconButton';
 // functions
-import { checkMembership, fetchMessages, handleCameraPress, handleImageUploadAndSend, emailSplit, getSetUserData } from '../../functions/backendFunctions';
+import { checkMembership, fetchMessages, handleCameraPress, handleImageUploadAndSend, handleDocumentPress, emailSplit, getSetUserData } from '../../functions/backendFunctions';
 import { deleteImageFromStorage } from '../../functions/chatFunctions';
 import { isSameDay } from '../../functions/timeFunctions';
 import { goToClubScreen } from '../../functions/navigationFunctions';
@@ -323,7 +323,7 @@ export default function Chat({ route, navigation }) {
   }
 
   // delete image preview
-  const deleteImagePreview = () => () => {
+  const deleteImagePreview = () => {
     deleteImageFromStorage(imageUrl);
 
     setImageUrl(null)
@@ -460,9 +460,13 @@ export default function Chat({ route, navigation }) {
               <BottomSheetModal
                 isVisible={isModalVisible}
                 onClose={closeModal}
-                onUploadImage={() => handleImageUploadAndSend("chat", setImageUrl, closeModal, setTempImageUrl)}
+                onUploadImage={() => handleImageUploadAndSend(chatName, setImageUrl, closeModal, setTempImageUrl)}
                 onUploadGif={() => handleGifSend(setGifUrl)}
-                onOpenCamera={() => handleCameraPress(setImageUrl, closeModal, setTempImageUrl)}
+                onOpenCamera={() => handleCameraPress(chatName, setImageUrl, closeModal, setTempImageUrl)}
+                onOpenDocument={() => handleDocumentPress(setMessageText, closeModal)}
+                setImage={setImageUrl}
+                setTempImageUrl={setTempImageUrl}
+                chatRef={collection(firestore, 'schools', schoolKey, 'chatData', 'clubs', clubId, 'chats', chatName)}
               />
 
               {/* Modal for toolbar buttons*/}

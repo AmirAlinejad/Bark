@@ -11,6 +11,8 @@ import EventScreen from './event/EventScreen';
 import EditEventScreen from "./event/EditEventScreen";
 import NewEvent from './event/NewEvent';
 import MapPicker from "./event/MapPicker";
+import AttendanceScreen from './event/AttendanceScreen';
+import AttendanceViewer from './event/AttendanceViewer';
 
 import Chat from './chat/Chat';
 import AdminChat from './chat/AdminChat';
@@ -49,12 +51,20 @@ const Main = () => {
         {/* main */}
         <Stack.Screen name="CalendarScreen" component={CalendarScreen} options={{ headerShown: false, gestureEnabled: false }}/>
         <Stack.Screen name="ClubCalendar" component={ClubCalendar} options={{ headerShown: false, gestureEnabled: false }}/>
-        <Stack.Screen name="ClubList" component={ClubList} options={{ headerShown: false, gestureEnabled: false }}/>
+        <Stack.Screen name="ClubList" component={ClubList} options={{ 
+          headerTitle: 'Search', 
+          headerLargeTitle: true, 
+          headerShadowVisible: false,
+          gestureEnabled: false 
+          }}
+        />
         <Stack.Screen name="MyClubs" component={MyClubs} options={{ headerShown: false, gestureEnabled: false }}/>
         <Stack.Screen name="ClubScreen" component={ClubScreen} options={{ headerShown: false, gestureEnabled: false }}/>
         <Stack.Screen name="ClubCategoryScreen" component={ClubCategoryScreen} options={{ headerShown: false, gestureEnabled: false }}/>
         <Stack.Screen name="Requests" component={Requests} options={{ headerShown: false, gestureEnabled: false }}/>
         <Stack.Screen name="EventScreen" component={EventScreen} options={{ headerShown: false, gestureEnabled: false }}/>
+        <Stack.Screen name="AttendanceScreen" component={AttendanceScreen} options={{ headerShown: false, gestureEnabled: false }}/>
+        <Stack.Screen name="AttendanceViewer" component={AttendanceViewer} options={{ headerShown: false, gestureEnabled: false }}/>
         <Stack.Screen name="NewEvent" component={NewEvent} options={{ headerShown: false, gestureEnabled: false }}/>
         <Stack.Screen name="MapPicker" component={MapPicker} options={{ headerShown: false, gestureEnabled: false }}/>
         <Stack.Screen name="Chat" component={Chat} options={{ headerShown: false, gestureEnabled: false }}/>

@@ -21,7 +21,7 @@ import { ref, set, update } from 'firebase/database';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db, firestore } from '../../backend/FirebaseConfig';
 // functions
-import { emailSplit, deleteEvent } from '../../functions/backendFunctions';
+import { emailSplit, deleteEvent, updateEventInGoogleCalendar, deleteEventFromGoogleCalendar } from '../../functions/backendFunctions';
 import { dateForObj, timeForObj } from '../../functions/timeFunctions';
 // icons
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -102,6 +102,8 @@ const EditEventScreen = ({ route, navigation }) => {
         publicEvent: publicEvent,
       });
 
+      updateEventInGoogleCalendar(updatedEvent);
+
       navigation.navigate("HomeScreen"); // make go back to event screen eventually
     } catch (error) {
       console.log(error);
@@ -144,6 +146,7 @@ const EditEventScreen = ({ route, navigation }) => {
   // delete event
   const deleteThisEvent = async () => {
     deleteEvent(event.id);
+    deleteEventFromGoogleCalendar(event);
     navigation.navigate('HomeScreen');
   }
 

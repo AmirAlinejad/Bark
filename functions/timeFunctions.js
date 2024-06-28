@@ -212,4 +212,16 @@ const chatFormatTime = (date) => {
   return `${formattedHours}:${formattedMinutes} ${amOrPm}`;
 };
 
-export { formatDate, formatTime, timeToString, formatStartEndTime, dateForObj, timeForObj, reformatDate, isSameDay, chatFormatDate, chatFormatTime};
+const getTimeZoneOffset = () => {
+  // get time zone as a string based on the current date
+  const offset = new Date().getTimezoneOffset();
+
+  // convert the offset to hours and minutes
+  const hours = Math.floor(Math.abs(offset) / 60);
+  const minutes = Math.abs(offset) % 60;
+
+  // return the time zone offset
+  return `${offset < 0 ? '+' : '-'}${hours}:${minutes}`;
+}
+
+export { formatDate, formatTime, timeToString, formatStartEndTime, dateForObj, timeForObj, reformatDate, isSameDay, chatFormatDate, chatFormatTime, getTimeZoneOffset};
