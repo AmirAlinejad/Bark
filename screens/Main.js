@@ -34,6 +34,7 @@ import Requests from './club/Requests';
 import Profile from './profile/Profile';
 import EditProfile from './profile/EditProfile';
 import FeedbackScreen from "./profile/FeedbackScreen";
+import Settings from './profile/Settings';
 
 import QRCodeScreen from './QRCodeScreen';
 // stack navigator
@@ -83,6 +84,7 @@ const Main = () => {
         <Stack.Screen name="EditEvent" component={EditEventScreen} options={{ headerShown: false, gestureEnabled: false }}/>
         <Stack.Screen name="Feedback" component={FeedbackScreen} options={{ headerShown: false, gestureEnabled: false }}/>
         <Stack.Screen name="QRCodeScreen" component={QRCodeScreen} options={{ headerShown: false, gestureEnabled: false }}/>
+        <Stack.Screen name="Settings" component={Settings} options={{ headerShown: false, gestureEnabled: false }}/>
       </Stack.Navigator>
   );
 }

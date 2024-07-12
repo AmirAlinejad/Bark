@@ -23,6 +23,7 @@ const CustomButton = ({ onPress, text, color, icon}) => {
 const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
+    justifyContent: 'center',
     flexDirection: 'row',
     gap: 10,
     width: '33%',

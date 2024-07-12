@@ -467,6 +467,7 @@ export default function Chat({ route, navigation }) {
                 setImage={setImageUrl}
                 setTempImageUrl={setTempImageUrl}
                 chatRef={collection(firestore, 'schools', schoolKey, 'chatData', 'clubs', clubId, 'chats', chatName)}
+                userData={userData}
               />
 
               {/* Modal for toolbar buttons*/}

@@ -18,6 +18,7 @@ const CustomInput = ({ width, value, setValue, placeholder, keyboardType, secure
         keyboardType={keyboardType}
         secureTextEntry={secureTextEntry}
         style={styles.input}
+        placeholderTextColor={Colors.gray}
         maxLength={maxLength}
         multiline={multiline}
       />
@@ -45,6 +46,7 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 50,
     color: Colors.black,
+    fonyColor: Colors.black,
     fontFamily: 'Nunito_400Regular',
     backgroundColor: 'transparent',
   },

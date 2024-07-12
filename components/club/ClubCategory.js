@@ -39,6 +39,7 @@ const ClubCategory = ({name, data, schoolKey, navigation}) => {
                 ItemSeparatorComponent={() => <View style={styles.separator} />}
                 keyExtractor={item => item.clubId}
                 horizontal={true}
+                showsHorizontalScrollIndicator={false}
             />
             <TouchableOpacity style={styles.rightButtonView} onPress={goToClubCategoryScreen}>
                 <CustomText text="View All" style={styles.viewAll} />
@@ -54,8 +55,7 @@ const styles = StyleSheet.create({
       alignItems: 'flex-start',
     },
     list: {
-        flex: 1,
-        width: '100%',
+        paddingRight: 20,
     },
     separator: {
         width: 12,

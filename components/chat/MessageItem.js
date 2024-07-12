@@ -91,6 +91,19 @@ const MessageItem = ({ item, navigation, setOverlayVisible, setOverlayUserData, 
                     )}
                 </View>
                 )}
+                {/* Poll */}
+                {item.voteOptions && (  
+                    <View style={styles.pollContainer}>
+                        <CustomText style={styles.pollQuestion} text={item.pollQuestion} font="bold"/>
+                        {item.voteOptions.map((option, index) => (
+                            <View key={index} style={styles.pollOption}>
+                                <CustomText style={styles.pollOptionText} text={option.text} />
+                                <CustomText style={styles.pollOptionVotes} text={option.votes} />
+                            </View>
+                        ))}
+                    </View>
+                )}
+                {/* Display view image text */}
                 <CustomText style={styles.dateTime} text={messageTime} font="light"/>
             </View>
         </View>

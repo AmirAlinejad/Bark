@@ -15,7 +15,7 @@ import * as DocumentPicker from 'expo-document-picker';
 // functions
 import handleImageUpload from './uploadImage';
 // google calendar
-import { apiCalendar } from '../backend/calendarApiConfig';
+import { apiCalendar } from '../backend/CalendarApiConfig';
 import { get } from 'firebase/database';
 
 const emailSplit = async () => {
@@ -535,18 +535,47 @@ const checkMembership = async (clubId, setPrivilege, setIsRequestSent) => {
 };
 
 const fetchMessages = async (querySnapshot, setMessages, setPinnedMessageCount) => {
-  const fetchedMessages = querySnapshot.docs.map(doc => ({
-    id: doc.id,
-    createdAt: doc.data().createdAt.toDate(),
-    text: doc.data().text,
-    user: doc.data().user,
-    image: doc.data().image,
-    likeCount: doc.data().likeCount || 0,
-    likes: doc.data().likes || [],
-    pinned: doc.data().pinned || false,
-    gifUrl: doc.data().gifUrl,
-    replyTo: doc.data().replyTo,
-  }));
+  const fetchedMessages = querySnapshot.docs.map(doc => {
+    // if poll, get poll data
+    if (doc.data().voteOptions) {
+      const voteOptions = doc.data().voteOptions;
+      const pollQuestion = doc.data().pollQuestion;
+      const votes = doc.data().votes;
+      const voters = doc.data().voters;
+
+      const pollData = {
+        voteOptions: voteOptions,
+        pollQuestion: pollQuestion,
+        votes: votes,
+        voters: voters,
+      };
+
+      return ({
+        id: doc.id,
+        createdAt: doc.data().createdAt.toDate(),
+        user: doc.data().user,
+        voteOptions: voteOptions,
+        pollQuestion: pollQuestion,
+        votes: votes,
+        voters: voters,
+        pinned: doc.data().pinned || false,
+        replyTo: doc.data().replyTo,
+      });
+    }
+
+    return ({
+      id: doc.id,
+      createdAt: doc.data().createdAt.toDate(),
+      text: doc.data().text,
+      user: doc.data().user,
+      image: doc.data().image,
+      likeCount: doc.data().likeCount || 0,
+      likes: doc.data().likes || [],
+      pinned: doc.data().pinned || false,
+      gifUrl: doc.data().gifUrl,
+      replyTo: doc.data().replyTo,
+    })
+  });
 
   // invert the order of messages
   fetchedMessages.reverse();
@@ -861,17 +890,18 @@ const syncEventsToGoogleCalendar = async () => {
     // for each event, add to google calendar
     for (let i = 0; i < events.length; i++) {
       const event = events[i];
-      const eventDate = event.date.toDate();
+      console.log('Event:', event);
+      const eventDate = event.date;
 
       // create event object
       const newEvent = {
         summary: event.name,
         start: {
-          dateTime: (eventDate + event.time).toISOString(),
+          dateTime: new Date(eventDate).toLocaleDateString(),
           timeZone: getTimeZoneOffset(), // change to user's timezone
         },
         end: {
-          dateTime: event.duration ? (eventDate + event.time + duration).toISOString() : (eventDate + event.time + 30).toISOString(),
+          dateTime: new Date(eventDate + 30).toLocaleDateString(),
           timeZone: getTimeZoneOffset(),
         },
       };
@@ -950,11 +980,11 @@ const addEventToGoogleCalendar = async (event) => {
   const newEvent = {
     summary: event.name,
     start: {
-      dateTime: event.date.toDate().toISOString(),
+      dateTime: new Date(event.date).toISOString(),
       timeZone: getTimeZoneOffset(), // change to user's timezone
     },
     end: {
-      dateTime: event.duration ? (event.date.toDate() + event.time + event.duration).toISOString() : (event.date.toDate() + event.time + 30).toISOString(),
+      dateTime: event.duration ? (new Date(event.date) + event.time + event.duration).toISOString() : (new Date(event.date) + event.time + 30).toISOString(),
       timeZone: getTimeZoneOffset(),
     },
   };
@@ -985,11 +1015,11 @@ const updateEventInGoogleCalendar = async (event) => {
   const newEvent = {
     summary: event.name,
     start: {
-      dateTime: event.date.toDate().toISOString(),
+      dateTime: new Date(event.date).toISOString(),
       timeZone: getTimeZoneOffset(), // change to user's timezone
     },
     end: {
-      dateTime: event.duration ? (event.date.toDate() + event.time + event.duration).toISOString() : (event.date.toDate() + event.time + 30).toISOString(),
+      dateTime: event.duration ? (new Date(event.date) + event.time + event.duration).toISOString() : (new Date(event.date) + event.time + 30).toISOString(),
       timeZone: getTimeZoneOffset(),
     },
   };
