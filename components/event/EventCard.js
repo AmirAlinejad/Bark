@@ -1,52 +1,68 @@
-import React from 'react';
+import React from "react";
 // react native components
-import { View, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, TouchableOpacity } from "react-native";
 // my components
-import CustomText from '../display/CustomText';
+import CustomText from "../display/CustomText";
 // time functions
-import { timeToString } from '../../functions/timeFunctions';
+import { timeToString } from "../../functions/timeFunctions";
 // icons
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons } from "@expo/vector-icons";
 // style
-import { Colors } from '../../styles/Colors';
+import { Colors } from "../../styles/Colors";
 
 // club card displayed on the club list screen
-const EventCard = ({ id, name, time, icon, iconColor, screenName, navigation }) => { // description and time are not used yet
+const EventCard = ({
+  id,
+  name,
+  time,
+  icon,
+  iconColor,
+  screenName,
+  navigation,
+}) => {
+  // description and time are not used yet
 
   const onPress = () => {
     // Navigate to the event screen
     navigation.navigate("EventScreen", {
       eventId: id,
-      fromScreen: screenName? screenName : null,
+      fromScreen: screenName ? screenName : null,
     });
-  }
+  };
 
   return (
-    <TouchableOpacity style={styles.eventCard} onPress={onPress}>   
-      <View style={{flexDirection: 'row', gap: 15}}>
-        
-        <View style={[styles.iconCircle, {backgroundColor: iconColor}]}>
+    <TouchableOpacity style={styles.eventCard} onPress={onPress}>
+      <View style={{ flexDirection: "row", gap: 15 }}>
+        <View style={[styles.iconCircle, { backgroundColor: iconColor }]}>
           <Ionicons name={icon} size={24} color={Colors.white} />
         </View>
 
         <View style={styles.cardText}>
-          <CustomText style={[styles.textNormal, {width: '70%'}]} text={name} font='bold' numberOfLines={1}/>
-          <View style={{width: 20}}></View>
-          <CustomText style={styles.timeText} text={timeToString(time)} />
+          <CustomText
+            style={[styles.textNormal]}
+            text={name}
+            font="bold"
+            numberOfLines={1}
+          />
+          <View stlye={{ alignItems: 'flex-end' }}>
+            <CustomText style={styles.timeText} text={timeToString(time)} />
+          </View>
         </View>
       </View>
     </TouchableOpacity>
   );
-}
+};
 
 const styles = StyleSheet.create({
   eventCard: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    backgroundColor: Colors.white,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     flex: 1,
-    paddingVertical: 20,
-    borderRadius: 20,
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    borderRadius: 16,
     // shadow
     shadowColor: Colors.black,
     shadowOffset: { width: 0, height: 2 },
@@ -54,30 +70,31 @@ const styles = StyleSheet.create({
   },
   cardText: {
     flex: 1,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginRight: 10,
-    marginTop: 5,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginRight: 0,
   },
   iconCircle: {
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     width: 40,
     height: 40,
     borderRadius: 50,
   },
   separator: {
     height: 1,
-    width: '100%',
+    width: "100%",
     backgroundColor: Colors.lightGray,
     marginBottom: 10,
   },
   textNormal: {
-    fontSize: 16,
+    textAlignVertical: "center",
+    fontSize: 18,
     marginTop: 5,
   },
   timeText: {
+    textAlign: "",
     marginTop: 5,
     fontSize: 16,
     color: Colors.darkGray,

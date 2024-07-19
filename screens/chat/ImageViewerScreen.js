@@ -38,7 +38,7 @@ export default function ImageViewerScreen({ route }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.8)', // Semi-transparent background
+    backgroundColor: 'rgba(0, 0, 0, 1)', // Semi-transparent background
     justifyContent: 'center',
     alignItems: 'center',
   },

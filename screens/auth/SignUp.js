@@ -11,7 +11,7 @@ import CustomText from '../../components/display/CustomText';
 import CustomInput from '../../components//input/CustomInput';
 import CustomButton from '../../components/buttons/CustomButton';
 // backend
-import { createUserWithEmailAndPassword, updateProfile, sendEmailVerification } from 'firebase/auth';
+import { createUserWithEmailAndPassword, sendEmailVerification } from 'firebase/auth';
 // keyboard aware scroll view
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 // firebase
@@ -103,6 +103,7 @@ const SignUp = ({ route, navigation }) => {
     <View style={styles.container}>
       <KeyboardAwareScrollView 
         contentContainerStyle={styles.elementsContainer}
+        style={{width: '100%'}}
       >
         <View style={styles.topElements}>
           <Image source={Logo} style={styles.logo} />
@@ -142,8 +143,8 @@ const SignUp = ({ route, navigation }) => {
 
           <CustomText style={styles.signupText} text={'Have an account already?'} />
           <CustomText style={styles.signupLink} onPress={onLoginIn} text="Log In" />
-
-          <View style={{position: "absolute", backgroundColor: Colors.white, height: 600}}/>
+        
+          <View style={{height: 50}} /> 
         </View>
       </KeyboardAwareScrollView>
     </View>
@@ -153,32 +154,27 @@ const SignUp = ({ route, navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'flex-start',
-    alignItems: 'flex-start',
     backgroundColor: Colors.lightGray,
   },
   elementsContainer: {
-    flex: 1,
-    width: 390,
+    width: '100%',
+    height: 'auto',
   },
   topElements: {
-    flex: 1,
     justifyContent: 'center',
     marginLeft: 40,
   },
   signInContainer: {
-    flex: 3,
+    flex: 1,
     padding: 20,
     paddingTop: 30,
     borderTopLeftRadius: 30,
     borderTopRightRadius: 30,
-    backgroundColor: Colors.white,
   },
   logo: {
     width: 100,
     height: 100,
-    marginBottom: 60,
-    marginTop: 100,
+    marginTop: 40,
   },
   title: {
     fontSize: 24,

@@ -1,20 +1,38 @@
-import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, FlatList, Switch, Linking } from 'react-native';
-import Modal from 'react-native-modal';
-import { getAuth } from 'firebase/auth';
-import { signOut } from 'firebase/auth';
-import { Colors } from '../../styles/Colors';
-import { getSetUserData, deleteAccount } from '../../functions/backendFunctions';
-import { syncEventsToGoogleCalendar, unsyncEventsFromGoogleCalendar, checkToggleSyncGoogleCalendar, toggleSyncGoogleCalendar, signInToGoogleCalendar } from '../../functions/backendFunctions';
-import Header from '../../components/display/Header';
-import IconText from '../../components/display/IconText';
-import IconButton from '../../components/buttons/IconButton';
-import CustomText from '../../components/display/CustomText';
-import CustomButton from '../../components/buttons/CustomButton';
+import React, { useState, useEffect } from "react";
+import {
+  View,
+  StyleSheet,
+  ScrollView,
+  FlatList,
+  Switch,
+  Linking,
+} from "react-native";
+import Modal from "react-native-modal";
+import { getAuth } from "firebase/auth";
+import { signOut } from "firebase/auth";
+import { Colors } from "../../styles/Colors";
+import {
+  getSetUserData,
+  deleteAccount,
+} from "../../functions/backendFunctions";
+import {
+  syncEventsToGoogleCalendar,
+  unsyncEventsFromGoogleCalendar,
+  checkToggleSyncGoogleCalendar,
+  toggleSyncGoogleCalendar,
+  signInToGoogleCalendar,
+} from "../../functions/backendFunctions";
+import Header from "../../components/display/Header";
+import IconText from "../../components/display/IconText";
+import IconButton from "../../components/buttons/IconButton";
+import CustomText from "../../components/display/CustomText";
+import CustomButton from "../../components/buttons/CustomButton";
+import SettingsSection from "../../components/display/SettingsSection";
+import { dateForObj } from "../../functions/timeFunctions";
 
 const Settings = ({ navigation }) => {
   const [userData, setUserData] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(loading);
   // delete account overlay
   const [deleteAccountModal, setDeleteAccountModal] = useState(false);
   const [logoutModal, setLogoutModal] = useState(false);
@@ -25,86 +43,105 @@ const Settings = ({ navigation }) => {
   // data for settings flatlist
   const settingsData = [
     {
-      id: '1',
-      icon: 'create-outline',
-      text: 'Edit Profile',
-      onPress: () => {
-        navigation.navigate("EditProfile", {
-          userData: userData,
-          navigation: navigation,
-        }); 
-      }
+      title: "Account",
+      data: [
+        {
+          id: "1",
+          icon: "create-outline",
+          text: "Edit Profile",
+          onPress: () => {
+            navigation.navigate("EditProfile", {
+              userData: userData,
+              navigation: navigation,
+            });
+          },
+        },
+        {
+          id: "4",
+          icon: "log-out-outline",
+          text: "Log Out",
+          onPress: () => {
+            setLogoutModal(true);
+          },
+        },
+      ],
     },
     {
-      id: '3',
-      icon: 'phone-portrait-outline',
-      text: 'App Settings',
-      onPress: () => {
-        Linking.openSettings();
-      },
+      title: "App Settings",
+      data: [
+        {
+          id: "7",
+          switch: true,
+          icon: "calendar-outline",
+          text: "Sync to Google Calendar",
+          onPress: () => {
+            if (syncGoogleCalendar) {
+              unSyncFromGoogleCalendar();
+              setSyncGoogleCalendar(false);
+            } else {
+              syncToGoogleCalendar();
+              setSyncGoogleCalendar(true);
+            }
+          },
+          value: syncGoogleCalendar,
+        },
+        {
+          id: "8",
+          switch: true,
+          icon: "moon-outline",
+          text: "Dark Mode",
+          onPress: () => {
+            console.log("dark mode");
+          },
+          value: null,
+        },
+        {
+          id: "3",
+          icon: "phone-portrait-outline",
+          text: "Phone Settings",
+          onPress: () => {
+            Linking.openSettings();
+          },
+        },
+      ],
     },
     {
-      id: '4',
-      icon: 'log-out-outline',
-      text: 'Log Out',
-      onPress: () => {
-        setLogoutModal(true);
-      }
+      title: "Support",
+      data: [
+        {
+          id: "5",
+          icon: "chatbubble-outline",
+          text: "Contact Us",
+          onPress: () => {
+            navigation.navigate("Feedback", {
+              userData: userData,
+              navigation: navigation,
+            });
+          },
+        },
+        {
+          id: "6",
+          icon: "information-circle-outline",
+          text: "About Us",
+          onPress: () => {
+            navigation.navigate("AboutUs");
+          },
+        },
+      ],
     },
     {
-      id: '5',
-      icon: 'chatbubble-outline',
-      text: 'Contact Us',
-      onPress: () => {
-        navigation.navigate('Feedback', {
-          userData: userData,
-          navigation: navigation,
-        });
-      },
-    },
-    {
-      id: '6',
-      icon: 'information-circle-outline',
-      text: 'About Us',
-      onPress: () => {
-        navigation.navigate('AboutUs');
-      },
-    },
-    {
-      id: '7',
-      switch: true,
-      icon: 'calendar-outline',
-      text: 'Sync to Google Calendar',
-      onPress: () => {
-        if (syncGoogleCalendar) {
-          unSyncFromGoogleCalendar();
-          setSyncGoogleCalendar(false);
-        } else {
-          syncToGoogleCalendar();
-          setSyncGoogleCalendar(true);
-        }
-        
-      },
-      value: syncGoogleCalendar,
-    },
-    {
-      id: '8',
-      switch: true,
-      icon: 'moon-outline',
-      text: 'Dark Mode',
-      onPress: () => {
-        console.log('dark mode');
-      },
-      value: null,
-    },
-    {
-      id: '9',
-      icon: 'trash-outline',
-      text: 'Delete Account',
-      onPress: () => {
-        setDeleteAccountModal(true);
-      },
-      color: Colors.red,
+      title: ' ',
+      data: [
+        {
+          id: "9",
+          icon: "trash-outline",
+          text: "Delete Account",
+          onPress: () => {
+            setDeleteAccountModal(true);
+          },
+          color: Colors.red,
+        },
+      ],
     },
   ];
 
@@ -121,9 +158,9 @@ const Settings = ({ navigation }) => {
     // sync to google calendar
     syncEventsToGoogleCalendar();
 
-    toggleSyncGoogleCalendar('true');
+    toggleSyncGoogleCalendar("true");
     setSyncGoogleCalendar(true);
-  }
+  };
 
   // unsync
   const unSyncFromGoogleCalendar = async () => {
@@ -131,49 +168,11 @@ const Settings = ({ navigation }) => {
     //await signOutFromGoogleCalendar();
     unsyncEventsFromGoogleCalendar();
 
-
-    toggleSyncGoogleCalendar('false');
+    toggleSyncGoogleCalendar("false");
     setSyncGoogleCalendar(false);
-  }
-
-
-  // render settings button
-  const renderSettingsButton = ({ item }) => {
-    if (item.switch) {
-      return (
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-          <IconButton icon={item.icon} text={item.text} style={styles.settingsButton} color={item.color ? item.color : Colors.black} />
-            <Switch 
-              trackColor={{ false: Colors.black, true: Colors.buttonBlue }}
-              thumbColor={Colors.white}
-              onValueChange={() => { // if not loading, then onPress
-                if (!loading) {
-                  item.onPress();
-                }
-              }}
-              value={item.value}
-            />
-        </View>
-      );
-    } else {
-      return (
-        <IconButton 
-          icon={item.icon} 
-          text={item.text} 
-          onPress={() => { // if not loading, then onPress
-            if (!loading) {
-              item.onPress();
-            }
-          }} 
-          style={styles.settingsButton} 
-          color={item.color ? item.color : Colors.black}
-        />
-      );
-    }
-  }
+  };
 
   useEffect(() => {
-
     const asyncFunc = async () => {
       setLoading(true);
       await getSetUserData(setUserData);
@@ -183,7 +182,7 @@ const Settings = ({ navigation }) => {
       setSyncGoogleCalendar(isSignedIn);
 
       setLoading(false);
-    }
+    };
 
     asyncFunc();
   }, []);
@@ -195,67 +194,77 @@ const Settings = ({ navigation }) => {
       userData: userData,
       navigation: navigation,
     });
-  }
+  };
 
   // delete account
   const deleteAccountFunc = () => {
     deleteAccount();
     setDeleteAccountModal(false);
-    navigation.navigate('SignIn');
-  }
+    navigation.navigate("SignIn");
+  };
 
   // log out
   const logOut = () => {
-     const auth = getAuth();
-     signOut(auth).then(() => {
-       navigation.navigate('SignIn');
-     }).catch((error) => {
-       console.error('Error signing out:', error);
-     });
-  }
+    const auth = getAuth();
+    signOut(auth)
+      .then(() => {
+        navigation.navigate("SignIn");
+      })
+      .catch((error) => {
+        console.error("Error signing out:", error);
+      });
+  };
 
-  const gradYear = userData?.graduationYear ? userData.graduationYear : 'Add Year';
-  const major = userData?.major ? userData.major : '📚Add Major';
+  const gradYear = userData?.graduationYear
+    ? userData.graduationYear
+    : "Add Year";
+  const major = userData?.major ? userData.major : "📚Add Major";
 
   return (
-    <View style={styles.container}>
-      <Header text="Settings" back navigation={navigation} />
-      <View style={styles.setttingsContent}>
-        
-        <ScrollView>
-          <FlatList
-            data={settingsData}
-            renderItem={renderSettingsButton}
-            keyExtractor={item => item.id}
-            style={styles.buttonContainerView}
-            ItemSeparatorComponent={() => <View style={styles.separator} />}
-          />
-        </ScrollView>
-
-      </View>
+    <View style={{ flex: 1 }}>
+      <ScrollView
+        style={{ backgroundColor: Colors.lightGray }}
+        contentInsetAdjustmentBehavior="automatic"
+      >
+        <SettingsSection data={settingsData} />
+      </ScrollView>
 
       <Modal isVisible={deleteAccountModal}>
-
         <View style={styles.modalContainer}>
-          <CustomText style={styles.modalText} text="Are you sure you want to delete your account?" />
+          <CustomText
+            style={styles.modalText}
+            text="Are you sure you want to delete your account?"
+          />
           <View style={styles.modalButtons}>
-            <CustomButton text="Yes" onPress={deleteAccount} color={Colors.red}/>
-            <CustomButton text="No" onPress={() => setDeleteAccountModal(false)} color={Colors.green}/>
+            <CustomButton
+              text="Yes"
+              onPress={deleteAccount}
+              color={Colors.red}
+            />
+            <CustomButton
+              text="No"
+              onPress={() => setDeleteAccountModal(false)}
+              color={Colors.green}
+            />
           </View>
         </View>
-
       </Modal>
 
       <Modal isVisible={logoutModal}>
-
         <View style={styles.modalContainer}>
-          <CustomText style={styles.modalText} text="Are you sure you want to log out of your account?" />
+          <CustomText
+            style={styles.modalText}
+            text="Are you sure you want to log out of your account?"
+          />
           <View style={styles.modalButtons}>
-            <CustomButton text="Yes" onPress={logOut} color={Colors.red}/>
-            <CustomButton text="No" onPress={() => setLogoutModal(false)} color={Colors.green}/>
+            <CustomButton text="Yes" onPress={logOut} color={Colors.red} />
+            <CustomButton
+              text="No"
+              onPress={() => setLogoutModal(false)}
+              color={Colors.green}
+            />
           </View>
         </View>
-
       </Modal>
     </View>
   );
@@ -265,15 +274,16 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.lightGray,
+    marginTop: 80,
   },
   setttingsContent: {
-    justifyContent: 'flex-start',
+    justifyContent: "flex-start",
     flex: 4,
     marginTop: 20,
     paddingTop: 20,
     paddingLeft: 20,
     backgroundColor: Colors.white,
-    
+
     borderTopLeftRadius: 30,
     borderTopRightRadius: 30,
   },
@@ -285,8 +295,8 @@ const styles = StyleSheet.create({
     marginTop: 0,
     marginBottom: 20,
   },
-  separator: { 
-    backgroundColor: Colors.lightGray,
+  separator: {
+    backgroundColor: Colors.white,
     height: 1,
     marginRight: 20,
   },
@@ -305,29 +315,29 @@ const styles = StyleSheet.create({
     marginBottom: 30,
   },
   settings: {
-    position: 'absolute',
+    position: "absolute",
     top: 70,
     right: 30,
   },
 
-   // modal styles
-   modalContainer: {
+  // modal styles
+  modalContainer: {
     backgroundColor: Colors.white,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     padding: 20,
     margin: 20,
     borderRadius: 20,
   },
   modalText: {
-    textAlign: 'center',
+    textAlign: "center",
     fontSize: 18,
     marginBottom: 20,
   },
   modalButtons: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 80,
-    justifyContent: 'space-between',
+    justifyContent: "space-between",
   },
 });
 

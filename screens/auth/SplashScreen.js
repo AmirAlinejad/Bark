@@ -77,7 +77,7 @@ const SplashScreen = ({navigation}) => {
                         navigation.navigate('Main', { screen: 'HomeScreen' });
                         navigation.navigate('Main', { screen: 'EventAttendance', params: { eventId: eventId } });
                     } else {
-                        navigation.navigate('Main');
+                        navigation.navigate('Main'); // put back
                     }
                 } else {
                     navigation.navigate('Onboarding');

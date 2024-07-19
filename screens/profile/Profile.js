@@ -1,35 +1,44 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 // react native components
-import { View, StyleSheet, TouchableOpacity, FlatList, Switch, ScrollView } from 'react-native';
+import {
+  View,
+  StyleSheet,
+  TouchableOpacity,
+  FlatList,
+  Switch,
+  ScrollView,
+} from "react-native";
 // my components
-import CustomText from '../../components/display/CustomText';
-import ProfileImg from '../../components/display/ProfileImg';
-import IconButton from '../../components/buttons/IconButton';
-import Header from '../../components/display/Header';
-import IconText from '../../components/display/IconText';
-import CustomButton from '../../components/buttons/CustomButton';
+import CustomText from "../../components/display/CustomText";
+import ProfileImg from "../../components/display/ProfileImg";
+import IconButton from "../../components/buttons/IconButton";
+import Header from "../../components/display/Header";
+import IconText from "../../components/display/IconText";
+import CustomButton from "../../components/buttons/CustomButton";
 // functions
-import { 
-        getSetUserData, 
-        deleteAccount, 
-        signInToGoogleCalendar, 
-        signOutFromGoogleCalendar, 
-        checkGoogleCalendarSignIn, 
-        checToogleGoogleCalendar,
-        syncEventsToGoogleCalendar, 
-        toggleSyncGoogleCalendar, 
-        unsyncEventsFromGoogleCalendar,
-        checkToggleSyncGoogleCalendar
-      } from '../../functions/backendFunctions';
+import {
+  getSetUserData,
+  deleteAccount,
+  signInToGoogleCalendar,
+  signOutFromGoogleCalendar,
+  checkGoogleCalendarSignIn,
+  checkToggleGoogleCalendar,
+  syncEventsToGoogleCalendar,
+  toggleSyncGoogleCalendar,
+  unsyncEventsFromGoogleCalendar,
+  checkToggleSyncGoogleCalendar,
+} from "../../functions/backendFunctions";
 // firebase
-import { getAuth, signOut } from 'firebase/auth';
+import { getAuth, signOut } from "firebase/auth";
 // modal
-import Modal from 'react-native-modal';
+import Modal from "react-native-modal";
 // colors
-import { Colors } from '../../styles/Colors';
-// linking
-import * as Linking from 'expo-linking';
-import { set } from 'firebase/database';
+import { Colors } from "../../styles/Colors";
+// stack
+import { createStackNavigator } from "@react-navigation/stack";
+import SettingsSection from "../../components/display/SettingsSection";
+
+const Stack = createStackNavigator();
 
 const Profile = ({ navigation }) => {
   const [userData, setUserData] = useState(null);
@@ -44,42 +53,46 @@ const Profile = ({ navigation }) => {
   // data for settings flatlist
   const settingsData = [
     {
-      id: '1',
-      icon: 'create-outline',
-      text: 'Edit Profile',
-      onPress: () => {
-        navigation.navigate("EditProfile", {
-          userData: userData,
-          navigation: navigation,
-        }); 
-      }
-    },
-    {
-      id: '2',
-      icon: 'settings-outline',
-      text: 'App Settings',
-      onPress: () => {
-        navigation.navigate('Settings');
-      },
-    },
-    {
-      id: '5',
-      icon: 'chatbubble-outline',
-      text: 'Contact Us',
-      onPress: () => {
-        navigation.navigate('Feedback', {
-          userData: userData,
-          navigation: navigation,
-        });
-      },
-    },
-    {
-      id: '6',
-      icon: 'information-circle-outline',
-      text: 'About Us',
-      onPress: () => {
-        navigation.navigate('AboutUs');
-      },
+      data: [
+        {
+          id: "1",
+          icon: "create-outline",
+          text: "Edit Profile",
+          onPress: () => {
+            navigation.navigate("Edit Profile", {
+              userData: userData,
+              navigation: navigation,
+            });
+          },
+        },
+        {
+          id: "2",
+          icon: "settings-outline",
+          text: "App Settings",
+          onPress: () => {
+            navigation.navigate("Settings");
+          },
+        },
+        {
+          id: "5",
+          icon: "chatbubble-outline",
+          text: "Contact Us",
+          onPress: () => {
+            navigation.navigate("Feedback", {
+              userData: userData,
+              navigation: navigation,
+            });
+          },
+        },
+        {
+          id: "6",
+          icon: "information-circle-outline",
+          text: "About Us",
+          onPress: () => {
+            navigation.navigate("AboutUs");
+          },
+        },
+      ],
     },
   ];
 
@@ -96,9 +109,9 @@ const Profile = ({ navigation }) => {
     // sync to google calendar
     syncEventsToGoogleCalendar();
 
-    toggleSyncGoogleCalendar('true');
+    toggleSyncGoogleCalendar("true");
     setSyncGoogleCalendar(true);
-  }
+  };
 
   // unsync
   const unSyncFromGoogleCalendar = async () => {
@@ -106,49 +119,11 @@ const Profile = ({ navigation }) => {
     //await signOutFromGoogleCalendar();
     unsyncEventsFromGoogleCalendar();
 
-
-    toggleSyncGoogleCalendar('false');
+    toggleSyncGoogleCalendar("false");
     setSyncGoogleCalendar(false);
-  }
-
-
-  // render settings button
-  const renderSettingsButton = ({ item }) => {
-    if (item.switch) {
-      return (
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-          <IconButton icon={item.icon} text={item.text} style={styles.settingsButton} color={item.color ? item.color : Colors.black} />
-            <Switch 
-              trackColor={{ false: Colors.black, true: Colors.buttonBlue }}
-              thumbColor={Colors.white}
-              onValueChange={() => { // if not loading, then onPress
-                if (!loading) {
-                  item.onPress();
-                }
-              }}
-              value={item.value}
-            />
-        </View>
-      );
-    } else {
-      return (
-        <IconButton 
-          icon={item.icon} 
-          text={item.text} 
-          onPress={() => { // if not loading, then onPress
-            if (!loading) {
-              item.onPress();
-            }
-          }} 
-          style={styles.settingsButton} 
-          color={item.color ? item.color : Colors.black}
-        />
-      );
-    }
-  }
+  };
 
   useEffect(() => {
-
     const asyncFunc = async () => {
       setLoading(true);
       await getSetUserData(setUserData);
@@ -158,7 +133,7 @@ const Profile = ({ navigation }) => {
       setSyncGoogleCalendar(isSignedIn);
 
       setLoading(false);
-    }
+    };
 
     asyncFunc();
   }, []);
@@ -170,130 +145,164 @@ const Profile = ({ navigation }) => {
       userData: userData,
       navigation: navigation,
     });
-  }
+  };
 
   // delete account
   const deleteAccountFunc = () => {
     deleteAccount();
     setDeleteAccountModal(false);
-    navigation.navigate('SignIn');
-  }
+    navigation.navigate("SignIn");
+  };
 
   // log out
   const logOut = () => {
-     const auth = getAuth();
-     signOut(auth).then(() => {
-       navigation.navigate('SignIn');
-     }).catch((error) => {
-       console.error('Error signing out:', error);
-     });
-  }
+    const auth = getAuth();
+    signOut(auth)
+      .then(() => {
+        navigation.navigate("SignIn");
+      })
+      .catch((error) => {
+        console.error("Error signing out:", error);
+      });
+  };
 
-  const gradYear = userData?.graduationYear ? userData.graduationYear : 'Add Year';
-  const major = userData?.major ? userData.major : '📚Add Major';
+  const gradYear = userData?.graduationYear
+    ? userData.graduationYear
+    : "Add Year";
+  const major = userData?.major ? userData.major : "📚Add Major";
 
   return (
-    <View style={styles.container}>
-      <Header text='Your Profile' />
-        <View style={styles.profileContainer}>
+    <Stack.Navigator>
+      <Stack.Screen
+        name="Profile"
+        options={{
+          headerShown: false,
+        }}
+      >
+        {() => (
+          <View style={{ flex: 1 }}>
+            <ScrollView contentContainerStyle={styles.container}>
+              <View style={styles.profileContainer}>
+                <TouchableOpacity onPress={goToEditProfile}>
+                  <ProfileImg profileImg={userData?.profileImg} width={120} />
+                </TouchableOpacity>
 
-          <TouchableOpacity onPress={goToEditProfile}>
-            <ProfileImg profileImg={userData?.profileImg} width={120} />
-          </TouchableOpacity>
+                <CustomText
+                  style={styles.name}
+                  text={userData?.firstName + " " + userData?.lastName}
+                  font="bold"
+                />
+                <CustomText
+                  style={styles.userName}
+                  text={"@" + userData?.userName}
+                />
 
-          <CustomText style={styles.name} text={userData?.firstName + " " + userData?.lastName} font='bold'/>
-          <CustomText style={styles.userName} text={'@'+userData?.userName} font='bold'/>
+                <View style={styles.detailsView}>
+                  <TouchableOpacity onPress={goToEditProfile}>
+                    <CustomText
+                      text={"🎓" + gradYear}
+                      style={styles.detailsText}
+                    />
+                  </TouchableOpacity>
+                  <View style={{ width: 25 }} />
+                  <TouchableOpacity onPress={goToEditProfile}>
+                    <CustomText text={major} style={styles.detailsText} />
+                  </TouchableOpacity>
+                </View>
+              </View>
 
-          <View style={styles.detailsView}>
-            <TouchableOpacity onPress={goToEditProfile}>
-              <CustomText text={'🎓' + gradYear} style={styles.detailsText} font='bold'/>
-            </TouchableOpacity>
-          <View style={{width: 25}}/>
-          <TouchableOpacity onPress={goToEditProfile}>
-            <CustomText text={major} style={styles.detailsText} font='bold' />
-          </TouchableOpacity>
-        </View>
-      </View>
-  
-      <View style={styles.setttingsContent}>
-        <IconText icon="person-outline" iconColor={Colors.lightGray} text="Profile" />
-        <FlatList
-          scrollEnabled={false}
-          data={settingsData}
-          renderItem={renderSettingsButton}
-          keyExtractor={item => item.id}
-          style={styles.buttonContainerView}
-          ItemSeparatorComponent={() => <View style={styles.separator} />}
-        />
+              <SettingsSection data={settingsData} loading={loading} />
+              
+            </ScrollView>
 
-      </View>
+            <IconButton
+              icon="settings-outline"
+              style={styles.settings}
+              onPress={() => navigation.navigate("Settings")}
+              color={Colors.buttonBlue}
+            />
 
-      <Modal isVisible={deleteAccountModal}>
+            <Modal isVisible={deleteAccountModal}>
+              <View style={styles.modalContainer}>
+                <CustomText
+                  style={styles.modalText}
+                  text="Are you sure you want to delete your account?"
+                />
+                <View style={styles.modalButtons}>
+                  <CustomButton
+                    text="Yes"
+                    onPress={deleteAccount}
+                    color={Colors.red}
+                  />
+                  <CustomButton
+                    text="No"
+                    onPress={() => setDeleteAccountModal(false)}
+                    color={Colors.green}
+                  />
+                </View>
+              </View>
+            </Modal>
 
-        <View style={styles.modalContainer}>
-          <CustomText style={styles.modalText} text="Are you sure you want to delete your account?" />
-          <View style={styles.modalButtons}>
-            <CustomButton text="Yes" onPress={deleteAccount} color={Colors.red}/>
-            <CustomButton text="No" onPress={() => setDeleteAccountModal(false)} color={Colors.green}/>
+            <Modal isVisible={logoutModal}>
+              <View style={styles.modalContainer}>
+                <CustomText
+                  style={styles.modalText}
+                  text="Are you sure you want to log out of your account?"
+                />
+                <View style={styles.modalButtons}>
+                  <CustomButton
+                    text="Yes"
+                    onPress={logOut}
+                    color={Colors.red}
+                  />
+                  <CustomButton
+                    text="No"
+                    onPress={() => setLogoutModal(false)}
+                    color={Colors.green}
+                  />
+                </View>
+              </View>
+            </Modal>
           </View>
-        </View>
-
-      </Modal>
-
-      <Modal isVisible={logoutModal}>
-
-        <View style={styles.modalContainer}>
-          <CustomText style={styles.modalText} text="Are you sure you want to log out of your account?" />
-          <View style={styles.modalButtons}>
-            <CustomButton text="Yes" onPress={logOut} color={Colors.red}/>
-            <CustomButton text="No" onPress={() => setLogoutModal(false)} color={Colors.green}/>
-          </View>
-        </View>
-
-      </Modal>
-      <IconButton icon="settings-outline" style={styles.settings} onPress={() => navigation.navigate('Settings')} color={Colors.buttonBlue}/>
-    </View>
+        )}
+      </Stack.Screen>
+    </Stack.Navigator>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.lightGray,
+    justifyContent: "space-between",
   },
   profileContainer: {
-    alignItems: 'center',
-    justifyContent: 'flex-start',
-    marginTop: 40,
-    flex: 4,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 88,
   },
   detailsView: {
-    flexDirection: 'row',
+    flexDirection: "row",
     marginTop: 0,
   },
   detailsText: {
     fontSize: 16,
     color: Colors.darkGray,
   },
-  setttingsContent: {
-    justifyContent: 'flex-start',
-    flex: 4,
+  settingsContent: {
+    justifyContent: "flex-start",
+    justifySelf: "flex-end",
     paddingTop: 20,
+    paddingBottom: 10,
     paddingLeft: 20,
     backgroundColor: Colors.white,
-    
     borderTopLeftRadius: 30,
     borderTopRightRadius: 30,
   },
-  settingsButton: {
-    marginVertical: 10,
-  },
   buttonContainerView: {
-    flex: 1,
-    marginTop: 10,
-    marginBottom: 20,
+    marginTop: 0,
+    marginBottom: 0,
   },
-  separator: { 
+  separator: {
     backgroundColor: Colors.lightGray,
     height: 1,
     marginRight: 20,
@@ -313,29 +322,29 @@ const styles = StyleSheet.create({
     marginBottom: 30,
   },
   settings: {
-    position: 'absolute',
-    top: 70,
-    right: 30,
+    position: "absolute",
+    top: 30,
+    right: 20,
   },
 
-   // modal styles
-   modalContainer: {
+  // modal styles
+  modalContainer: {
     backgroundColor: Colors.white,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     padding: 20,
     margin: 20,
     borderRadius: 20,
   },
   modalText: {
-    textAlign: 'center',
+    textAlign: "center",
     fontSize: 18,
     marginBottom: 20,
   },
   modalButtons: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 80,
-    justifyContent: 'space-between',
+    justifyContent: "space-between",
   },
 });
 

@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { TouchableOpacity, StyleSheet, FlatList, View, Dimensions } from 'react-native';
+import React, { useState, useEffect, useLayoutEffect } from 'react';
+import { TouchableOpacity, StyleSheet, FlatList, View, Dimensions, ScrollView } from 'react-native';
 // Firebase
 import { query, collection, where, onSnapshot, orderBy } from 'firebase/firestore';
 import { firestore } from '../../backend/FirebaseConfig'; // Update this path according to your project structure
@@ -26,6 +26,12 @@ const ImageGalleryScreen = ({ route }) => {
   const navigation = useNavigation();
 
   const [messages, setMessages] = useState([]);
+
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerTitle: 'Image Gallery',
+    });
+  }, [navigation]);
 
   // Fetch messages on initial render
   useEffect(() => {  
@@ -60,8 +66,7 @@ const ImageGalleryScreen = ({ route }) => {
   );
 
   return (
-    <View style={styles.container}>
-      <Header navigation={navigation} text={""} back={true} />
+    <ScrollView style={styles.container} contentInsetAdjustmentBehavior='automatic'>
       <View style={{height: 15}} />
 
       {/* Show if no messages */}
@@ -80,8 +85,9 @@ const ImageGalleryScreen = ({ route }) => {
         numColumns={numColumns}
         contentContainerStyle={styles.flatlistContainer}
         style={{margin: 0}}
+        scrollEnabled={false}
       />
-    </View>
+    </ScrollView>
   );
 };
 

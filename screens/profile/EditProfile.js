@@ -104,10 +104,10 @@ const EditProfile = ({ route, navigation }) => {
 
   return (
     <View style={styles.container}>
-    <Header text='Edit Profile' back navigation={navigation}/>
       <KeyboardAwareScrollView 
         contentContainerStyle={styles.elementsContainer}
         extraHeight={200}
+        contentInsetAdjustmentBehavior='automatic'
       >
         <View style={{alignItems: 'center', margin: 20}} >
           <TouchableOpacity onPress={() => handleImageUploadAndSend('profile', setProfileImg)}>
@@ -191,9 +191,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
   },
   buttonContainer: {
-    marginTop: 20,
-   marginLeft: 20,
-   width: 400,
+    marginVertical: 20,
+    marginLeft: 20,
+    width: 400,
   },
   textNormal: {
     fontSize: 20,

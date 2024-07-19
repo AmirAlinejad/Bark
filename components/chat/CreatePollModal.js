@@ -15,7 +15,6 @@ const CreatePollModal = ({ isVisible, onClose, schoolKey, clubId, chatName }) =>
     // const [editingText, setEditingText] = useState('');
     const [options, setOptions] = useState([]);
 
-    // Add option
     const onAddOption = () => {
         if (newOptionText) {
             setOptions([...options, { id: options.length.toString(), text: newOptionText }]);

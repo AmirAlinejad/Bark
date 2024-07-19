@@ -1,26 +1,37 @@
-import React, { useState, useCallback, useEffect } from 'react';
-import { View, StyleSheet, ScrollView } from 'react-native';
+import React, {
+  useState,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+} from "react";
+import { View, StyleSheet, ScrollView } from "react-native";
 // modal
-import Modal from 'react-native-modal';
+import Modal from "react-native-modal";
 // my components
-import Header from '../../components/display/Header';
-import IconButton from '../../components/buttons/IconButton';
-import CustomText from '../../components/display/CustomText';
-import CustomButton from '../../components/buttons/CustomButton';
-// navigation
-import { useFocusEffect } from '@react-navigation/native';
+import CustomText from "../../components/display/CustomText";
+import CustomButton from "../../components/buttons/CustomButton";
+import SettingsSection from "../../components/display/SettingsSection";
 // styles
-import { Colors } from '../../styles/Colors';
+import { Colors } from "../../styles/Colors";
 // functions
-import { getSetClubData, checkMembership, leaveClubConfirmed } from '../../functions/backendFunctions';
-import { get } from 'firebase/database';
+import {
+  getSetClubData,
+  checkMembership,
+  leaveClubConfirmed,
+} from "../../functions/backendFunctions";
 
 const InClubView = ({ navigation, route }) => {
   const { clubData } = route.params;
-  const [currentUserPrivilege, setCurrentUserPrivilege] = useState(''); // not used
+  const [currentUserPrivilege, setCurrentUserPrivilege] = useState(""); // not used
   const [isLeaveClubModalVisible, setLeaveClubModalVisible] = useState(false);
 
   console.log(clubData);
+
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerTitle: "Manage Club",
+    });
+  }, [navigation]);
 
   // refresh states when you come back to this screen
   useEffect(() => {
@@ -32,7 +43,7 @@ const InClubView = ({ navigation, route }) => {
 
   // go to edit club screen
   const onEditButtonPress = () => {
-    navigation.navigate('EditClub', {
+    navigation.navigate("EditClub", {
       name: clubData.clubName,
       id: clubData.clubId,
       img: clubData.clubImg,
@@ -44,7 +55,7 @@ const InClubView = ({ navigation, route }) => {
 
   // go to requests screen
   const onRequestsButtonPress = () => {
-    navigation.navigate('Requests', {
+    navigation.navigate("Requests", {
       clubId: clubData.clubId,
       clubName: clubData.clubName,
     });
@@ -67,59 +78,60 @@ const InClubView = ({ navigation, route }) => {
   const leaveClub = () => {
     leaveClubConfirmed(clubId);
     toggleLeaveClubModal();
-    navigation.navigate('HomeScreen');
-  }
+    navigation.navigate("HomeScreen");
+  };
+
+  const setttingsData = [
+    {
+      data: [
+        {
+          id: 1,
+          icon: "create-outline",
+          text: "Edit Club",
+          onPress: onEditButtonPress,
+        },
+        {
+          id: 2,
+          icon: "person-add-outline",
+          text: `Requests (${getNumRequests()})`,
+          onPress: onRequestsButtonPress,
+          disabled: getNumRequests() === 0 || (currentUserPrivilege !== "admin" && currentUserPrivilege !== "owner"),
+        },
+        {
+          id: 3,
+          icon: "log-out-outline",
+          text: "Leave Club",
+          onPress: toggleLeaveClubModal,
+        },
+      ],
+    },
+  ];
 
   return (
-    <View style={styles.container}>
-      {clubData === null ? null : (
-      <View style={styles.container}>
-        <Header navigation={navigation} text="Manage Club" back/>
-
-        <ScrollView>
-          <View style={styles.content}>
-
-            <View style={styles.clubButtons}>
-              
-              <View style={styles.clubSettings}>
-                <IconButton
-                  text="Edit Club"
-                  icon="create-outline"
-                  onPress={onEditButtonPress}
-                />
-                {/*getNumRequests() > 0 && (currentUserPrivilege == 'admin' || currentUserPrivilege == 'owner') (
-                  <View>
-                    <View style={styles.separator} />
-                    <IconButton
-                      text={`Requests (${getNumRequests()})`}
-                      icon="person-add-outline"
-                      onPress={onRequestsButtonPress}
-                    />
-                  </View>
-                )*/}
-                <View style={styles.separator} />
-                <IconButton icon={'log-out-outline'} text="Leave Club" onPress={toggleLeaveClubModal} color={Colors.red} />
-              </View>
-
-              <View style={{position: "absolute", bottom: -600, left: 0, right: 0, backgroundColor: Colors.white, height: 600}}/>
-            </View>
-
-          </View>
-        </ScrollView>
-      </View>
-      )}
-
+    <View style={{ flex: 1 }}>
+      <ScrollView
+        contentContainerStyle={styles.container}
+        style={{ flex: 1 }}
+        contentInsetAdjustmentBehavior="automatic"
+      >
+        {clubData === null ? null : <SettingsSection data={setttingsData} />}
+      </ScrollView>
       {/* leave club modal */}
       <Modal isVisible={isLeaveClubModalVisible}>
-
         <View style={styles.modalContainer}>
-          <CustomText style={styles.modalText} text="Are you sure you want to leave this club?" />
+          <CustomText
+            style={styles.modalText}
+            text="Are you sure you want to leave this club?"
+          />
           <View style={styles.modalButtons}>
-            <CustomButton text="Yes" onPress={leaveClub} color={Colors.red}/>
-            <CustomButton text="No" onPress={toggleLeaveClubModal} color={Colors.green} />
+            <CustomButton text="Yes" onPress={leaveClub} color={Colors.red} />
+            <CustomButton
+              text="No"
+              onPress={toggleLeaveClubModal}
+              color={Colors.green}
+            />
           </View>
         </View>
-
       </Modal>
     </View>
   );
@@ -127,26 +139,25 @@ const InClubView = ({ navigation, route }) => {
 
 const styles = StyleSheet.create({
   container: {
-    justifyContent: 'flex-start',
-    backgroundColor: Colors.white,
+    justifyContent: "flex-start",
     flex: 1,
   },
   clubContent: {
+    flex: 1,
     marginTop: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "flex-start",
+    alignItems: "center",
+    borderWidth: 1,
   },
   clubMembers: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
     gap: 5,
   },
   clubButtons: {
     flex: 1,
-    justifyContent: 'center',
-    backgroundColor: Colors.white,
-    width: '100%',
+    width: "100%",
     marginTop: 0,
     paddingTop: 20,
     gap: 20,
@@ -155,29 +166,27 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   separator: {
-    backgroundColor: Colors.lightGray,
     height: 1,
     marginVertical: 10,
   },
 
-   // modal styles
-   modalContainer: {
-    backgroundColor: Colors.white,
-    justifyContent: 'center',
-    alignItems: 'center',
+  // modal styles
+  modalContainer: {
+    justifyContent: "center",
+    alignItems: "center",
     padding: 20,
     margin: 20,
     borderRadius: 20,
   },
   modalText: {
-    textAlign: 'center',
+    textAlign: "center",
     fontSize: 18,
     marginBottom: 20,
   },
   modalButtons: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 80,
-    justifyContent: 'space-between',
+    justifyContent: "space-between",
   },
 });
 

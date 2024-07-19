@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useLayoutEffect } from 'react';
 // storage
 import AsyncStorage from '@react-native-async-storage/async-storage';
 // react native components
-import { View, StyleSheet, TouchableOpacity, TextInput } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, TextInput, ScrollView } from 'react-native';
 // my components
 import CustomInput from '../../components/input/CustomInput';
 import CustomButton from '../../components/buttons/CustomButton';
@@ -50,6 +50,12 @@ const NewEvent = ({ route, navigation }) => {
   const [loading, setLoading] = useState(false);
   // overlay
   const [overlayVisible, setOverlayVisible] = useState(false);
+
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerTitle: 'New Event',
+    });
+  }, [navigation]);
 
   /*// location and address are const (not implemented currently)
   const location = event ? event.location : {
@@ -156,10 +162,10 @@ const NewEvent = ({ route, navigation }) => {
   }
 
   return (
-    <View style={styles.container}>
-      <Header text='New Event' back navigation={navigation}></Header>
+    <View style={{ flex: 1, backgroundColor: Colors.white }}>
       <KeyboardAwareScrollView 
         contentContainerStyle={styles.elementsContainer}
+        contentInsetAdjustmentBehavior='automatic'
         extraHeight={200}
       >
         <CustomText style={styles.textNormal} font="bold" text="Event Name*" />

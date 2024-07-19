@@ -18,10 +18,10 @@ import CustomButton from '../../components/buttons/CustomButton';
 // keyboard aware scroll view
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 // backend
-import { signInWithEmailAndPassword, getAuth } from 'firebase/auth';
+import { signInWithEmailAndPassword } from 'firebase/auth';
 // styling
 import { Colors } from '../../styles/Colors';
-import { FadeInDown } from 'react-native-reanimated';
+import Animated, { FadeInUp } from 'react-native-reanimated';
 
 const SignIn = ({ route, navigation }) => {
   // state variables
@@ -78,7 +78,7 @@ const SignIn = ({ route, navigation }) => {
       }
 
       // Navigate to the home screen
-      navigation.navigate('HomeScreen');
+      navigation.navigate('Main');
 
       const schoolKey = response.user.email.split('@')[1].split('.')[0];
 
@@ -113,10 +113,11 @@ const SignIn = ({ route, navigation }) => {
     <View style={styles.container}>
       <KeyboardAwareScrollView 
         contentContainerStyle={styles.elementsContainer}
+        style={{ width: '100%' }}
         extraHeight={-100}
       >
         <View style={styles.topElements}>
-          <AnimatedImage entering={FadeInDown} source={Logo} style={styles.logo} />
+          <Animated.Image etnering={FadeInUp} source={Logo} style={styles.logo} />
         </View>
 
         <View style={styles.signInContainer}>
@@ -163,26 +164,26 @@ const SignIn = ({ route, navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    width: '100%',
     justifyContent: 'flex-start',
     alignItems: 'flex-start',
-    backgroundColor: Colors.lightGray,
   },
   elementsContainer: {
     flex: 1,
-    width: 390,
+    width: '100%',
   },
   topElements: {
     flex: 1,
-    justifyContent: 'center',
-    marginLeft: 40,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
   },
   signInContainer: {
     flex: 2,
-    padding: 20,
+    display: 'flex',
+    justifyContent: 'flex-start',
+    alignItems: 'center',
     paddingTop: 30,
-    borderTopLeftRadius: 30,
-    borderTopRightRadius: 30,
-    backgroundColor: Colors.white,
   },
   logo: {
     width: 120,
@@ -197,7 +198,7 @@ const styles = StyleSheet.create({
   signupText: {
     fontSize: 16,
     color: 'black',
-    marginTop: 15,
+    marginTop: 5,
   },
   signupLink: {
     marginTop: 5,

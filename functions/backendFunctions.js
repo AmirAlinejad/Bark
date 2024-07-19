@@ -1,121 +1,154 @@
-import { Alert } from 'react-native';
+import { Alert } from "react-native";
 // backend functions
-import { firestore } from '../backend/FirebaseConfig';
-import { doc, collection, query, where, limit, updateDoc, deleteDoc, setDoc, getDoc, getDocs, orderBy } from 'firebase/firestore';
+import { firestore } from "../backend/FirebaseConfig";
+import {
+  doc,
+  collection,
+  query,
+  where,
+  limit,
+  updateDoc,
+  deleteDoc,
+  setDoc,
+  getDoc,
+  getDocs,
+  orderBy,
+} from "firebase/firestore";
 import { getAuth, deleteUser } from "firebase/auth";
-import { getTimeZoneOffset } from './timeFunctions';
+import { getTimeZoneOffset } from "./timeFunctions";
 // storage
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import AsyncStorage from "@react-native-async-storage/async-storage";
 // macros
-import { SCHOOLS } from '../macros/macros';
+import { SCHOOLS } from "../macros/macros";
 // image
-import * as ImagePicker from 'expo-image-picker';
+import * as ImagePicker from "expo-image-picker";
 // document picker
-import * as DocumentPicker from 'expo-document-picker';
+import * as DocumentPicker from "expo-document-picker";
 // functions
-import handleImageUpload from './uploadImage';
+import handleImageUpload from "./uploadImage";
 // google calendar
-import { apiCalendar } from '../backend/CalendarApiConfig';
-import { get } from 'firebase/database';
+import { apiCalendar } from "../backend/CalendarApiConfig";
+import { get } from "firebase/database";
 
 const emailSplit = async () => {
-
   // try async storage first
   try {
-    const value = await AsyncStorage.getItem('schoolKey');
+    const value = await AsyncStorage.getItem("schoolKey");
     if (value !== null) {
       return value;
     }
   } catch (error) {
-    console.error('Error getting school key from async:', error);
+    console.error("Error getting school key from async:", error);
   }
 
   // if not there, get from auth
   const auth = getAuth();
   const user = auth.currentUser;
-  return user.email.split('@')[1].split('.')[0];
-}
+  return user.email.split("@")[1].split(".")[0];
+};
 
-const getSetUserData = async (setter, setUserId) => {
-   // get data from async storage
-    try {
-      const userData = await AsyncStorage.getItem('user');
-      if (userData) {
+const getSetUserData = async (setter) => {
+  // get data from async storage
+  try {
+    const userData = await AsyncStorage.getItem("user");
+    if (userData) {
+      console.log("User data:", JSON.parse(userData));
 
-        console.log('User data:', JSON.parse(userData));
-
-        setter(JSON.parse(userData));
-      }
-     } catch (error) {
-      console.error('Error getting user data:', error);
+      setter(JSON.parse(userData));
     }
-}
+  } catch (error) {
+    console.error("Error getting user data:", error);
+  }
+};
 
 const getProfileData = async (userId) => {
   try {
-    const userDocRef = doc(firestore, 'schools', emailSplit(), 'userData', userId);
+    const userDocRef = doc(
+      firestore,
+      "schools",
+      emailSplit(),
+      "userData",
+      userId
+    );
     const userDocSnapshot = await getDoc(userDocRef);
     return userDocSnapshot.data();
   } catch (error) {
-    console.error('Error getting user data:', error);
+    console.error("Error getting user data:", error);
   }
-}
+};
 
 const updateProfileData = async (userId, setter) => {
-    try {
-      let schoolKey = await emailSplit();
+  try {
+    let schoolKey = await emailSplit();
 
-      const userDocRef = doc(firestore, 'schools', schoolKey, 'userData', userId);
-      const userDocSnapshot = await getDoc(userDocRef);
-      const userData = userDocSnapshot.data();
+    const userDocRef = doc(firestore, "schools", schoolKey, "userData", userId);
+    const userDocSnapshot = await getDoc(userDocRef);
+    const userData = userDocSnapshot.data();
 
-      // set user data
-      setter(userData);
-      console.log(userData);
-    
-    } catch (error) {
-      console.log(emailSplit())
-      console.error('Error updating user data:', error);
-    }
+    // set user data
+    setter(userData);
+    console.log(userData);
+  } catch (error) {
+    console.log(emailSplit());
+    console.error("Error updating user data:", error);
+  }
 };
 
 const fetchClubMembers = async (clubId, setClubMembers) => {
   const schoolKey = await emailSplit();
 
-  const clubMembersRef = collection(firestore, 'schools', schoolKey, 'clubMemberData', 'clubs', clubId);
+  const clubMembersRef = collection(
+    firestore,
+    "schools",
+    schoolKey,
+    "clubMemberData",
+    "clubs",
+    clubId
+  );
   const clubMembersSnapshot = await getDocs(clubMembersRef);
 
   if (clubMembersSnapshot.empty) {
-    console.log('No club members found.');
+    console.log("No club members found.");
     return;
   }
 
-  const clubMembers = clubMembersSnapshot.docs.map(doc => doc.data());
+  const clubMembers = clubMembersSnapshot.docs.map((doc) => doc.data());
   setClubMembers(clubMembers);
 };
 
 const getClubCategoryData = async (category) => {
   const schoolKey = await emailSplit();
 
-  console.log('Getting clubs for category:', category);
+  console.log("Getting clubs for category:", category);
 
-  const clubsDocRef = collection(firestore, 'schools', schoolKey, 'clubSearchData', category, 'clubs');
+  const clubsDocRef = collection(
+    firestore,
+    "schools",
+    schoolKey,
+    "clubSearchData",
+    category,
+    "clubs"
+  );
   // get clubs based on category
-  const clubsQuery = query(clubsDocRef, orderBy('clubMembers', 'desc'), limit(10)); // order by club members
+  const clubsQuery = query(
+    clubsDocRef,
+    orderBy("clubMembers", "desc"),
+    limit(10)
+  ); // order by club members
   const clubsSnapshot = await getDocs(clubsQuery);
 
   if (clubsSnapshot.empty) {
-    console.log('No clubs found.');
+    console.log("No clubs found.");
     return;
   }
 
-  const clubs = clubsSnapshot.docs.map(doc => doc.data());
+  const clubs = clubsSnapshot.docs.map((doc) => doc.data());
   console.log(clubs);
   return clubs;
-}
+};
 
 const fetchClubs = async (querySnapshot, setter) => {
-  const fetchedClubs = querySnapshot.docs.map(doc => doc.data());
+  const fetchedClubs = querySnapshot.docs.map((doc) => doc.data());
   setter(fetchedClubs);
 };
 
@@ -127,23 +160,23 @@ const fetchClubs = async (querySnapshot, setter) => {
 
 const getSetClubData = async (clubId, setter) => {
   const schoolKey = await emailSplit();
-  const clubDocRef = doc(firestore, 'schools', schoolKey, 'clubData', clubId);
+  const clubDocRef = doc(firestore, "schools", schoolKey, "clubData", clubId);
   const clubDocSnapshot = await getDoc(clubDocRef);
 
   if (!clubDocSnapshot.exists()) {
-    console.log('Club not found.');
+    console.log("Club not found.");
     return;
   }
 
   setter(clubDocSnapshot.data());
-}
+};
 
 // get set my clubs data
 const getSetMyClubsData = async (setter, setMutedClubs) => {
   const schoolKey = await emailSplit();
 
   // get clubs from async storage
-  const userData = await AsyncStorage.getItem('user');
+  const userData = await AsyncStorage.getItem("user");
   const user = JSON.parse(userData);
   const clubs = user.clubs;
 
@@ -152,14 +185,22 @@ const getSetMyClubsData = async (setter, setMutedClubs) => {
   let mutedClubs = [];
   for (let i = 0; i < clubs.length; i++) {
     const clubId = clubs[i];
-    const clubDocRef = doc(firestore, 'schools', schoolKey, 'clubData', clubId);
+    const clubDocRef = doc(firestore, "schools", schoolKey, "clubData", clubId);
     const clubDocSnapshot = await getDoc(clubDocRef);
 
     if (clubDocSnapshot.exists()) {
       clubData.push(clubDocSnapshot.data());
 
       // get club member data
-      const clubMemberRef = doc(firestore, 'schools', schoolKey, 'clubMemberData', 'clubs', clubId, user.id);
+      const clubMemberRef = doc(
+        firestore,
+        "schools",
+        schoolKey,
+        "clubMemberData",
+        "clubs",
+        clubId,
+        user.id
+      );
       const clubMemberSnapshot = await getDoc(clubMemberRef);
 
       if (clubMemberSnapshot.exists()) {
@@ -173,17 +214,30 @@ const getSetMyClubsData = async (setter, setMutedClubs) => {
       }
 
       // get most recent message from club
-      const clubMessagesRef = collection(firestore, 'schools', schoolKey, 'chatData', 'clubs', clubId, 'chats', 'chat');
-      const clubMessagesQuery = query(clubMessagesRef, orderBy('createdAt', 'desc'), limit(1));
+      const clubMessagesRef = collection(
+        firestore,
+        "schools",
+        schoolKey,
+        "chatData",
+        "clubs",
+        clubId,
+        "chats",
+        "chat"
+      );
+      const clubMessagesQuery = query(
+        clubMessagesRef,
+        orderBy("createdAt", "desc"),
+        limit(1)
+      );
       const clubMessagesSnapshot = await getDocs(clubMessagesQuery);
 
       if (!clubMessagesSnapshot.empty) {
         const messageData = clubMessagesSnapshot.docs[0].data();
-        if (messageData.text == '') {
+        if (messageData.text == "") {
           if (messageData.image) {
-            clubData[i].lastMessage = 'An image was sent';
+            clubData[i].lastMessage = "An image was sent";
           } else if (messageData.gif) {
-            clubData[i].lastMessage = 'A gif was sent';
+            clubData[i].lastMessage = "A gif was sent";
           }
         } else {
           clubData[i].lastMessage = messageData.text;
@@ -194,27 +248,33 @@ const getSetMyClubsData = async (setter, setMutedClubs) => {
           // say date if message was not sent today
           const today = new Date();
           if (messageData.createdAt.toDate().getDate() !== today.getDate()) {
-            clubData[i].lastMessageTime = messageData.createdAt.toDate().toLocaleDateString();
+            clubData[i].lastMessageTime = messageData.createdAt
+              .toDate()
+              .toLocaleDateString();
           } else {
             // take out seconds
-            clubData[i].lastMessageTime = messageData.createdAt.toDate().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            clubData[i].lastMessageTime = messageData.createdAt
+              .toDate()
+              .toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
           }
         }
       } else {
-        clubData[i].lastMessage = 'No messages yet';
+        clubData[i].lastMessage = "No messages yet";
         clubData[i].lastMessageTime = null;
       }
     }
   }
 
-  console.log('MY CLUBS:', clubData);
+  console.log("MY CLUBS:", clubData);
 
   // update async storage
-  await AsyncStorage.setItem('myClubs', JSON.stringify(clubData));
+  await AsyncStorage.setItem("myClubs", JSON.stringify(clubData));
 
-  setMutedClubs(mutedClubs);
+  if (setMutedClubs) {
+    setMutedClubs(mutedClubs);
+  }
   setter(clubData);
-}
+};
 
 /*const getSetAllEventsData = async (setter) => {
   // get event data
@@ -235,73 +295,92 @@ const getSetMyClubsData = async (setter, setMutedClubs) => {
   })
 }*/
 
-const getSetCalendarData = async (setter) => { // maybe change to query based on date or club
+const getSetCalendarData = async (setter) => {
+  // maybe change to query based on date or club
   const schoolKey = await emailSplit();
-  const eventsDocRef = collection(firestore, 'schools', schoolKey, 'calendarData');
+  const eventsDocRef = collection(
+    firestore,
+    "schools",
+    schoolKey,
+    "calendarData"
+  );
   const eventsSnapshot = await getDocs(eventsDocRef);
 
   if (eventsSnapshot.empty) {
-    console.log('No events found.');
+    console.log("No events found.");
     return;
   }
 
-  const events = eventsSnapshot.docs.map(doc => doc.data());
-  console.log('EVENTS: ', events);
+  const events = eventsSnapshot.docs.map((doc) => doc.data());
+  console.log("EVENTS: ", events);
   setter(events);
-}
+};
 
 const getSetClubCalendarData = async (clubId, setter) => {
   const schoolKey = await emailSplit();
-  const eventsDocRef = collection(firestore, 'schools', schoolKey, 'calendarData');
-  const eventsQuery = query(eventsDocRef, where('clubId', '==', clubId));
+  const eventsDocRef = collection(
+    firestore,
+    "schools",
+    schoolKey,
+    "calendarData"
+  );
+  const eventsQuery = query(eventsDocRef, where("clubId", "==", clubId));
   const eventsSnapshot = await getDocs(eventsQuery);
 
   if (eventsSnapshot.empty) {
-    console.log('No events found.');
+    console.log("No events found.");
     return;
   }
 
-  const events = eventsSnapshot.docs.map(doc => doc.data());
-  console.log('EVENTS: ', events);
+  const events = eventsSnapshot.docs.map((doc) => doc.data());
+  console.log("EVENTS: ", events);
   setter(events);
-}
+};
 
 const getSetEventData = async (eventId, setter, setRSVPList) => {
   const schoolKey = await emailSplit();
-  const eventDocRef = doc(firestore, 'schools', schoolKey, 'eventData', eventId);
+  const eventDocRef = doc(
+    firestore,
+    "schools",
+    schoolKey,
+    "eventData",
+    eventId
+  );
   const eventDocSnapshot = await getDoc(eventDocRef);
 
   if (!eventDocSnapshot.exists()) {
-    console.log('Event not found.');
+    console.log("Event not found.");
     return;
   }
 
   const event = eventDocSnapshot.data();
 
-  console.log('Event data:', event);
+  console.log("Event data:", event);
 
   // get RSVP list
-  setRSVPList(event.rsvps? event.rsvps : []);
+  setRSVPList(event.rsvps ? event.rsvps : []);
 
   setter(event);
-}
+};
 
 const deleteEvent = async (eventId) => {
   const schoolKey = await emailSplit();
 
   // delete event data
-  await deleteDoc(doc(firestore, 'schools', schoolKey, 'eventData', eventId));
+  await deleteDoc(doc(firestore, "schools", schoolKey, "eventData", eventId));
 
   // delete event from calendar
-  await deleteDoc(doc(firestore, 'schools', schoolKey, 'calendarData', eventId));
-}
+  await deleteDoc(
+    doc(firestore, "schools", schoolKey, "calendarData", eventId)
+  );
+};
 
 const joinClub = async (id, privilege, userId) => {
   try {
     let userData;
     if (!userId) {
       // get user data from async storage
-      const user = await AsyncStorage.getItem('user');
+      const user = await AsyncStorage.getItem("user");
       userData = JSON.parse(user);
     } else {
       // get user data based on user id from firestore
@@ -313,7 +392,7 @@ const joinClub = async (id, privilege, userId) => {
     // add user to club's members
     let clubMember = {
       userName: userData.userName,
-      privilege: privilege ? privilege : 'member',
+      privilege: privilege ? privilege : "member",
       firstName: userData.firstName,
       lastName: userData.lastName,
       expoPushToken: userData.expoPushToken,
@@ -324,58 +403,65 @@ const joinClub = async (id, privilege, userId) => {
       clubMember.profileImg = userData.profileImg;
     }
 
-    const clubMembersDoc = doc(firestore, 'schools', schoolKey, 'clubMemberData', 'clubs', id, userData.id);
+    const clubMembersDoc = doc(
+      firestore,
+      "schools",
+      schoolKey,
+      "clubMemberData",
+      "clubs",
+      id,
+      userData.id
+    );
     await setDoc(clubMembersDoc, clubMember);
 
     // append clubid to user's clubs
     let updatedUserClubs = userData.clubs;
-    
+
     if (updatedUserClubs == undefined) {
       updatedUserClubs = [];
     }
     updatedUserClubs.push(id);
 
-    const userDocRef = doc(firestore, 'schools', schoolKey, 'userData', userData.id);
+    const userDocRef = doc(
+      firestore,
+      "schools",
+      schoolKey,
+      "userData",
+      userData.id
+    );
     await updateDoc(userDocRef, {
       clubs: updatedUserClubs,
-    });
-
-    // update clubSearchData (just updates club members for ordering purposes)
-    const clubDocRef = doc(firestore, 'schools', schoolKey, 'clubSearchData', 'clubs', id);
-    const clubDocSnapshot = await getDoc(clubDocRef);
-    let clubMembers = clubDocSnapshot.data();
-    if (clubMembers) {
-      clubMembers++;
-    } else {
-      clubMembers = 1;
-    }
-
-    await updateDoc(clubDocRef, {
-      clubMembers: clubMembers,
     });
 
     // update async storage
     // create object of user data with updated clubs
     userData.clubs = updatedUserClubs;
-    await AsyncStorage.setItem('user', JSON.stringify(userData));
-
+    await AsyncStorage.setItem("user", JSON.stringify(userData));
   } catch (error) {
-    console.error('Error processing request:', error);
+    console.error("Error processing request:", error);
   }
 };
 
 const requestToJoinClub = async (id, name, publicClub) => {
   if (publicClub) {
-    joinClub(id, 'member')
+    joinClub(id, "member");
   } else {
     const schoolKey = await emailSplit();
     // get user id from async storage
-    const userData = await AsyncStorage.getItem('user');
+    const userData = await AsyncStorage.getItem("user");
     const user = JSON.parse(userData);
 
     // send request to club
     // get club ref
-    const clubRequestsDocRef = doc(firestore, 'schools', schoolKey, 'clubRequestsData', 'clubs', id, user.id);
+    const clubRequestsDocRef = doc(
+      firestore,
+      "schools",
+      schoolKey,
+      "clubRequestsData",
+      "clubs",
+      id,
+      user.id
+    );
 
     let clubRequest = {
       userName: user.userName,
@@ -389,53 +475,86 @@ const requestToJoinClub = async (id, name, publicClub) => {
 
     await setDoc(clubRequestsDocRef, clubRequest);
   }
-}
+};
 
 const acceptRequest = async (clubId, clubName, userId) => {
-
   // join club
-  joinClub(clubId, 'member', userId);
+  joinClub(clubId, "member", userId);
 
   const schoolKey = await emailSplit();
 
   // remove request
-  await deleteDoc(doc(firestore, 'schools', schoolKey, 'clubRequestsData', 'clubs', clubId, userId));
-}
+  await deleteDoc(
+    doc(
+      firestore,
+      "schools",
+      schoolKey,
+      "clubRequestsData",
+      "clubs",
+      clubId,
+      userId
+    )
+  );
+};
 
 const declineRequest = async (clubId, userId) => {
   const schoolKey = await emailSplit();
 
   // remove request
-  await deleteDoc(doc(firestore, 'schools', schoolKey, 'clubRequestsData', 'clubs', clubId, userId));
-}
+  await deleteDoc(
+    doc(
+      firestore,
+      "schools",
+      schoolKey,
+      "clubRequestsData",
+      "clubs",
+      clubId,
+      userId
+    )
+  );
+};
 
 const getSetRequestsData = async (setter, clubId) => {
   const schoolKey = await emailSplit();
 
   // get requests from firestore
-  const clubRequestsDocRef = collection(firestore, 'schools', schoolKey, 'clubRequestsData', clubId);
+  const clubRequestsDocRef = collection(
+    firestore,
+    "schools",
+    schoolKey,
+    "clubRequestsData",
+    clubId
+  );
   const clubRequestsSnapshot = await getDocs(clubRequestsDocRef);
 
   if (clubRequestsSnapshot.empty) {
-    console.log('No requests found.');
+    console.log("No requests found.");
     return;
   }
 
-  const requests = clubRequestsSnapshot.docs.map(doc => doc.data());
+  const requests = clubRequestsSnapshot.docs.map((doc) => doc.data());
   setter(requests);
-}
+};
 
 const leaveClubConfirmed = async (id) => {
   try {
     const schoolKey = await emailSplit();
 
     // get user id from async storage
-    const userData = await AsyncStorage.getItem('user');
+    const userData = await AsyncStorage.getItem("user");
     const user = JSON.parse(userData);
     const userId = user.id;
 
     // get current club status
-    const clubMembersDoc = doc(firestore, 'schools', schoolKey, 'clubMemberData', 'clubs', id, userId);
+    const clubMembersDoc = doc(
+      firestore,
+      "schools",
+      schoolKey,
+      "clubMemberData",
+      "clubs",
+      id,
+      userId
+    );
 
     let wasOwner = false;
 
@@ -443,7 +562,7 @@ const leaveClubConfirmed = async (id) => {
     const clubMembersSnapshot = await getDoc(clubMembersDoc);
     if (clubMembersSnapshot.exists()) {
       const clubMember = clubMembersSnapshot.data();
-      if (clubMember.privilege === 'owner') {
+      if (clubMember.privilege === "owner") {
         wasOwner = true;
       }
     }
@@ -452,10 +571,16 @@ const leaveClubConfirmed = async (id) => {
     await deleteDoc(clubMembersDoc);
 
     // remove club from user data
-    const userClubsDocRef = doc(firestore, 'schools', schoolKey, 'userData', userId);
+    const userClubsDocRef = doc(
+      firestore,
+      "schools",
+      schoolKey,
+      "userData",
+      userId
+    );
     const userClubsSnapshot = await getDoc(userClubsDocRef);
     const userClubs = userClubsSnapshot.data().clubs;
-    const updatedUserClubs = userClubs.filter(club => club !== id);
+    const updatedUserClubs = userClubs.filter((club) => club !== id);
 
     await updateDoc(userClubsDocRef, {
       clubs: updatedUserClubs,
@@ -464,39 +589,51 @@ const leaveClubConfirmed = async (id) => {
     // update async storage
     // create object of user data with updated clubs
     user.clubs = updatedUserClubs;
-    await AsyncStorage.setItem('user', JSON.stringify(user));
-
-    // subtract club members
-    const clubDocRef = doc(firestore, 'schools', schoolKey, 'clubSearchData', 'clubs', id);
-    const clubDocSnapshot = await getDoc(clubDocRef);
-    let clubMembers = clubDocSnapshot.data().clubMembers;
-    clubMembers--;
-
-    await updateDoc(clubDocRef, {
-      clubMembers: clubMembers,
-    });
+    await AsyncStorage.setItem("user", JSON.stringify(user));
 
     // delete club if no members **not implemented yet**
 
     // transfer ownership if user was owner
     if (wasOwner) {
       // query for a random admin
-      const clubMembersRef = collection(firestore, 'schools', schoolKey, 'clubMemberData', 'clubs', id);
-      const adminQuery = query(clubMembersRef, where('privilege', '==', 'admin'), limit(1));
+      const clubMembersRef = collection(
+        firestore,
+        "schools",
+        schoolKey,
+        "clubMemberData",
+        "clubs",
+        id
+      );
+      const adminQuery = query(
+        clubMembersRef,
+        where("privilege", "==", "admin"),
+        limit(1)
+      );
 
       const adminSnapshot = await getDoc(adminQuery);
       if (adminSnapshot.exists()) {
         const adminData = adminSnapshot.data();
         // update new owner
-        await updateDoc(doc(firestore, 'schools', schoolKey, 'clubMemberData', 'clubs', id, adminData.id), {
-          privilege: 'owner',
-        });
+        await updateDoc(
+          doc(
+            firestore,
+            "schools",
+            schoolKey,
+            "clubMemberData",
+            "clubs",
+            id,
+            adminData.id
+          ),
+          {
+            privilege: "owner",
+          }
+        );
       }
     }
 
-    alert('You have left the club');
+    alert("You have left the club");
   } catch (error) {
-    console.error('Error leaving club:', error);
+    console.error("Error leaving club:", error);
   }
 };
 
@@ -504,38 +641,50 @@ const getSetSchoolData = async (setter) => {
   const schoolKey = await emailSplit();
   // return school data from macros
   await setter(SCHOOLS[schoolKey]);
-}
+};
 
 const checkMembership = async (clubId, setPrivilege, setIsRequestSent) => {
   // get user id from async storage
-  const userData = await AsyncStorage.getItem('user');
+  const userData = await AsyncStorage.getItem("user");
   const user = JSON.parse(userData);
   const userId = user.id;
 
   const schoolKey = await emailSplit();
 
-  const clubMemberDocRef = doc(firestore, 'schools', schoolKey, 'clubMemberData', 'clubs', clubId, userId);
+  const clubMemberDocRef = doc(
+    firestore,
+    "schools",
+    schoolKey,
+    "clubMemberData",
+    "clubs",
+    clubId,
+    userId
+  );
   const snapshot = await getDoc(clubMemberDocRef);
 
   // check permissions
   if (snapshot.exists()) {
     const clubMember = snapshot.data();
-    if (clubMember.privilege === 'member') {
-      setPrivilege('member');
-    } else if (clubMember.privilege === 'admin') {
-      setPrivilege('admin');
-    } else if (clubMember.privilege === 'owner') {
-      setPrivilege('owner');
+    if (clubMember.privilege === "member") {
+      setPrivilege("member");
+    } else if (clubMember.privilege === "admin") {
+      setPrivilege("admin");
+    } else if (clubMember.privilege === "owner") {
+      setPrivilege("owner");
     }
   } else {
-    setPrivilege('none');
+    setPrivilege("none");
   }
 
   // check if user has requested to join **not implemented yet**
 };
 
-const fetchMessages = async (querySnapshot, setMessages, setPinnedMessageCount) => {
-  const fetchedMessages = querySnapshot.docs.map(doc => {
+const fetchMessages = async (
+  querySnapshot,
+  setMessages,
+  setPinnedMessageCount
+) => {
+  const fetchedMessages = querySnapshot.docs.map((doc) => {
     // if poll, get poll data
     if (doc.data().voteOptions) {
       const voteOptions = doc.data().voteOptions;
@@ -550,7 +699,7 @@ const fetchMessages = async (querySnapshot, setMessages, setPinnedMessageCount) 
         voters: voters,
       };
 
-      return ({
+      return {
         id: doc.id,
         createdAt: doc.data().createdAt.toDate(),
         user: doc.data().user,
@@ -560,10 +709,10 @@ const fetchMessages = async (querySnapshot, setMessages, setPinnedMessageCount) 
         voters: voters,
         pinned: doc.data().pinned || false,
         replyTo: doc.data().replyTo,
-      });
+      };
     }
 
-    return ({
+    return {
       id: doc.id,
       createdAt: doc.data().createdAt.toDate(),
       text: doc.data().text,
@@ -574,7 +723,7 @@ const fetchMessages = async (querySnapshot, setMessages, setPinnedMessageCount) 
       pinned: doc.data().pinned || false,
       gifUrl: doc.data().gifUrl,
       replyTo: doc.data().replyTo,
-    })
+    };
   });
 
   // invert the order of messages
@@ -582,15 +731,23 @@ const fetchMessages = async (querySnapshot, setMessages, setPinnedMessageCount) 
 
   setMessages(fetchedMessages);
 
-  console.log('MESSAGES:', fetchedMessages);
+  console.log("MESSAGES:", fetchedMessages);
 
   // Calculate and update the count of pinned messages.
-  if(setPinnedMessageCount) setPinnedMessageCount(fetchedMessages.filter(message => message.pinned).length);
+  if (setPinnedMessageCount)
+    setPinnedMessageCount(
+      fetchedMessages.filter((message) => message.pinned).length
+    );
 };
 
-const handleImageUploadAndSend = async (chatType, setImageUrl, closeModal, setTempImageUrl) => {
-
-  const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+const handleImageUploadAndSend = async (
+  chatType,
+  setImageUrl,
+  closeModal,
+  setTempImageUrl
+) => {
+  const permissionResult =
+    await ImagePicker.requestMediaLibraryPermissionsAsync();
 
   if (!permissionResult.granted) {
     alert("You've refused to allow this app to access your photos!");
@@ -605,21 +762,25 @@ const handleImageUploadAndSend = async (chatType, setImageUrl, closeModal, setTe
   });
 
   if (closeModal) {
-    closeModal(); 
+    closeModal();
   }
 
-  if (!pickerResult.canceled && pickerResult.assets && pickerResult.assets.length > 0) {
+  if (
+    !pickerResult.canceled &&
+    pickerResult.assets &&
+    pickerResult.assets.length > 0
+  ) {
     if (setTempImageUrl) {
       const image = pickerResult.assets[0].uri;
       setTempImageUrl(image);
 
       // add image to async storage
-      const images = await AsyncStorage.getItem('userImages');
+      const images = await AsyncStorage.getItem("userImages");
 
       if (images) {
-        await AsyncStorage.setItem('userImages', images + ',' + image);
+        await AsyncStorage.setItem("userImages", images + "," + image);
       } else {
-        await AsyncStorage.setItem('userImages', image);
+        await AsyncStorage.setItem("userImages", image);
       }
     }
 
@@ -628,12 +789,16 @@ const handleImageUploadAndSend = async (chatType, setImageUrl, closeModal, setTe
 };
 
 // Define the function to handle camera press
-const handleCameraPress = async (chatType, setImageUrl, closeModal, setTempImageUrl) => {
-     
+const handleCameraPress = async (
+  chatType,
+  setImageUrl,
+  closeModal,
+  setTempImageUrl
+) => {
   const { status } = await ImagePicker.requestCameraPermissionsAsync();
 
-  if (status !== 'granted') {
-    alert('Permission to access camera was denied');
+  if (status !== "granted") {
+    alert("Permission to access camera was denied");
     return;
   }
 
@@ -653,12 +818,12 @@ const handleCameraPress = async (chatType, setImageUrl, closeModal, setTempImage
       setTempImageUrl(image);
 
       // add image to async storage
-      const images = await AsyncStorage.getItem('userImages');
+      const images = await AsyncStorage.getItem("userImages");
 
       if (images) {
-        await AsyncStorage.setItem('userImages', images + ',' + image);
+        await AsyncStorage.setItem("userImages", images + "," + image);
       } else {
-        await AsyncStorage.setItem('userImages', image);
+        await AsyncStorage.setItem("userImages", image);
       }
     }
 
@@ -669,7 +834,6 @@ const handleCameraPress = async (chatType, setImageUrl, closeModal, setTempImage
 
 // Define the function to handle document press
 const handleDocumentPress = async (setDocumentUrl, closeModal) => {
-
   const { status } = await DocumentPicker.getDocumentAsync();
 
   if (!status.canceled) {
@@ -680,7 +844,11 @@ const handleDocumentPress = async (setDocumentUrl, closeModal) => {
   closeModal();
 };
 
-const handlePressMessage = (likes, setLikedProfileImages, setIsLikesModalVisible) => {
+const handlePressMessage = (
+  likes,
+  setLikedProfileImages,
+  setIsLikesModalVisible
+) => {
   if (!likes || likes.length === 0) {
     setLikedProfileImages(new Set());
     return;
@@ -694,7 +862,13 @@ const handlePressMessage = (likes, setLikedProfileImages, setIsLikesModalVisible
     let profilePics = new Set();
     for (let i = 0; i < likes.length; i++) {
       let userId = likes[i];
-      const userDocRef = doc(firestore, 'schools', schoolKey, 'userData', userId);
+      const userDocRef = doc(
+        firestore,
+        "schools",
+        schoolKey,
+        "userData",
+        userId
+      );
       const userDocSnapshot = await getDoc(userDocRef);
 
       if (userDocSnapshot.exists()) {
@@ -710,22 +884,26 @@ const handlePressMessage = (likes, setLikedProfileImages, setIsLikesModalVisible
 
     //setLikedUserNames(userNames);
     setLikedProfileImages(profilePics);
-  }
+  };
 
   setLikesUserDataById();
   setIsLikesModalVisible(true);
-  console.log('Likes:', likes);
+  console.log("Likes:", likes);
 };
 
 // Function to delete a message
 const deleteMessage = async (messageId, chatType) => {
   await deleteDoc(doc(firestore, chatType, messageId));
-  console.log('Message deleted successfully');
+  console.log("Message deleted successfully");
 };
 
 // Define the function to handle long press
-const handleLongPress = async (message, currentUserPrivilege, setReplyingToMessage, messageRef) => {
-
+const handleLongPress = async (
+  message,
+  currentUserPrivilege,
+  setReplyingToMessage,
+  messageRef
+) => {
   // get user id
   const auth = getAuth();
   const user = auth.currentUser;
@@ -734,9 +912,9 @@ const handleLongPress = async (message, currentUserPrivilege, setReplyingToMessa
   try {
     // Define the options array with the 'Cancel' option
     let options = [
-      { text: 'Cancel', style: 'cancel' },
+      { text: "Cancel", style: "cancel" },
       {
-        text: message.pinned ? 'Unpin' : 'Pin',
+        text: message.pinned ? "Unpin" : "Pin",
         onPress: async () => {
           // Assuming this part remains unchanged as it likely updates Firestore
           const newPinStatus = !message.pinned;
@@ -744,16 +922,20 @@ const handleLongPress = async (message, currentUserPrivilege, setReplyingToMessa
         },
       },
       {
-        text: 'Reply',
+        text: "Reply",
         onPress: () => setReplyingToMessage(message),
       },
     ];
 
     // Add the delete option based on the fetched privilege
-    if (message.user._id === userId || currentUserPrivilege === 'owner' || currentUserPrivilege === 'admin') {
+    if (
+      message.user._id === userId ||
+      currentUserPrivilege === "owner" ||
+      currentUserPrivilege === "admin"
+    ) {
       options.push({
-        text: 'Delete Message',
-        style: 'destructive',
+        text: "Delete Message",
+        style: "destructive",
         onPress: () => {
           // Assuming the delete operation targets Firestore
           deleteMessage(message._id, chatType);
@@ -761,52 +943,61 @@ const handleLongPress = async (message, currentUserPrivilege, setReplyingToMessa
       });
     }
 
-    Alert.alert('Options', 'Select an option', options.filter(Boolean), { cancelable: false });
+    Alert.alert("Options", "Select an option", options.filter(Boolean), {
+      cancelable: false,
+    });
   } catch (error) {
-    console.error('Error handling long press:', error);
+    console.error("Error handling long press:", error);
   }
 };
 
 const deleteAccount = async () => {
   // get user id from async storage
-  const userData = await AsyncStorage.getItem('user');
+  const userData = await AsyncStorage.getItem("user");
   const user = JSON.parse(userData);
   const id = user.id;
   const clubArray = userData.clubs;
 
   // remove user from all clubs
-  clubArray.forEach(club => {
+  clubArray.forEach((club) => {
     leaveClubConfirmed(club, id);
   });
 
   // remove user from database
   const schoolKey = await emailSplit();
-  const userDocRef = doc(firestore, 'schools', schoolKey, 'userData', id);
+  const userDocRef = doc(firestore, "schools", schoolKey, "userData", id);
   await deleteDoc(userDocRef);
 
   // delete user from auth
   const auth = getAuth();
   const authUser = auth.currentUser;
-  deleteUser(authUser).then(() => {
-  }).catch((error) => {
-    Alert.alert('Error deleting user:', error);
-  });
+  deleteUser(authUser)
+    .then(() => {})
+    .catch((error) => {
+      Alert.alert("Error deleting user:", error);
+    });
 
   // clear async storage
   await AsyncStorage.clear();
-}
+};
 
 // add user to attendance for an event
 const attendEvent = async (eventId) => {
   const schoolKey = await emailSplit();
 
   // get user id from async storage
-  const userData = await AsyncStorage.getItem('user');
+  const userData = await AsyncStorage.getItem("user");
   const user = JSON.parse(userData);
   const userId = user.id;
 
   // get event data
-  const eventDocRef = doc(firestore, 'schools', schoolKey, 'eventAttendance', eventId);
+  const eventDocRef = doc(
+    firestore,
+    "schools",
+    schoolKey,
+    "eventAttendance",
+    eventId
+  );
   const eventDocSnapshot = await getDoc(eventDocRef);
   const eventData = eventDocSnapshot.data();
 
@@ -820,16 +1011,22 @@ const attendEvent = async (eventId) => {
   await updateDoc(eventDocRef, {
     attendance: attendanceList,
   });
-}
+};
 
 // get list of users attending an event
 const getSetEventAttendance = async (eventId, setter) => {
   const schoolKey = await emailSplit();
 
-  const eventDocRef = doc(firestore, 'schools', schoolKey, 'eventAttendance', eventId);
+  const eventDocRef = doc(
+    firestore,
+    "schools",
+    schoolKey,
+    "eventAttendance",
+    eventId
+  );
   const eventDocSnapshot = await getDoc(eventDocRef);
   setter(eventDocSnapshot.data().attendance);
-}
+};
 
 // get attendees' data
 const getAttendeesData = async (attendees, setter) => {
@@ -839,7 +1036,7 @@ const getAttendeesData = async (attendees, setter) => {
   // for every user id in the attendance list, get user data
   for (let i = 0; i < attendees.length; i++) {
     const userId = attendees[i];
-    const userDocRef = doc(firestore, 'schools', schoolKey, 'userData', userId);
+    const userDocRef = doc(firestore, "schools", schoolKey, "userData", userId);
     const userDocSnapshot = await getDoc(userDocRef);
 
     // append user data to array
@@ -849,28 +1046,32 @@ const getAttendeesData = async (attendees, setter) => {
   }
 
   setter(attendeesData);
-}
+};
 
 const getClubCalendarData = async (clubId) => {
   const schoolKey = await emailSplit();
 
-  const eventsDocRef = collection(firestore, 'schools', schoolKey, 'calendarData');
-  const eventsQuery = query(eventsDocRef, where('clubId', '==', clubId));
+  const eventsDocRef = collection(
+    firestore,
+    "schools",
+    schoolKey,
+    "calendarData"
+  );
+  const eventsQuery = query(eventsDocRef, where("clubId", "==", clubId));
   const eventsSnapshot = await getDocs(eventsQuery);
 
   if (eventsSnapshot.empty) {
-    console.log('No events found.');
+    console.log("No events found.");
     return;
   }
 
-  return eventsSnapshot.docs.map(doc => doc.data());
-}
-
+  return eventsSnapshot.docs.map((doc) => doc.data());
+};
 
 // sync events to google calendar
 const syncEventsToGoogleCalendar = async () => {
   // get events for clubs user is in
-  const userData = await AsyncStorage.getItem('user');
+  const userData = await AsyncStorage.getItem("user");
 
   if (userData) {
     const user = JSON.parse(userData);
@@ -890,7 +1091,7 @@ const syncEventsToGoogleCalendar = async () => {
     // for each event, add to google calendar
     for (let i = 0; i < events.length; i++) {
       const event = events[i];
-      console.log('Event:', event);
+      console.log("Event:", event);
       const eventDate = event.date;
 
       // create event object
@@ -909,70 +1110,70 @@ const syncEventsToGoogleCalendar = async () => {
       // add event to google calendar
       try {
         await apiCalendar.createEvent({
-          calendarId: 'primary',
+          calendarId: "primary",
           resource: newEvent,
         });
       } catch (error) {
-        console.error('Error adding event to Google Calendar:', error);
+        console.error("Error adding event to Google Calendar:", error);
       }
     }
   }
-}
+};
 
 // unsync events from google calendar
 const unsyncEventsFromGoogleCalendar = async () => {
   // get all events from google calendar
   const events = await apiCalendar.listEvents({
-    calendarId: 'primary',
+    calendarId: "primary",
   });
 
   // delete all events
   for (let i = 0; i < events.length; i++) {
     const event = events[i];
     await apiCalendar.deleteEvent({
-      calendarId: 'primary',
+      calendarId: "primary",
       eventId: event.id,
     });
   }
-}
+};
 
 // sign in to google calendar
 const signInToGoogleCalendar = async () => {
   apiCalendar.handleAuthClick();
 
   // set signed in to true in async storage
-  await AsyncStorage.setItem('googleCalendarSignedIn', 'true');
-}
+  await AsyncStorage.setItem("googleCalendarSignedIn", "true");
+};
 
 // sign out of google calendar
 const signOutFromGoogleCalendar = async () => {
   apiCalendar.handleSignoutClick();
 
   // set signed in to false in async storage
-  await AsyncStorage.setItem('googleCalendarSignedIn', 'false');
-}
+  await AsyncStorage.setItem("googleCalendarSignedIn", "false");
+};
 
 // check if user is signed in to google calendar
 const checkGoogleCalendarSignIn = async () => {
-  const signedIn = await AsyncStorage.getItem('googleCalendarSignedIn');
-  return signedIn === 'true';
-}
+  const signedIn = await AsyncStorage.getItem("googleCalendarSignedIn");
+  return signedIn === "true";
+};
 
 // check if sync is toggled on
 const checkToggleSyncGoogleCalendar = async () => {
-  const signedIn = await AsyncStorage.getItem('syncGoogleCalendar');
-  return signedIn === 'true';
-}
+  const signedIn = await AsyncStorage.getItem("syncGoogleCalendar");
+  return signedIn === "true";
+};
 
 // toggle sync google calendar async
 const toggleSyncGoogleCalendar = async (bool) => {
-  const signedIn = await AsyncStorage.getItem('syncGoogleCalendar');
-  if (signedIn === 'true') {
-    AsyncStorage.setItem('syncGoogleCalendar', bool);
+  const signedIn = await AsyncStorage.getItem("syncGoogleCalendar");
+  if (signedIn === "true") {
+    AsyncStorage.setItem("syncGoogleCalendar", bool);
   } else {
-    AsyncStorage.setItem('syncGoogleCalendar', bool);
+    AsyncStorage.setItem("syncGoogleCalendar", bool);
   }
-}
+};
 
 // add new event to google calendar
 const addEventToGoogleCalendar = async (event) => {
@@ -984,7 +1185,9 @@ const addEventToGoogleCalendar = async (event) => {
       timeZone: getTimeZoneOffset(), // change to user's timezone
     },
     end: {
-      dateTime: event.duration ? (new Date(event.date) + event.time + event.duration).toISOString() : (new Date(event.date) + event.time + 30).toISOString(),
+      dateTime: event.duration
+        ? (new Date(event.date) + event.time + event.duration).toISOString()
+        : (new Date(event.date) + event.time + 30).toISOString(),
       timeZone: getTimeZoneOffset(),
     },
   };
@@ -992,22 +1195,22 @@ const addEventToGoogleCalendar = async (event) => {
   // add event to google calendar
   try {
     await apiCalendar.createEvent({
-      calendarId: 'primary',
+      calendarId: "primary",
       resource: newEvent,
     });
   } catch (error) {
-    console.error('Error adding event to Google Calendar:', error);
+    console.error("Error adding event to Google Calendar:", error);
   }
-}
+};
 
 // delete event from google calendar
 const deleteEventFromGoogleCalendar = async (event) => {
   try {
     await apiCalendar.deleteEvent(event.id);
   } catch (error) {
-    console.error('Error deleting event from Google Calendar', error)
+    console.error("Error deleting event from Google Calendar", error);
   }
-}
+};
 
 // update event in google calendar
 const updateEventInGoogleCalendar = async (event) => {
@@ -1019,7 +1222,9 @@ const updateEventInGoogleCalendar = async (event) => {
       timeZone: getTimeZoneOffset(), // change to user's timezone
     },
     end: {
-      dateTime: event.duration ? (new Date(event.date) + event.time + event.duration).toISOString() : (new Date(event.date) + event.time + 30).toISOString(),
+      dateTime: event.duration
+        ? (new Date(event.date) + event.time + event.duration).toISOString()
+        : (new Date(event.date) + event.time + 30).toISOString(),
       timeZone: getTimeZoneOffset(),
     },
   };
@@ -1027,26 +1232,73 @@ const updateEventInGoogleCalendar = async (event) => {
   // update event in google calendar
   try {
     await apiCalendar.updateEvent({
-      calendarId: 'primary',
+      calendarId: "primary",
       eventId: event.id,
       resource: newEvent,
     });
   } catch (error) {
-    console.error('Error updating event in Google Calendar:', error);
+    console.error("Error updating event in Google Calendar:", error);
   }
-}
+};
 
-export { 
-  emailSplit, 
+// vote in a poll
+const voteInPoll = async (messageRef, voteId, userId) => {
+  try {
+    // get old votes
+    const messageSnapshot = await getDoc(messageRef);
+    const messageData = messageSnapshot.data();
+    let votes = messageData.votes;
+    await updateDoc(messageRef, {
+      votes: [...votes, voteId],
+      voters: [...messageData.voters, userId],
+    });
+  } catch (error) {
+    console.error("Error voting:", error);
+  }
+};
+
+export {
+  emailSplit,
   getSetSchoolData,
-  getSetUserData, getProfileData, updateProfileData, 
-  getSetClubData, getSetMyClubsData, fetchClubs, getClubCategoryData, fetchClubMembers,
-  joinClub, requestToJoinClub, getSetRequestsData, acceptRequest, declineRequest, leaveClubConfirmed, checkMembership,
-  getSetEventData, deleteEvent, getSetEventAttendance, getAttendeesData, attendEvent,
-  getSetCalendarData, getSetClubCalendarData, getClubCalendarData,
-  fetchMessages, handleCameraPress, handleLongPress, handlePressMessage, handleImageUploadAndSend, handleDocumentPress,
-  syncEventsToGoogleCalendar, unsyncEventsFromGoogleCalendar, signInToGoogleCalendar, signOutFromGoogleCalendar,
-  toggleSyncGoogleCalendar, checkToggleSyncGoogleCalendar, checkGoogleCalendarSignIn, 
-  addEventToGoogleCalendar, deleteEventFromGoogleCalendar, updateEventInGoogleCalendar,
+  getSetUserData,
+  getProfileData,
+  updateProfileData,
+  getSetClubData,
+  getSetMyClubsData,
+  fetchClubs,
+  getClubCategoryData,
+  fetchClubMembers,
+  joinClub,
+  requestToJoinClub,
+  getSetRequestsData,
+  acceptRequest,
+  declineRequest,
+  leaveClubConfirmed,
+  checkMembership,
+  getSetEventData,
+  deleteEvent,
+  getSetEventAttendance,
+  getAttendeesData,
+  attendEvent,
+  getSetCalendarData,
+  getSetClubCalendarData,
+  getClubCalendarData,
+  fetchMessages,
+  handleCameraPress,
+  handleLongPress,
+  handlePressMessage,
+  handleImageUploadAndSend,
+  handleDocumentPress,
+  voteInPoll,
+  syncEventsToGoogleCalendar,
+  unsyncEventsFromGoogleCalendar,
+  signInToGoogleCalendar,
+  signOutFromGoogleCalendar,
+  toggleSyncGoogleCalendar,
+  checkToggleSyncGoogleCalendar,
+  checkGoogleCalendarSignIn,
+  addEventToGoogleCalendar,
+  deleteEventFromGoogleCalendar,
+  updateEventInGoogleCalendar,
   deleteAccount,
 };

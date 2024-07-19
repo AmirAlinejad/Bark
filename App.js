@@ -1,50 +1,52 @@
-import React, { useState, useEffect } from 'react';
-import { Text } from 'react-native';
-import * as Device from 'expo-device';
-import * as Notifications from 'expo-notifications';
-import Constants from 'expo-constants';
-import { AppState, Platform } from 'react-native';
+import React, { useState, useEffect } from "react";
+import { Text, View } from "react-native";
+import * as Device from "expo-device";
+import * as Notifications from "expo-notifications";
+import Constants from "expo-constants";
+import { AppState, Platform } from "react-native";
 // screen segments
-import SplashScreen from './screens/auth/SplashScreen';
-import Onboarding from './screens/auth/Onboarding';
-import Main from './screens/Main';
+import SplashScreen from "./screens/auth/SplashScreen";
+import Onboarding from "./screens/auth/Onboarding";
+import Main from "./screens/Main";
 // navigation
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import {
   DarkTheme,
   DefaultTheme,
   NavigationContainer,
-} from '@react-navigation/native';
-import { useColorScheme } from 'react-native';  
+} from "@react-navigation/native";
+import { useColorScheme } from "react-native";
 // linking
-import * as Linking from 'expo-linking';
+import * as Linking from "expo-linking";
+// colors
+import { Colors } from "./styles/Colors";
 
 // linking
-const prefix = Linking.createURL('/');
+const prefix = Linking.createURL("/");
 
 // notifications
 async function registerForPushNotificationsAsync() {
   let token;
 
-  if (Platform.OS === 'android') {
-    Notifications.setNotificationChannelAsync('default', {
-      name: 'default',
+  if (Platform.OS === "android") {
+    Notifications.setNotificationChannelAsync("default", {
+      name: "default",
       importance: Notifications.AndroidImportance.MAX,
       vibrationPattern: [0, 250, 250, 250],
-      lightColor: '#FF231F7C',
+      lightColor: "#FF231F7C",
     });
   }
 
   if (Device.isDevice) {
-    const { status: existingStatus } = await
-    Notifications.getPermissionsAsync();
+    const { status: existingStatus } =
+      await Notifications.getPermissionsAsync();
     let finalStatus = existingStatus;
-    if (existingStatus !== 'granted') {
+    if (existingStatus !== "granted") {
       const { status } = await Notifications.requestPermissionsAsync();
       finalStatus = status;
     }
-    if (finalStatus !== 'granted') {
-      alert('Failed to get push token for push notification!');
+    if (finalStatus !== "granted") {
+      alert("Failed to get push token for push notification!");
       return;
     }
 
@@ -53,7 +55,7 @@ async function registerForPushNotificationsAsync() {
     });
     console.log(token);
   } else {
-    alert('Must use physical device for Push Notifications');
+    alert("Must use physical device for Push Notifications");
   }
 
   return token?.data;
@@ -66,7 +68,7 @@ export default App = () => {
   const theme = useColorScheme();
 
   // notifications
-  const [expoPushToken, setExpoPushToken] = useState('');
+  const [expoPushToken, setExpoPushToken] = useState("");
   const [appState, setAppState] = useState(AppState.currentState);
 
   // linking
@@ -77,41 +79,69 @@ export default App = () => {
   // notifications
   Notifications.setNotificationHandler({
     handleNotification: async () => ({
-      shouldShowAlert: true, 
+      shouldShowAlert: true,
       shouldPlaySound: false,
       shouldSetBadge: true,
     }),
   });
 
   useEffect(() => {
-      // notifications
-      registerForPushNotificationsAsync().then(token => setExpoPushToken(token));
+    // notifications
+    registerForPushNotificationsAsync().then((token) =>
+      setExpoPushToken(token)
+    );
 
-      const handleAppStateChange = nextAppState => {
-        setAppState(nextAppState);
-        console.log('App state changed:', nextAppState);
-      };
+    const handleAppStateChange = (nextAppState) => {
+      setAppState(nextAppState);
+      console.log("App state changed:", nextAppState);
+    };
 
-      const subscription = AppState.addEventListener('change', handleAppStateChange);
+    const subscription = AppState.addEventListener(
+      "change",
+      handleAppStateChange
+    );
 
-      return () => {
-        subscription.remove();
-      };
-
+    return () => {
+      subscription.remove();
+    };
   }, []);
 
   return (
-    <NavigationContainer linking={linking} fallback={<Text>Loading...</Text>} theme={theme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack.Navigator initialRouteName={'SignIn'}>
-        {/* splash */}
-        <Stack.Screen name="SplashScreen" component={SplashScreen} options={{ headerShown: false, gestureEnabled: false }}/>
+    <View
+      style={{
+        flex: 1,
+        backgroundColor: Colors.white,
+      }}
+    >
+      <NavigationContainer
+        linking={linking}
+        fallback={<Text>Loading...</Text>}
+        theme={theme === "dark" ? DarkTheme : DefaultTheme}
+      >
+        <Stack.Navigator initialRouteName={"SignIn"}>
+          {/* splash */}
+          <Stack.Screen
+            name="SplashScreen"
+            component={SplashScreen}
+            options={{ headerShown: false, gestureEnabled: false }}
+          />
 
-        {/* auth */}
-        <Stack.Screen name="Onboarding" component={Onboarding} options={{ headerShown: false, gestureEnabled: false }} initialParams={{expoPushToken}}/>
+          {/* auth */}
+          <Stack.Screen
+            name="Onboarding"
+            component={Onboarding}
+            options={{ headerShown: false, gestureEnabled: false }}
+            initialParams={{ expoPushToken }}
+          />
 
-        {/* main */}
-        <Stack.Screen name="Main" component={Main} options={{ headerShown: false, gestureEnabled: false }}/>
-      </Stack.Navigator>
-    </NavigationContainer>
+          {/* main */}
+          <Stack.Screen
+            name="Main"
+            component={Main}
+            options={{ headerShown: false, gestureEnabled: false }}
+          />
+        </Stack.Navigator>
+      </NavigationContainer>
+    </View>
   );
-}
+};

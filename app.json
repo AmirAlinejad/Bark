@@ -15,8 +15,29 @@
       "**/*"
     ],
     "ios": {
-      "supportsTablet": true,
-      "bundleIdentifier": "com.sbpete.Bark"
+     "supportsTablet": true,
+      "bundleIdentifier": "com.sbpete.Bark",
+      "infoPlist": {
+        "NSPrivacyAccessedAPITypes": [
+          {
+            "API": "NSPrivacyAccessedAPICategoryDiskSpace",
+            "UsageDescription": "We used this to check available storage for app functionality."
+          },
+          {
+            "API": "NSPrivacyAccessedAPICategoryFileTimestamp",
+            "UsageDescription": "We used this to synchronize data or manage cache."
+          },
+          {
+            "API": "NSPrivacyAccessedAPICategorySystemBootTime",
+            "UsageDescription": "Our reason to use this API is to monitor app performance or behavior after reboot."
+          },
+          {
+            "API": "NSPrivacyAccessedAPICategoryUserDefaults",
+            "UsageDescription": "Our reason for the use of this API is to store user preferences or settings."
+          }
+        ]
+      }
+      
     },
     "android": {
       "adaptiveIcon": {

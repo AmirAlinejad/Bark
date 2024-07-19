@@ -26,21 +26,12 @@ import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view
 // colors
 import { Colors } from '../../styles/Colors';
 
-const NewClub = ({ navigation }) => {
-  // set state for all club vars
-  const [clubName, setName] = useState('');
-  const [clubDescription, setDescription] = useState('');
-  const [categoriesSelected, setSelected] = useState([]);
-  const [publicClub, setpublicClub] = useState(true);
+const Form = ({ formProperties, formPropertyInputs, defaultState, overlays, formRef, navigation }) => {
+  // set default state for form
+  const [form, setForm] = useState(defaultState);
   const [loading, setLoading] = useState(false);
-  // overlay
-  const [overlayVisible, setOverlayVisible] = useState(false);
-
-  useLayoutEffect(() => {
-    navigation.setOptions({
-      headerTitle: 'New Club',
-    });
-  }, [navigation]);
+  // overlay(s)
+  const [overlaysVisible, setOverlaysVisible] = useState(overlays.map(() => false));
 
   // submit club
   const onSubmitPressed = async () => {
@@ -197,4 +188,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default NewClub;
+export default Form;

@@ -1,92 +1,204 @@
 // parent component for main screens
-import React from 'react';
-import { Text } from 'react-native';
+import React, { useState } from "react";
 // screens
-import HomeScreen from './HomeScreen';
+import HomeScreen from "./HomeScreen";
 
-import CalendarScreen from './calendar/CalendarScreen';
-import ClubCalendar from './calendar/ClubCalendar';
+import CalendarScreen from "./calendar/CalendarScreen";
+import ClubCalendar from "./calendar/ClubCalendar";
 
-import EventScreen from './event/EventScreen';
+import EventScreen from "./event/EventScreen";
 import EditEventScreen from "./event/EditEventScreen";
-import NewEvent from './event/NewEvent';
+import NewEvent from "./event/NewEvent";
 import MapPicker from "./event/MapPicker";
-import AttendanceScreen from './event/AttendanceScreen';
-import AttendanceViewer from './event/AttendanceViewer';
+import AttendanceScreen from "./event/AttendanceScreen";
+import AttendanceViewer from "./event/AttendanceViewer";
 
-import Chat from './chat/Chat';
-import AdminChat from './chat/AdminChat';
-import GifSelectionScreen from './chat/GifSelectionScreen';
-import ImageGalleryScreen from './chat/ImageGalleryScreen';
-import ImageViewerScreen from './chat/ImageViewerScreen';
-import MessageSearchScreen from './chat/MessageSearchScreen';
-import UserList from './chat/UserList';
+import Chat from "./chat/Chat";
+import AdminChat from "./chat/AdminChat";
+import GifSelectionScreen from "./chat/GifSelectionScreen";
+import ImageGalleryScreen from "./chat/ImageGalleryScreen";
+import ImageViewerScreen from "./chat/ImageViewerScreen";
+import MessageSearchScreen from "./chat/MessageSearchScreen";
+import UserList from "./chat/UserList";
 
-import MyClubs from './club/MyClubs';
-import ClubList from './club/ClubList';
-import ClubCategoryScreen from './club/ClubCategoryScreen';
-import NewClub from './club/NewClub';
-import ClubScreen from './club/ClubScreen';
-import InClubView from './club/InClubView';
+import MyClubs from "./club/MyClubs";
+import ClubList from "./club/ClubList";
+import ClubCategoryScreen from "./club/ClubCategoryScreen";
+import NewClub from "./club/NewClub";
+import ClubScreen from "./club/ClubScreen";
+import InClubView from "./club/InClubView";
 import EditClubScreen from "./club/EditClubScreen";
-import Requests from './club/Requests';
+import Requests from "./club/Requests";
 
-import Profile from './profile/Profile';
-import EditProfile from './profile/EditProfile';
+import Profile from "./profile/Profile";
+import EditProfile from "./profile/EditProfile";
 import FeedbackScreen from "./profile/FeedbackScreen";
-import Settings from './profile/Settings';
+import Settings from "./profile/Settings";
 
-import QRCodeScreen from './QRCodeScreen';
+import QRCodeScreen from "./QRCodeScreen";
 // stack navigator
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { NavigationContainer } from '@react-navigation/native';
+import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import { getFocusedRouteNameFromRoute } from "@react-navigation/native";
+import { setParams } from "@react-navigation/native";
+
+function getHeaderTitle(route) {
+  // If the focused route is not found, we need to assume it's the initial screen
+  // This can happen during if there hasn't been any navigation inside the screen
+  // In our case, it's "Feed" as that's the first screen inside the navigator
+  const routeName = getFocusedRouteNameFromRoute(route) ?? "Feed";
+
+  switch (routeName) {
+    case "Home":
+      return "My Clubs";
+    case "Profile":
+      return "Profile";
+    case "Calendar":
+      return "Calendar";
+    case "Search":
+      return "Search";
+    default:
+      return "Home";
+  }
+}
+
+const dontShowHeaderProps = { headerShown: false, gestureEnabled: true };
+const noTitleProps = {
+  gestureEnabled: false,
+  headerTitle: "",
+  headerShadowVisible: false,
+  headerTransparent: true,
+  headerBlurEffect: "light",
+};
+const headerProps = {
+  headerLargeTitle: true,
+  headerShadowVisible: false,
+  gestureEnabled: false,
+  headerTransparent: true,
+  headerBlurEffect: "light",
+};
 
 // stack navigator
 const Stack = createNativeStackNavigator();
 
 const Main = () => {
-
   return (
-      <Stack.Navigator initialRouteName={'HomeScreen'}>
-
-        {/* main */}
-        <Stack.Screen name="CalendarScreen" component={CalendarScreen} options={{ headerShown: false, gestureEnabled: false }}/>
-        <Stack.Screen name="ClubCalendar" component={ClubCalendar} options={{ headerShown: false, gestureEnabled: false }}/>
-        <Stack.Screen name="ClubList" component={ClubList} options={{ 
-          headerTitle: 'Search', 
-          headerLargeTitle: true, 
-          headerShadowVisible: false,
-          gestureEnabled: false 
-          }}
-        />
-        <Stack.Screen name="MyClubs" component={MyClubs} options={{ headerShown: false, gestureEnabled: false }}/>
-        <Stack.Screen name="ClubScreen" component={ClubScreen} options={{ headerShown: false, gestureEnabled: false }}/>
-        <Stack.Screen name="ClubCategoryScreen" component={ClubCategoryScreen} options={{ headerShown: false, gestureEnabled: false }}/>
-        <Stack.Screen name="Requests" component={Requests} options={{ headerShown: false, gestureEnabled: false }}/>
-        <Stack.Screen name="EventScreen" component={EventScreen} options={{ headerShown: false, gestureEnabled: false }}/>
-        <Stack.Screen name="AttendanceScreen" component={AttendanceScreen} options={{ headerShown: false, gestureEnabled: false }}/>
-        <Stack.Screen name="AttendanceViewer" component={AttendanceViewer} options={{ headerShown: false, gestureEnabled: false }}/>
-        <Stack.Screen name="NewEvent" component={NewEvent} options={{ headerShown: false, gestureEnabled: false }}/>
-        <Stack.Screen name="MapPicker" component={MapPicker} options={{ headerShown: false, gestureEnabled: false }}/>
-        <Stack.Screen name="Chat" component={Chat} options={{ headerShown: false, gestureEnabled: false }}/>
-        <Stack.Screen name="AdminChat" component={AdminChat} options={{ headerShown: false, gestureEnabled: false }}/>
-        <Stack.Screen name="GifSelectionScreen" component={GifSelectionScreen} options={{ headerShown: false, gestureEnabled: false }}/>
-        <Stack.Screen name="ImageGalleryScreen" component={ImageGalleryScreen} options={{ headerShown: false, gestureEnabled: false }}/>
-        <Stack.Screen name="ImageViewerScreen" component={ImageViewerScreen} options={{ headerShown: false, gestureEnabled: false }}/>
-        <Stack.Screen name="InClubView" component={InClubView} options={{ headerShown: false, gestureEnabled: false }}/>
-        <Stack.Screen name="MessageSearchScreen" component={MessageSearchScreen} options={{ headerShown: false, gestureEnabled: false }}/>
-        <Stack.Screen name="UserList" component={UserList} options={{ headerShown: false, gestureEnabled: false }}/>
-        <Stack.Screen name="HomeScreen" component={HomeScreen} options={{ headerShown: false, gestureEnabled: false }}/>
-        <Stack.Screen name="NewClub" component={NewClub} options={{ headerShown: false, gestureEnabled: false }}/>
-        <Stack.Screen name="Profile" component={Profile} options={{ headerShown: false, gestureEnabled: false }}/>
-        <Stack.Screen name="EditProfile" component={EditProfile} options={{ headerShown: false, gestureEnabled: false }}/>
-        <Stack.Screen name="EditClub" component={EditClubScreen} options={{ headerShown: false, gestureEnabled: false }}/>
-        <Stack.Screen name="EditEvent" component={EditEventScreen} options={{ headerShown: false, gestureEnabled: false }}/>
-        <Stack.Screen name="Feedback" component={FeedbackScreen} options={{ headerShown: false, gestureEnabled: false }}/>
-        <Stack.Screen name="QRCodeScreen" component={QRCodeScreen} options={{ headerShown: false, gestureEnabled: false }}/>
-        <Stack.Screen name="Settings" component={Settings} options={{ headerShown: false, gestureEnabled: false }}/>
-      </Stack.Navigator>
+    <Stack.Navigator initialRouteName={"Home Screen"}>
+      {/* main */}
+      <Stack.Screen
+        name="Home Screen"
+        component={HomeScreen}
+        options={dontShowHeaderProps}
+      />
+      <Stack.Screen name="MyClubs" component={MyClubs} options={headerProps} />
+      <Stack.Screen
+        name="ClubScreen"
+        component={ClubScreen}
+        options={noTitleProps}
+      />
+      <Stack.Screen
+        name="ClubCategoryScreen"
+        component={ClubCategoryScreen}
+        options={headerProps}
+      />
+      <Stack.Screen
+        name="Requests"
+        component={Requests}
+        options={{ ...headerProps, headerTitle: "Requests" }}
+      />
+      <Stack.Screen
+        name="EventScreen"
+        component={EventScreen}
+        options={noTitleProps}
+      />
+      <Stack.Screen
+        name="AttendanceScreen"
+        component={AttendanceScreen}
+        options={headerProps}
+      />
+      <Stack.Screen
+        name="AttendanceViewer"
+        component={AttendanceViewer}
+        options={headerProps}
+      />
+      <Stack.Screen
+        name="NewEvent"
+        component={NewEvent}
+        options={headerProps}
+      />
+      <Stack.Screen
+        name="MapPicker"
+        component={MapPicker}
+        options={headerProps}
+      />
+      <Stack.Screen name="Chat" component={Chat} options={headerProps} />
+      <Stack.Screen
+        name="AdminChat"
+        component={AdminChat}
+        options={headerProps}
+      />
+      <Stack.Screen
+        name="GifSelectionScreen"
+        component={GifSelectionScreen}
+        options={headerProps}
+      />
+      <Stack.Screen
+        name="ImageGalleryScreen"
+        component={ImageGalleryScreen}
+        options={headerProps}
+      />
+      <Stack.Screen
+        name="ImageViewerScreen"
+        component={ImageViewerScreen}
+        options={headerProps}
+      />
+      <Stack.Screen
+        name="InClubView"
+        component={InClubView}
+        options={headerProps}
+      />
+      <Stack.Screen
+        name="MessageSearchScreen"
+        component={MessageSearchScreen}
+        options={headerProps}
+      />
+      <Stack.Screen
+        name="UserList"
+        component={UserList}
+        options={headerProps}
+      />
+      <Stack.Screen name="NewClub" component={NewClub} options={headerProps} />
+      <Stack.Screen
+        name="Edit Profile"
+        component={EditProfile}
+        options={headerProps}
+      />
+      <Stack.Screen
+        name="EditClub"
+        component={EditClubScreen}
+        options={headerProps}
+      />
+      <Stack.Screen
+        name="EditEvent"
+        component={EditEventScreen}
+        options={headerProps}
+      />
+      <Stack.Screen
+        name="Feedback"
+        component={FeedbackScreen}
+        options={headerProps}
+      />
+      <Stack.Screen
+        name="QRCodeScreen"
+        component={QRCodeScreen}
+        options={headerProps}
+      />
+      <Stack.Screen
+        name="Settings"
+        component={Settings}
+        options={headerProps}
+      />
+    </Stack.Navigator>
   );
-}
+};
 
 export default Main;

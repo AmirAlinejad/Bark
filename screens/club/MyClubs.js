@@ -1,25 +1,31 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 // react native components
-import { View, StyleSheet, ScrollView } from 'react-native';
+import { View, StyleSheet, ScrollView } from "react-native";
 // use focus effect
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect } from "@react-navigation/native";
 // async storage
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import AsyncStorage from "@react-native-async-storage/async-storage";
 // storage
 // my components
-import ChatClubCard from '../../components/club/ChatClubCard';
-import Header from '../../components/display/Header';
-import SearchBar from '../../components/input/SearchBar';
-import CustomText from '../../components/display/CustomText';
+import ChatClubCard from "../../components/club/ChatClubCard";
+import CustomText from "../../components/display/CustomText";
 // functions
-import { emailSplit, getSetMyClubsData, getSetUserData } from '../../functions/backendFunctions';
+import {
+  emailSplit,
+  getSetMyClubsData,
+  getSetUserData,
+} from "../../functions/backendFunctions";
 // backend
-import { firestore } from '../../backend/FirebaseConfig';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { firestore } from "../../backend/FirebaseConfig";
+import { doc, getDoc, updateDoc } from "firebase/firestore";
 // icons
-import Ionicon from 'react-native-vector-icons/Ionicons';
+import Ionicon from "react-native-vector-icons/Ionicons";
 // colors
-import { Colors } from '../../styles/Colors';
+import { Colors } from "../../styles/Colors";
+// stack navigator
+import { createNativeStackNavigator } from "@react-navigation/native-stack";
+
+const Stack = createNativeStackNavigator();
 
 const MyClubs = ({ navigation }) => {
   // user data
@@ -31,7 +37,7 @@ const MyClubs = ({ navigation }) => {
   // unread messages
   //const [unreadMessages, setUnreadMessages] = useState({});
   // search text
-  const [searchText, setSearchText] = useState('');
+  const [searchText, setSearchText] = useState("");
   // loading
   const [loading, setLoading] = useState(true);
 
@@ -40,39 +46,44 @@ const MyClubs = ({ navigation }) => {
 
     // get user data
     getSetUserData(setUserData);
-    
+
     // get all club data from db
     getSetMyClubsData(setClubData, setMutedClubs);
-    
+
     setLoading(false);
-  }
+  };
 
   // load myClubs data from async storage
   const loadMyClubsData = async () => {
-    const myClubsData = await AsyncStorage.getItem('myClubs');
+    const myClubsData = await AsyncStorage.getItem("myClubs");
     if (myClubsData) {
       setClubData(JSON.parse(myClubsData));
     }
-  }
+  };
 
   // get data from firebase
   useFocusEffect(
-
     React.useCallback(() => {
       loadMyClubsData();
       asyncFunc();
-
     }, [])
   );
 
   // toggle mute
   const toggleMute = async (clubId) => {
-    
     // get school key
     const schoolKey = await emailSplit();
 
     // get club member data
-    const clubMemberRef = doc(firestore, 'schools', schoolKey, 'clubMemberData', 'clubs', clubId, userData.id);
+    const clubMemberRef = doc(
+      firestore,
+      "schools",
+      schoolKey,
+      "clubMemberData",
+      "clubs",
+      clubId,
+      userData.id
+    );
     getDoc(clubMemberRef).then((clubMemberSnapshot) => {
       const clubMemberData = clubMemberSnapshot.data();
 
@@ -92,7 +103,6 @@ const MyClubs = ({ navigation }) => {
 
   // filter function
   const filterFunct = (club) => {
-
     // filter by search text
     if (searchText.length > 0) {
       if (!club.clubName.toLowerCase().includes(searchText.toLowerCase())) {
@@ -101,7 +111,7 @@ const MyClubs = ({ navigation }) => {
     }
 
     return true;
-  }
+  };
 
   // filter clubs by filter function
   const filteredClubs = clubData.filter(filterFunct);
@@ -112,82 +122,105 @@ const MyClubs = ({ navigation }) => {
   });
 
   return (
-    <View style={styles.container}>
-      <Header text='My Clubs'></Header>
-
-      <View style={styles.searchBarView}>
-        <SearchBar placeholder='Search' value={searchText} setValue={setSearchText}/>
-      </View>
-
-      <ScrollView style={styles.clubScrollView} contentContainerStyle={styles.clubContent}>
-      { 
-        // if no clubs found
-        sortedClubs.length === 0 ? (
-          <View style={styles.noClubsView}>
-            <Ionicon name="chatbubbles" size={100} color={Colors.lightGray} />
-            <CustomText style={styles.title} text="No clubs found." font='bold' />
+    <Stack.Navigator>
+      <Stack.Screen
+        name="ClubList"
+        options={{
+          headerTitle: "My Clubs",
+          headerLargeTitle: true,
+          headerShadowVisible: false,
+          headerSearchBarOptions: {
+            placeholder: "Search Clubs",
+            onChangeText: (event) => {
+              setSearchText(event.nativeEvent.text);
+            },
+            hideWhenScrolling: false,
+          },
+          headerTransparent: true,
+          headerBlurEffect: "light",
+          // add club button top right
+        }}
+      >
+        {() => (
+          <View style={{ flex: 1, backgroundColor: Colors.lightGray }}>
+            <ScrollView
+              style={{ flex: 1, paddingHorizontal: 16 }}
+              contentContainerStyle={styles.container}
+              contentInsetAdjustmentBehavior="automatic"
+            >
+              {
+                // if no clubs found
+                sortedClubs.length === 0 ? (
+                  <View style={styles.noClubsView}>
+                    <Ionicon
+                      name="chatbubbles"
+                      size={100}
+                      color={Colors.mediumGray}
+                    />
+                    <CustomText
+                      style={styles.title}
+                      text="No clubs found."
+                      font="bold"
+                    />
+                  </View>
+                ) : (
+                  // create a chat club card for each club
+                  sortedClubs.map((item, index) => {
+                    return (
+                      <View key={index}>
+                        <ChatClubCard
+                          name={item.clubName}
+                          description={item.clubDescription}
+                          img={item.clubImg}
+                          muted={
+                            mutedClubs !== undefined
+                              ? mutedClubs.includes(item.clubId)
+                              : false
+                          }
+                          toggleMute={() => toggleMute(item.clubId)}
+                          unreadMessages={item.unreadMessages}
+                          lastMessage={item.lastMessage}
+                          lastMessageTime={item.lastMessageTime}
+                          clubId={item.clubId}
+                          navigation={navigation}
+                        />
+                        {index === sortedClubs.length - 1 ? null : (
+                          <View style={styles.separator}></View>
+                        )}
+                      </View>
+                    );
+                  })
+                )
+              }
+            </ScrollView>
           </View>
-        ) : 
-          // create a chat club card for each club
-          sortedClubs.map((item, index) => {
-            return (
-              <View key={index} style={{width: '100%'}}>
-                <ChatClubCard 
-                  name={item.clubName} 
-                  description={item.clubDescription} img={item.clubImg} 
-                  muted={mutedClubs !== undefined ? mutedClubs.includes(item.clubId) : false} 
-                  toggleMute={() => toggleMute(item.clubId)} 
-                  unreadMessages={item.unreadMessages} 
-                  lastMessage={item.lastMessage} 
-                  lastMessageTime={item.lastMessageTime} 
-                  clubId={item.clubId} 
-                  navigation={navigation}
-                />
-                {
-                  index === sortedClubs.length - 1 ? null : <View style={styles.separator}></View>
-                }
-              </View>
-            )
-          }
-        )
-      }
-      </ScrollView>
-    </View>
+        )}
+      </Stack.Screen>
+    </Stack.Navigator>
   );
-}
+};
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.lightGray,
-    justifyContent: 'flex-start',
-  },
   clubScrollView: {
     paddingTop: 15,
     paddingHorizontal: 15,
     borderTopLeftRadius: 30,
     borderTopRightRadius: 30,
-    backgroundColor: Colors.white,
-  },
-  searchBarView: {
-    margin: 15,
-    marginTop: 5,
-    marginBottom: 15,
   },
   clubContent: {
-    justifyContent: 'flex-start',
-    alignItems: 'flex-start',
+    justifyContent: "flex-start",
+    alignItems: "flex-start",
   },
   noClubsView: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: '100%',
-    marginTop: 200,
+    alignItems: "center",
+    justifyContent: "center",
+    width: "100%",
+    marginTop: "50%",
   },
   title: {
     fontSize: 25,
     margin: 5,
-    color: Colors.darkGray,
+    color: Colors.gray,
   },
 });
 
