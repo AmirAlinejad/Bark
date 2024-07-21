@@ -1,5 +1,7 @@
 import React from "react";
 import { View, StyleSheet, TouchableOpacity } from "react-native";
+// expo image
+import { Image } from "expo-image";
 // my components
 import ProfileImg from "../display/ProfileImg";
 import CustomText from "../display/CustomText";
@@ -18,12 +20,12 @@ const ReplyPreview = ({ replyingToMessage, setReplyingToMessage }) => {
 
   // reply to text
   const replyToText =
-    replyingToMessage.text.length > maxReplyToTextLength
+    replyingToMessage.text?.length > maxReplyToTextLength
       ? `${replyingToMessage.text.substring(0, 20)}...`
       : replyingToMessage.text;
 
   return (
-    <View style={replyPreview}>
+    <View style={styles.replyPreview}>
       <ProfileImg profileImg={replyingToMessage.user.avatar} width={40} />
 
       <View style={{ marginLeft: 10 }}>

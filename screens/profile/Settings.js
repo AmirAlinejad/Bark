@@ -261,7 +261,7 @@ const Settings = ({ navigation }) => {
             <CustomButton
               text="No"
               onPress={() => setLogoutModal(false)}
-              color={Colors.green}
+              color={Colors.buttonBlue}
             />
           </View>
         </View>

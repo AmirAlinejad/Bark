@@ -1,8 +1,8 @@
 {
   "expo": {
-    "name": "Bark!",
+    "name": "Bark",
     "slug": "Bark",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -15,7 +15,7 @@
       "**/*"
     ],
     "ios": {
-     "supportsTablet": true,
+      "supportsTablet": true,
       "bundleIdentifier": "com.sbpete.Bark",
       "infoPlist": {
         "NSPrivacyAccessedAPITypes": [
@@ -37,7 +37,6 @@
           }
         ]
       }
-      
     },
     "android": {
       "adaptiveIcon": {
@@ -46,7 +45,8 @@
       },
       "permissions": [
         "android.permission.RECORD_AUDIO"
-      ]
+      ],
+      "package": "com.sbpete.Bark"
     },
     "web": {
       "favicon": "./assets/favicon.png"

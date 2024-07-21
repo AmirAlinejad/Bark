@@ -110,7 +110,7 @@ const ProfileOverlay = ({ visible, setVisible, userData }) => {
 const styles = StyleSheet.create({
   modal: {
     flex: 1,
-    marginTop: "80%",
+    marginTop: 500,
     alignItems: "center",
   },
   modalContent: {

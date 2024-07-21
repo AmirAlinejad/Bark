@@ -24,6 +24,8 @@ import Ionicon from "react-native-vector-icons/Ionicons";
 import { Colors } from "../../styles/Colors";
 // stack navigator
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
+// swipeable
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 const Stack = createNativeStackNavigator();
 
@@ -144,10 +146,11 @@ const MyClubs = ({ navigation }) => {
         {() => (
           <View style={{ flex: 1, backgroundColor: Colors.lightGray }}>
             <ScrollView
-              style={{ flex: 1, paddingHorizontal: 16 }}
+              style={{ flex: 1 }}
               contentContainerStyle={styles.container}
               contentInsetAdjustmentBehavior="automatic"
             >
+            <GestureHandlerRootView>
               {
                 // if no clubs found
                 sortedClubs.length === 0 ? (
@@ -192,6 +195,7 @@ const MyClubs = ({ navigation }) => {
                   })
                 )
               }
+              </GestureHandlerRootView>
             </ScrollView>
           </View>
         )}

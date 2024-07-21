@@ -278,7 +278,7 @@ const styles = StyleSheet.create({
   profileContainer: {
     alignItems: "center",
     justifyContent: "center",
-    marginTop: 88,
+    marginTop: '40%',
   },
   detailsView: {
     flexDirection: "row",
@@ -323,7 +323,7 @@ const styles = StyleSheet.create({
   },
   settings: {
     position: "absolute",
-    top: 30,
+    top: 50,
     right: 20,
   },
 

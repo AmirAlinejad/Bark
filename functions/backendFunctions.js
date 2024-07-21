@@ -398,6 +398,7 @@ const joinClub = async (id, privilege, userId) => {
       expoPushToken: userData.expoPushToken,
       muted: false,
       unreadMessages: 0,
+      id: userData.id,
     };
     if (userData.profileImg) {
       clubMember.profileImg = userData.profileImg;
@@ -897,6 +898,15 @@ const deleteMessage = async (messageId, chatType) => {
   console.log("Message deleted successfully");
 };
 
+// pin message
+const pinMessage = async (messageRef, newPinStatus) => {
+  try {
+    await updateDoc(messageRef, { pinned: newPinStatus });
+  } catch (error) {
+    console.error("Error pinning message:", error);
+  }
+};
+
 // Define the function to handle long press
 const handleLongPress = async (
   message,
@@ -905,9 +915,9 @@ const handleLongPress = async (
   messageRef
 ) => {
   // get user id
-  const auth = getAuth();
-  const user = auth.currentUser;
-  const userId = user.uid;
+  const userData = await AsyncStorage.getItem("user");
+  const user = JSON.parse(userData);
+  const userId = user.id;
 
   try {
     // Define the options array with the 'Cancel' option
@@ -915,11 +925,7 @@ const handleLongPress = async (
       { text: "Cancel", style: "cancel" },
       {
         text: message.pinned ? "Unpin" : "Pin",
-        onPress: async () => {
-          // Assuming this part remains unchanged as it likely updates Firestore
-          const newPinStatus = !message.pinned;
-          await updateDoc(messageRef, { pinned: newPinStatus });
-        },
+        onPress: () => pinMessage(messageRef, !message.pinned),
       },
       {
         text: "Reply",
@@ -1286,6 +1292,7 @@ export {
   fetchMessages,
   handleCameraPress,
   handleLongPress,
+  pinMessage,
   handlePressMessage,
   handleImageUploadAndSend,
   handleDocumentPress,

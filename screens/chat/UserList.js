@@ -7,9 +7,12 @@ import {
   TouchableOpacity,
   Alert,
   ScrollView,
+  Animated,
 } from "react-native";
 // storage
 import AsyncStorage from "@react-native-async-storage/async-storage";
+// modal
+import Modal from "react-native-modal";
 // my components
 import Header from "../../components/display/Header";
 import SearchBar from "../../components/input/SearchBar";
@@ -17,9 +20,8 @@ import ProfileImg from "../../components/display/ProfileImg";
 import CustomText from "../../components/display/CustomText";
 import ToggleButton from "../../components/buttons/ToggleButton";
 import ProfileOverlay from "../../components/overlays/ProfileOverlay";
+import CustomButton from "../../components/buttons/CustomButton";
 // Firebase
-import { ref, get, remove, update, set } from "firebase/database";
-import { getAuth } from "firebase/auth";
 import { doc, getDoc, updateDoc, deleteDoc } from "firebase/firestore";
 import { db, firestore } from "../../backend/FirebaseConfig";
 // icons
@@ -32,6 +34,8 @@ import {
 } from "../../functions/backendFunctions";
 // styles
 import { Colors } from "../../styles/Colors";
+// icons
+import { Ionicons } from "@expo/vector-icons";
 
 const UserList = ({ route, navigation }) => {
   const { clubId } = route.params;
@@ -45,6 +49,7 @@ const UserList = ({ route, navigation }) => {
   // overlay
   const [overlayVisible, setOverlayVisible] = useState(false);
   const [overlayUserData, setOverlayUserData] = useState({});
+  const [removeMember, setRemoveMember] = useState(null);
   // loading
   const [loading, setLoading] = useState(true);
 
@@ -104,6 +109,7 @@ const UserList = ({ route, navigation }) => {
 
   // sets buttons for editing members
   const actionButtonPressed = (member) => {
+    console.log(member);
     const buttons = [];
     // Ensure actions cannot be performed on the owner or the current user
     if (member.privilege !== "owner" && member.id !== currentUserId) {
@@ -128,7 +134,7 @@ const UserList = ({ route, navigation }) => {
       ) {
         buttons.push({
           text: "Remove",
-          onPress: () => removeMemberConfirmed(member.id),
+          onPress: () => setRemoveMember(member.id),
           style: "destructive",
         });
       }
@@ -276,14 +282,14 @@ const UserList = ({ route, navigation }) => {
           </View>
         </View>
 
-        {item.id !== currentUserId && (
+        {/* {item.name !== currentUserId && ( */}
           <TouchableOpacity
             onPress={() => actionButtonPressed(item)}
             style={{ marginRight: 5 }}
           >
             <Icon name="dots-vertical" size={24} color="black" />
           </TouchableOpacity>
-        )}
+        {/* )} */}
       </View>
     );
   };
@@ -319,14 +325,38 @@ const UserList = ({ route, navigation }) => {
           style={{ paddingHorizontal: 0, backgroundColor: Colors.white }}
           scrollEnabled={false}
         />
-
-        {/* Overlay */}
-        <ProfileOverlay
-          visible={overlayVisible}
-          setVisible={setOverlayVisible}
-          userData={overlayUserData}
-        />
       </ScrollView>
+
+      {/* Overlay */}
+      <ProfileOverlay
+        visible={overlayVisible}
+        setVisible={setOverlayVisible}
+        userData={overlayUserData}
+      />
+
+      <Modal isVisible={removeMember !== null}>
+        <View style={styles.modalContainer}>
+          <CustomText
+            style={styles.modalText}
+            text="Are you sure you want to remove this user from the club?"
+          />
+          <View style={styles.modalButtons}>
+            <CustomButton
+              text="Yes"
+              onPress={() => {
+                removeMemberConfirmed(removeMember);
+                setRemoveMember(null);
+              }}
+              color={Colors.red}
+            />
+            <CustomButton
+              text="No"
+              onPress={() => setRemoveMember(null)}
+              color={Colors.buttonBlue}
+            />
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -334,7 +364,7 @@ const UserList = ({ route, navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.lightGray,
+    backgroundColor: Colors.white,
   },
   searchBarView: {
     margin: 15,
@@ -370,6 +400,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     padding: 10,
+    backgroundColor: Colors.white,
   },
   memberInfo: {
     flexDirection: "column",
@@ -400,6 +431,33 @@ const styles = StyleSheet.create({
   avatar: {
     width: "100%",
     height: "100%",
+  },
+
+  // Swipeable
+  rightAction: {
+    backgroundColor: "red",
+    justifyContent: "center",
+    paddingHorizontal: 20,
+  },
+
+  // modal styles
+  modalContainer: {
+    backgroundColor: Colors.white,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+    margin: 20,
+    borderRadius: 20,
+  },
+  modalText: {
+    textAlign: "center",
+    fontSize: 18,
+    marginBottom: 20,
+  },
+  modalButtons: {
+    flexDirection: "row",
+    gap: 80,
+    justifyContent: "space-between",
   },
 });
 

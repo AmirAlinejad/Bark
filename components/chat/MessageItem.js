@@ -1,6 +1,14 @@
-import { View, StyleSheet, TouchableOpacity, Text } from "react-native";
+import React, { useRef } from "react";
+import {
+  View,
+  StyleSheet,
+  TouchableOpacity,
+  Text,
+  Animated,
+} from "react-native";
 // functions
 import {
+  pinMessage,
   updateProfileData,
   voteInPoll,
 } from "../../functions/backendFunctions";
@@ -16,6 +24,11 @@ import { Image } from "expo-image";
 import CustomButton from "../buttons/CustomButton";
 // hyperlinks
 import Hyperlink from "react-native-hyperlink";
+// mask view
+import MaskedView from "@react-native-masked-view/masked-view";
+import { LinearGradient } from "expo-linear-gradient";
+// swipeable
+import { Swipeable } from "react-native-gesture-handler";
 
 const MessageItem = ({
   item,
@@ -24,6 +37,7 @@ const MessageItem = ({
   setOverlayUserData,
   userId,
   messageRef,
+  setReplyingToMessage,
 }) => {
   const maxReplyToTextLength = 20; // Maximum length of the reply to text
 
@@ -91,124 +105,196 @@ const MessageItem = ({
     return max;
   };
 
+  const swipeableRef = useRef(null);
+
+  renderRightActions = (progress, dragX) => {
+    const trans = dragX.interpolate({
+      inputRange: [0, 50, 100, 101],
+      outputRange: [-20, 0, 0, 1],
+    });
+
+    return (
+      <View style={styles.rightAction}>
+        <Animated.View
+          style={{
+            transform: [{ translateX: trans }],
+            opacity: progress,
+          }}
+        >
+          <MaterialCommunityIcons name="pin" size={24} color="gray" />
+        </Animated.View>
+      </View>
+    );
+  };
+
+  renderLeftActions = (progress, dragX) => {
+    const trans = dragX.interpolate({
+      inputRange: [0, 50, 100, 101],
+      outputRange: [-20, 0, 0, 1],
+    });
+    return (
+      <View style={styles.rightAction}>
+        <Animated.View
+          style={{
+            transform: [{ translateX: trans }],
+            opacity: progress,
+          }}
+        >
+          <MaterialCommunityIcons name="reply" size={24} color="gray" />
+        </Animated.View>
+      </View>
+    );
+  };
+
   return (
-    <View style={styles.messageItem}>
-      <TouchableOpacity style={styles.avatarContainer} onPress={onMessagePress}>
-        <ProfileImg profileImg={item.user.avatar} width={40} />
-      </TouchableOpacity>
-      <View style={{ flex: 1 }}>
-        {item.user._id != userId && (
-          <CustomText
-            style={styles.senderName}
-            text={item.user.first + " " + item.user.last}
-            font="bold"
-          />
-        )}
-        {/* Display text message */}
-        {item.text && (
-          <Hyperlink linkDefault={true} linkStyle={styles.linkStyle}>
-            <Text style={styles.messageText}>{item.text}</Text>
-          </Hyperlink>
-        )}
-        {/* Display image with option to view larger */}
-        {item.image && (
-          <TouchableOpacity onPress={onImagePress}>
-            <Image source={{ uri: item.image }} style={styles.messageImage} />
-          </TouchableOpacity>
-        )}
-        {/* Display GIF with option to view larger */}
-        {item.gifUrl && (
-          <TouchableOpacity onPress={onGIFPress}>
-            <Image source={{ uri: item.gifUrl }} style={styles.messageImage} />
-          </TouchableOpacity>
-        )}
-        {item.replyTo && (
-          <View style={styles.replyContextContainer}>
-            <View style={styles.arrowIcon}>
-              <MaterialCommunityIcons
-                name="arrow-left-top"
-                size={24}
-                color={Colors.darkGray}
+    <Swipeable
+      ref={swipeableRef}
+      renderRightActions={renderRightActions}
+      renderLeftActions={renderLeftActions}
+      containerStyle={{ flex: 1 }}
+      onSwipeableOpen={(direction) => {
+        if (direction == "right") {
+          pinMessage(messageRef, !item.pinned);
+        } else {
+          setReplyingToMessage(item);
+        }
+        // Close the swipeable row
+        swipeableRef.current.close();
+      }}
+    >
+      <View style={styles.messageItem}>
+        <TouchableOpacity
+          style={styles.avatarContainer}
+          onPress={onMessagePress}
+        >
+          <ProfileImg profileImg={item.user.avatar} width={40} />
+        </TouchableOpacity>
+        <View style={{ flex: 1 }}>
+          {item.user._id != userId && (
+            <CustomText
+              style={styles.senderName}
+              text={item.user.first + " " + item.user.last}
+              font="bold"
+            />
+          )}
+          {/* Display text message */}
+          {item.text && (
+            <Hyperlink linkDefault={true} linkStyle={styles.linkStyle}>
+              <Text style={styles.messageText}>{item.text}</Text>
+            </Hyperlink>
+          )}
+          {/* Display image with option to view larger */}
+          {item.image && (
+            <TouchableOpacity onPress={onImagePress}>
+              <Image source={{ uri: item.image }} style={styles.messageImage} />
+            </TouchableOpacity>
+          )}
+          {/* Display GIF with option to view larger */}
+          {item.gifUrl && (
+            <TouchableOpacity onPress={onGIFPress}>
+              <Image
+                source={{ uri: item.gifUrl }}
+                style={styles.messageImage}
               />
-            </View>
-            <CustomText
-              style={styles.replyContextLabel}
-              text={`${item.replyTo.user.first} ${item.replyTo.user.last}`}
-              font="bold"
-            />
-            {item.replyTo.image && (
-              <TouchableOpacity style={styles.replyContent}>
-                <Image
-                  source={{ uri: item.replyTo.image }}
-                  style={styles.replyImageContext}
+            </TouchableOpacity>
+          )}
+          {item.replyTo && (
+            <View style={styles.replyContextContainer}>
+              <View style={styles.arrowIcon}>
+                <MaterialCommunityIcons
+                  name="arrow-left-top"
+                  size={24}
+                  color={Colors.darkGray}
                 />
-              </TouchableOpacity>
-            )}
-            {item.replyTo.gifUrl && (
-              <TouchableOpacity style={styles.replyContent}>
-                <Image
-                  source={{ uri: item.replyTo.gifUrl }}
-                  style={styles.replyImageContext}
-                />
-              </TouchableOpacity>
-            )}
-            {item.replyTo.text && (
-              <CustomText style={styles.replyContextText} text={replyToText} />
-            )}
-          </View>
-        )}
-        {/* Poll */}
-        {item.voteOptions && (
-          <View style={styles.pollContainer}>
-            <CustomText
-              style={styles.pollQuestion}
-              text={item.pollQuestion}
-              font="bold"
-            />
-            {item.voteOptions.map((option, index) => (
-              <View key={index}>
+              </View>
+              <CustomText
+                style={styles.replyContextLabel}
+                text={`${item.replyTo.user.first} ${item.replyTo.user.last}`}
+                font="bold"
+              />
+              {item.replyTo.image && (
+                <TouchableOpacity style={styles.replyContent}>
+                  <Image
+                    source={{ uri: item.replyTo.image }}
+                    style={styles.replyImageContext}
+                  />
+                </TouchableOpacity>
+              )}
+              {item.replyTo.gifUrl && (
+                <TouchableOpacity style={styles.replyContent}>
+                  <Image
+                    source={{ uri: item.replyTo.gifUrl }}
+                    style={styles.replyImageContext}
+                  />
+                </TouchableOpacity>
+              )}
+              {item.replyTo.text && (
                 <CustomText
-                  style={styles.pollOptionText}
-                  font="bold"
-                  text={option.text}
+                  style={styles.replyContextText}
+                  text={replyToText}
                 />
-                <View style={styles.pollOption}>
+              )}
+            </View>
+          )}
+          {/* Poll */}
+          {item.voteOptions && (
+            <View style={styles.pollContainer}>
+              <CustomText
+                style={styles.pollQuestion}
+                text={item.pollQuestion}
+                font="bold"
+              />
+              {item.voteOptions.map((option, index) => (
+                <View key={index}>
                   <CustomText
                     style={styles.pollOptionText}
-                    text={`(${votesArray()[option.id]})  `}
+                    font="bold"
+                    text={option.text}
                   />
-                  <View style={styles.pollGraph}>
-                    <View
-                      style={[
-                        styles.pollGraphBar,
-                        {
+                  <View style={styles.pollOption}>
+                    <CustomText
+                      style={styles.pollOptionText}
+                      text={`(${votesArray()[option.id]})  `}
+                    />
+
+                    <View style={styles.pollGraph}>
+                      <LinearGradient // Background Linear Gradient
+                        colors={[Colors.purple, Colors.buttonBlue]}
+                        locations={[0, 1]}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 0 }}
+                        style={{
+                          position: "absolute",
                           width: `${
                             100 * (votesArray()[option.id] / mostVotes())
                           }%`,
-                        },
-                      ]}
-                    />
-                  </View>
-                  {!item.voters.includes(userId) && (
-                    <View style={styles.pollOptionButton}>
-                      <CustomButton
-                        text="Vote"
-                        onPress={() =>
-                          voteInPoll(messageRef, option.id, userId)
-                        }
-                        color={Colors.buttonBlue}
+                          height: 30,
+                          borderRadius: 8,
+                        }}
                       />
                     </View>
-                  )}
+
+                    {!item.voters.includes(userId) && (
+                      <View style={styles.pollOptionButton}>
+                        <CustomButton
+                          text="Vote"
+                          onPress={() =>
+                            voteInPoll(messageRef, option.id, userId)
+                          }
+                          color={Colors.buttonBlue}
+                        />
+                      </View>
+                    )}
+                  </View>
                 </View>
-              </View>
-            ))}
-          </View>
-        )}
-        {/* Display view image text */}
-        <CustomText style={styles.dateTime} text={messageTime} font="light" />
+              ))}
+            </View>
+          )}
+          {/* Display view image text */}
+          <CustomText style={styles.dateTime} text={messageTime} font="light" />
+        </View>
       </View>
-    </View>
+    </Swipeable>
   );
 };
 
@@ -242,7 +328,7 @@ const styles = StyleSheet.create({
     marginRight: 110,
   },
   linkStyle: {
-    color: "blue",
+    color: Colors.buttonBlue,
     textDecorationLine: "underline",
   },
 
@@ -314,13 +400,15 @@ const styles = StyleSheet.create({
   },
   pollGraph: {
     flex: 1,
+    height: 30,
     flexDirection: "row",
     alignItems: "center",
   },
   pollGraphBar: {
     width: 200,
     height: 30,
-    backgroundColor: Colors.purple,
+    backgroundColor: "black",
+    maskImage: "linear-gradient(to right, rgba(0,0,0,0), rgba(0,0,0,1))",
     borderRadius: 8,
   },
   pollOptionText: {
@@ -332,6 +420,18 @@ const styles = StyleSheet.create({
   pollOptionButton: {
     alignSelf: "flex-end",
     marginLeft: 10,
+  },
+
+  // Swipeable styles
+  rightAction: {
+    justifyContent: "center",
+    padding: 20,
+    marginRight: 20,
+  },
+  leftActions: {
+    justifyContent: "center",
+    padding: 20,
+    marginLeft: 20,
   },
 });
 

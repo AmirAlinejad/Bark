@@ -3,7 +3,6 @@ import React, { useState, useEffect, useLayoutEffect } from "react";
 import { View, StyleSheet, ScrollView, FlatList } from "react-native";
 // mask view
 import MaskedView from "@react-native-masked-view/masked-view";
-
 import { LinearGradient } from "expo-linear-gradient";
 // use focus effect
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
@@ -263,7 +262,7 @@ const ClubList = ({ navigation }) => {
                             ))
                         ) {
                           return (
-                            <View index={index} style={styles.categoryView}>
+                            <View key={index} style={styles.categoryView}>
                               <ClubCategory
                                 name={
                                   category.categoryName.slice(0, 2) +

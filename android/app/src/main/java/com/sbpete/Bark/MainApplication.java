@@ -1,4 +1,4 @@
-package club.app;
+package com.sbpete.Bark;
 
 import android.app.Application;
 import android.content.res.Configuration;

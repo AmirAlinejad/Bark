@@ -67,6 +67,7 @@ import {
 import { deleteImageFromStorage } from "../../functions/chatFunctions";
 import { isSameDay } from "../../functions/timeFunctions";
 import { goToClubScreen } from "../../functions/navigationFunctions";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 async function sendPushNotification(
   expoPushToken,
@@ -361,6 +362,28 @@ export default function Chat({ route, navigation }) {
           sender.avatar = userData.profileImg;
         }
 
+        // clear invalid data types from replyTo message
+        let newReplyingToMessage;
+        if (replyingToMessage) {
+          newReplyingToMessage = {
+            id: replyingToMessage.id,
+            createdAt: replyingToMessage.createdAt,
+            user: replyingToMessage.user,
+            likeCount: replyingToMessage.likeCount,
+            pinned: replyingToMessage.pinned,
+            likes: replyingToMessage.likes,
+          };
+          if (replyingToMessage.text) {
+            newReplyingToMessage.text = replyingToMessage.text;
+          }
+          if (replyingToMessage.image) {
+            newReplyingToMessage.image = replyingToMessage.image;
+          }
+          if (replyingToMessage.gif) {
+            newReplyingToMessage.gif = replyingToMessage.gif;
+          }
+        }
+
         // Create the message object
         const message = {
           id: new Date().getTime().toString(),
@@ -370,7 +393,7 @@ export default function Chat({ route, navigation }) {
           pinned: false,
           likes: [],
           userId: userData.id,
-          replyTo: replyingToMessage,
+          replyTo: newReplyingToMessage,
         };
         if (messageText.trim() != "") {
           message.text = messageText.trim();
@@ -623,20 +646,22 @@ export default function Chat({ route, navigation }) {
         )}
 
         {/* Messages */}
-        <FlatList
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-          }
-          ref={flatListRef}
-          renderItem={renderMessage}
-          keyExtractor={(item) => item._id}
-          data={messages}
-          onScroll={({ nativeEvent }) => {
-            const isAtBottom = isCloseToBottom(nativeEvent);
-            setIsAtBottom(isAtBottom);
-          }}
-          contentContainerStyle={{ justifyContent: "flex-end", flexGrow: 1 }}
-        />
+        <GestureHandlerRootView style={{ flex: 1 }}>
+          <FlatList
+            refreshControl={
+              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+            }
+            ref={flatListRef}
+            renderItem={renderMessage}
+            keyExtractor={(item) => item._id}
+            data={messages}
+            onScroll={({ nativeEvent }) => {
+              const isAtBottom = isCloseToBottom(nativeEvent);
+              setIsAtBottom(isAtBottom);
+            }}
+            contentContainerStyle={{ justifyContent: "flex-end", flexGrow: 1 }}
+          />
+        </GestureHandlerRootView>
 
         {/* Likes Bottom Modal */}
         <LikesModal

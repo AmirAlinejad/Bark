@@ -128,6 +128,7 @@ const ChatMessage = ({
           setOverlayUserData={setOverlayUserData}
           userId={userId}
           messageRef={messageRef}
+          setReplyingToMessage={setReplyingToMessage}
         />
         {!message.voteOptions && (
           <TouchableOpacity onPress={toggleLike} style={styles.likeButton}>

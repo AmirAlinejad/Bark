@@ -81,9 +81,9 @@ android {
 
     compileSdkVersion rootProject.ext.compileSdkVersion
 
-    namespace 'club.app'
+    namespace 'com.sbpete.Bark'
     defaultConfig {
-        applicationId 'club.app'
+        applicationId 'com.sbpete.Bark'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
