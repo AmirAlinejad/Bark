@@ -1,6 +1,6 @@
 import React from "react";
 // react native components
-import { View, StyleSheet, TouchableOpacity, Image } from "react-native";
+import { View, StyleSheet, TouchableOpacity } from "react-native";
 // my components
 import CustomText from "../display/CustomText";
 import ClubImg from "./ClubImg";

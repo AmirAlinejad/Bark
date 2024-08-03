@@ -4,15 +4,16 @@ import { StyleSheet, Pressable } from 'react-native';
 // my components
 import CustomText from '../CustomText';
 // styles
-import { Colors } from '../../styles/Colors';
+import { useTheme } from '@react-navigation/native';
 
 /////////////////////////////////////////////   maybe delete this file   /////////////////////////////////////////////////
 
 const clubCategoryButton = ({ text, onPress, toggled }) => { 
+  const { colors } = useTheme();
   const containerStyle = [
     styles.container,
     // set color to red if toggled, light red if not
-    toggled ? { backgroundColor: Colors.red } : { backgroundColor: Colors.lightRed }, 
+    toggled ? { backgroundColor: colors.bark } : { backgroundColor: colors.lightRed }, 
   ];
 
   const textStyle = [

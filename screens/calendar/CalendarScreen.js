@@ -8,10 +8,7 @@ import {
   TouchableOpacity,
 } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
-// storage
-import AsyncStorage from "@react-native-async-storage/async-storage";
 // my components
-import Header from "../../components/display/Header";
 import UpcomingEvents from "../../components/event/UpcomingEvents";
 import ToggleButton from "../../components/buttons/ToggleButton";
 import CustomText from "../../components/display/CustomText";
@@ -32,7 +29,7 @@ import SwipeUpDownModal from "react-native-swipe-modal-up-down";
 // macros
 import { CLUBCATEGORIES, DAYSOFTHEWEEK } from "../../macros/macros";
 // styles
-import { Colors } from "../../styles/Colors";
+import { useTheme } from "@react-navigation/native";
 // scroll view
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 // stack navigator
@@ -117,6 +114,8 @@ const CalendarScreen = ({ navigation }) => {
   const [startEndTime, setStartEndTime] = React.useState([0, 24]); // filter by time of day
   const [clubList, setClubList] = useState([]);
 
+  const { colors } = useTheme();
+
   const getDataAsync = async () => {
     setLoading(true);
 
@@ -162,8 +161,7 @@ const CalendarScreen = ({ navigation }) => {
   // filter for events
   const filterFunct = (event) => {
     // if not same month as calendar
-    console.log("event month: ", new Date(event.date).getMonth());
-    console.log("calendar month: ", currenMonth);
+   
     if (new Date(event.date).getMonth() != currenMonth) {
       return false;
     }
@@ -218,8 +216,10 @@ const CalendarScreen = ({ navigation }) => {
     // filter by time of day
     const formattedStartTime = startEndTime[0];
     const formattedEndTime = startEndTime[1];
-    // get hour from event time
-    const hour = parseInt(event.time.substring(0, event.time.indexOf(":")));
+    // get hour from event date
+    console.log(event.date);
+    const hour = new Date(event.date).getHours();
+    console.log("hour: ", hour);
     // if hour outside of bounds
     if (hour < formattedStartTime || hour > formattedEndTime) {
       return false;
@@ -316,8 +316,8 @@ const CalendarScreen = ({ navigation }) => {
         markedDates = {
           [selectedDate]: {
             selected: true,
-            selectedColor: Colors.red,
-            dotColor: Colors.red,
+            selectedColor: colors.bark,
+            dotColor: colors.bark,
           },
         };
       }
@@ -351,9 +351,19 @@ const CalendarScreen = ({ navigation }) => {
               text=""
               onPress={toggleFilter}
               style={styles.filterButtonView}
-              color={Colors.buttonBlue}
+              color={colors.button}
             />
           ),
+          headerLargeTitleStyle: {
+            fontWeight: "bold",
+            fontFamily: "Nunito",
+            fontSize: 32,
+          },
+          headerStyle: {
+            backgroundColor: colors.background,
+            shadowColor: "transparent",
+            elevation: 0,
+          },
         }}
       >
         {() => (
@@ -373,7 +383,15 @@ const CalendarScreen = ({ navigation }) => {
                     current={selectedDate}
                     markingType="multi-dot"
                     markedDates={markedDates}
-                    theme={styles.calendarTheme}
+                    theme={{
+                      calendarBackground: "transparent",
+                      textSectionTitleColor: colors.bark,
+                      todayTextColor: colors.bark,
+                      dayTextColor: "gray",
+                      textDisabledColor: colors.textLight,
+                      arrowColor: colors.bark,
+                      monthTextColor: colors.bark,
+                    }}
                     onDayPress={(day) => selectSpecificDate(day)}
                     onMonthChange={(month) => setCurrentMonth(month.month - 1)}
                   />
@@ -385,9 +403,6 @@ const CalendarScreen = ({ navigation }) => {
                     navigation={navigation}
                   />
                 </View>
-
-               
-                
               </View>
             </ScrollView>
 
@@ -401,7 +416,9 @@ const CalendarScreen = ({ navigation }) => {
                   <View style={styles.filter}>
                     <TouchableWithoutFeedback>
                       <View style={{ alignItems: "center", width: "100%" }}>
-                        <View style={styles.bar} />
+                        <View
+                          style={[styles.bar, { backgroundColor: colors.gray }]}
+                        />
                       </View>
                     </TouchableWithoutFeedback>
 
@@ -423,8 +440,8 @@ const CalendarScreen = ({ navigation }) => {
                             text="My Clubs"
                             onPress={() => setCalendarSetting("myClubs")}
                             toggled={calendarSetting == "myClubs"}
-                            toggledCol={Colors.red}
-                            untoggledCol={Colors.gray}
+                            toggledCol={colors.bark}
+                            untoggledCol={colors.gray}
                             icon="people"
                           />
                         </View>
@@ -433,8 +450,8 @@ const CalendarScreen = ({ navigation }) => {
                             text="New Clubs"
                             onPress={() => setCalendarSetting("newClubs")}
                             toggled={calendarSetting == "newClubs"}
-                            toggledCol={Colors.blue}
-                            untoggledCol={Colors.gray}
+                            toggledCol={colors.bark}
+                            untoggledCol={colors.gray}
                             icon="search"
                           />
                         </View>
@@ -478,8 +495,8 @@ const CalendarScreen = ({ navigation }) => {
                                     marginTop: 5,
                                     marginLeft: 5,
                                     color: daySelected.includes(day.key)
-                                      ? Colors.black
-                                      : Colors.gray,
+                                      ? colors.text
+                                      : colors.gray,
                                   }}
                                   text={day.value}
                                 />
@@ -558,7 +575,7 @@ const CalendarScreen = ({ navigation }) => {
                                         category.value
                                       )}
                                       toggledCol={category.color}
-                                      untoggledCol={Colors.gray}
+                                      untoggledCol={colors.gray}
                                     />
                                   </View>
                                 );
@@ -606,20 +623,10 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     width: "100%",
-    backgroundColor: Colors.lightGray,
   },
   calendarContainer: {
     flex: 1,
     width: "100%",
-  },
-  calendarTheme: {
-    calendarBackground: "transparent",
-    textSectionTitleColor: Colors.red,
-    todayTextColor: Colors.red,
-    dayTextColor: Colors.black,
-    textDisabledColor: Colors.gray,
-    arrowColor: Colors.red,
-    fontFamily: "nunito-regular",
   },
   eventsContainer: {
     flex: 1,
@@ -649,7 +656,7 @@ const styles = StyleSheet.create({
   bar: {
     width: 80,
     height: 5,
-    backgroundColor: Colors.lightGray,
+
     borderRadius: 5,
     marginTop: 20,
     marginBottom: 10,

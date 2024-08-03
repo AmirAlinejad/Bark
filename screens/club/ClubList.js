@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useLayoutEffect } from "react";
+import React, { useState, useEffect } from "react";
 // react native components
 import { View, StyleSheet, ScrollView, FlatList } from "react-native";
 // mask view
@@ -29,8 +29,7 @@ import {
   emailSplit,
 } from "../../functions/backendFunctions";
 // styles
-import { Colors } from "../../styles/Colors";
-import { set } from "firebase/database";
+import { useTheme } from "@react-navigation/native";
 
 const Stack = createNativeStackNavigator();
 
@@ -46,6 +45,8 @@ const ClubList = ({ navigation }) => {
   const [loading, setLoading] = useState(true);
   // school key to pass to club category screen
   const [schoolKey, setSchoolKey] = useState("");
+
+  const { colors } = useTheme();
 
   // useLayoutEffect(() => {
   //   navigation.setOptions({
@@ -89,15 +90,15 @@ const ClubList = ({ navigation }) => {
   // get data from firebase
   useFocusEffect(
     React.useCallback(() => {
-      loadClubSearchData();
-      asyncFunc();
-
       // get school key
       const getSetSchoolKey = async () => {
         const schoolkey = await emailSplit();
         setSchoolKey(schoolkey);
       };
       getSetSchoolKey();
+      
+      loadClubSearchData(); // get data from async storage
+      asyncFunc(); // get actual data from firebase (takes longer)
     }, [])
   );
 
@@ -170,10 +171,19 @@ const ClubList = ({ navigation }) => {
               setSearchText(event.nativeEvent.text);
             },
             hideWhenScrolling: false,
+            textColor: colors.text,
           },
           headerTransparent: true,
           headerBlurEffect: "light",
           // add club button top right
+          headerLargeTitleStyle: {
+            fontWeight: "bold",
+            fontFamily: "Nunito",
+            fontSize: 32,
+          },
+          headerStyle: {
+            backgroundColor: colors.background,
+          },
         }}
       >
         {() => (
@@ -214,7 +224,7 @@ const ClubList = ({ navigation }) => {
                           onPress={() => toggleButton(item.value)}
                           toggled={categoriesSelected.includes(item.value)}
                           toggledCol={item.color}
-                          untoggledCol={Colors.mediumGray}
+                          untoggledCol={colors.gray}
                         />
                       </View>
                     )}
@@ -223,11 +233,12 @@ const ClubList = ({ navigation }) => {
                     contentContainerStyle={styles.categoriesButtonRow}
                     style={{ marginHorizontal: 0, mask: "hidden" }}
                     scrollEnabled={true}
+                    // make scroll bar visible at all times
+                    persistentScrollbar={true}
                   />
                 </MaskedView>
-
               </View>
-                
+
               <View style={styles.separator} />
 
               <View style={styles.lowerContent}>
@@ -238,10 +249,13 @@ const ClubList = ({ navigation }) => {
                       <Ionicon
                         name="megaphone"
                         size={100}
-                        color={Colors.mediumGray}
+                        color={colors.gray}
                       />
                       <CustomText
-                        style={styles.noClubsText}
+                        style={[
+                          styles.noClubsText,
+                          { color: colors.textLight },
+                        ]}
                         text="No clubs found."
                         font="bold"
                       />
@@ -283,13 +297,13 @@ const ClubList = ({ navigation }) => {
               </View>
 
               <View style={styles.fadeView}>
-                <Fade visible={showText}>
+                {/* <Fade visible={showText}>
                   <CustomText
                     style={styles.popUpText}
                     text="Create a club."
                     font="bold"
                   />
-                </Fade>
+                </Fade> */}
               </View>
             </ScrollView>
             <CircleButton
@@ -309,7 +323,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     width: "100%",
-    backgroundColor: Colors.lightGray,
   },
   upperContent: {
     justifyContent: "flex-start",
@@ -352,7 +365,6 @@ const styles = StyleSheet.create({
     height: 1,
     width: "100%",
     marginRight: 20,
-    backgroundColor: Colors.gray,
   },
   rightButtonView: {
     position: "absolute",
@@ -360,27 +372,14 @@ const styles = StyleSheet.create({
     right: 0,
     margin: 30,
   },
-  addClubButton: {
-    backgroundColor: Colors.red,
-    padding: 20,
-    borderRadius: 50,
-    shadowColor: Colors.black,
-    shadowOffset: { width: 3, height: 5 },
-    shadowOpacity: 0.25,
-  },
-  loadMoreText: {
-    color: Colors.buttonBlue,
-  },
   title: {
     fontSize: 20,
   },
   noClubsText: {
     fontSize: 25,
-    color: Colors.gray,
     marginTop: 10,
   },
   popUpText: {
-    color: Colors.black,
     fontSize: 25,
     textAlign: "right",
   },

@@ -3,9 +3,10 @@ import { View, StyleSheet, Switch } from 'react-native';
 // icons
 import { Ionicons } from '@expo/vector-icons';
 // colors
-import { Colors } from '../../styles/Colors';
+import { useTheme } from '@react-navigation/native';
 
 const PrivacySwitch = ({ style, toggled, setToggled }) => {
+    const { colors } = useTheme();
 
     const newStyle = {...styles.privacySwitch, ...style};
 
@@ -14,11 +15,11 @@ const PrivacySwitch = ({ style, toggled, setToggled }) => {
             <Ionicons
                 name={toggled ? 'globe-outline' : 'lock-closed'}
                 size={30}
-                color={Colors.black}
+                color={colors.text}
             />
             <Switch
-                trackColor={{ false: Colors.black, true: Colors.buttonBlue }}
-                thumbColor={Colors.white}
+                trackColor={{ false: colors.gray, true: colors.button }}
+                thumbColor={colors.white}
                 onValueChange={setToggled}
                 value={toggled}
             />

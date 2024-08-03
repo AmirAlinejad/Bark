@@ -27,10 +27,15 @@ import SearchBar from "../../components/input/SearchBar";
 import ProfileOverlay from "../../components/overlays/ProfileOverlay";
 import CustomText from "../../components/display/CustomText";
 import CircleButton from "../../components/buttons/CircleButton";
+import CustomButton from "../../components/buttons/CustomButton";
+
 // icons
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 // styles
-import { Colors } from "../../styles/Colors";
+import { useTheme } from "@react-navigation/native";
+// gesture handler
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+import ToggleButton from "../../components/buttons/ToggleButton";
 
 const MessageSearchScreen = ({ route, navigation }) => {
   const { clubId, chatName, pin, schoolKey } = route.params;
@@ -44,6 +49,8 @@ const MessageSearchScreen = ({ route, navigation }) => {
   // loading
   const [loading, setLoading] = useState(true);
 
+  const { colors } = useTheme();
+
   useLayoutEffect(() => {
     navigation.setOptions({
       headerTitle: "Search Messages",
@@ -53,6 +60,7 @@ const MessageSearchScreen = ({ route, navigation }) => {
           setSearchQuery(event.nativeEvent.text);
         },
         hideWhenScrolling: false,
+        textColor: colors.text,
       },
     });
   }, [navigation]);
@@ -115,10 +123,12 @@ const MessageSearchScreen = ({ route, navigation }) => {
         style={styles.pinnedButton}
         onPress={() => setSearchPinned(!searchPinned)}
       >
-        <MaterialCommunityIcons
-          name={"pin"}
-          size={32}
-          color={searchPinned ? Colors.buttonBlue : Colors.gray}
+        <ToggleButton
+          text={`Filter: ${searchPinned ? "Pinned" : "All"}`}
+          toggled={searchPinned}
+          toggledCol={colors.primary}
+          untoggledCol={colors.gray}
+          onPress={() => setSearchPinned(!searchPinned)}
         />
       </TouchableOpacity>
     );
@@ -129,6 +139,7 @@ const MessageSearchScreen = ({ route, navigation }) => {
       item={item}
       setOverlayVisible={setOverlayVisible}
       setOverlayUserData={setOverlayUserData}
+      swipeable={false}
     />
   );
 
@@ -138,6 +149,10 @@ const MessageSearchScreen = ({ route, navigation }) => {
         style={styles.container}
         contentInsetAdjustmentBehavior="automatic"
       >
+        {/*Toggle pinned messages*/}
+        <View style={{ flexDirection: "row", marginLeft: 20 }}>
+          {renderPinButton()}
+        </View>
         {/* Show if no messages */}
         {filteredMessages.length === 0 && (
           <View
@@ -148,35 +163,32 @@ const MessageSearchScreen = ({ route, navigation }) => {
               marginTop: 200,
             }}
           >
-            <Ionicons name="chatbubbles" size={100} color={Colors.gray} />
+            <Ionicons name="chatbubbles" size={100} color={colors.gray} />
             <CustomText
               text="No messages to display."
               font="bold"
-              style={{ fontSize: 20, color: Colors.darkGray }}
+              style={{ fontSize: 20, color: colors.textLight }}
             />
           </View>
         )}
 
-        <FlatList
-          data={filteredMessages}
-          renderItem={renderMessage}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.messageList}
-          scrollEnabled={false}
-        />
+        {/* Messages */}
+
+        <GestureHandlerRootView>
+          <FlatList
+            data={filteredMessages}
+            renderItem={renderMessage}
+            keyExtractor={(item) => item.id}
+            contentContainerStyle={styles.messageList}
+            scrollEnabled={false}
+          />
+        </GestureHandlerRootView>
       </ScrollView>
       {/* Overlay */}
       <ProfileOverlay
         visible={overlayVisible}
         setVisible={setOverlayVisible}
         userData={overlayUserData}
-      />
-
-      <CircleButton
-        icon={searchPinned ? "pin" : "pin-outline"}
-        onPress={() => setSearchPinned(!searchPinned)}
-        position={{ bottom: 0, right: 0 }}
-        size={60}
       />
     </View>
   );
@@ -185,7 +197,6 @@ const MessageSearchScreen = ({ route, navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.light,
   },
   searchBarView: {
     margin: 15,
@@ -195,6 +206,11 @@ const styles = StyleSheet.create({
   messageList: {
     paddingBottom: 20,
     paddingHorizontal: 0,
+  },
+  pinnedButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginRight: 20,
   },
 });
 

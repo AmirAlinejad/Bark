@@ -33,7 +33,7 @@ import { getAuth, signOut } from "firebase/auth";
 // modal
 import Modal from "react-native-modal";
 // colors
-import { Colors } from "../../styles/Colors";
+import { useTheme } from "@react-navigation/native";
 // stack
 import { createStackNavigator } from "@react-navigation/stack";
 import SettingsSection from "../../components/display/SettingsSection";
@@ -49,6 +49,8 @@ const Profile = ({ navigation }) => {
 
   // toggle sync to google calendar
   const [syncGoogleCalendar, setSyncGoogleCalendar] = useState(false);
+
+  const { colors } = useTheme();
 
   // data for settings flatlist
   const settingsData = [
@@ -82,14 +84,6 @@ const Profile = ({ navigation }) => {
               userData: userData,
               navigation: navigation,
             });
-          },
-        },
-        {
-          id: "6",
-          icon: "information-circle-outline",
-          text: "About Us",
-          onPress: () => {
-            navigation.navigate("AboutUs");
           },
         },
       ],
@@ -141,7 +135,7 @@ const Profile = ({ navigation }) => {
   // navigate to edit profile screen
   const goToEditProfile = () => {
     console.log(userData);
-    navigation.navigate("EditProfile", {
+    navigation.navigate("Edit Profile", {
       userData: userData,
       navigation: navigation,
     });
@@ -180,7 +174,7 @@ const Profile = ({ navigation }) => {
         }}
       >
         {() => (
-          <View style={{ flex: 1 }}>
+          <View style={{ flex: 1, backgroundColor: colors.background }}>
             <ScrollView contentContainerStyle={styles.container}>
               <View style={styles.profileContainer}>
                 <TouchableOpacity onPress={goToEditProfile}>
@@ -188,12 +182,12 @@ const Profile = ({ navigation }) => {
                 </TouchableOpacity>
 
                 <CustomText
-                  style={styles.name}
+                  style={[styles.name, { color: colors.text }]}
                   text={userData?.firstName + " " + userData?.lastName}
                   font="bold"
                 />
                 <CustomText
-                  style={styles.userName}
+                  style={[styles.userName, { color: colors.textLight }]}
                   text={"@" + userData?.userName}
                 />
 
@@ -201,43 +195,45 @@ const Profile = ({ navigation }) => {
                   <TouchableOpacity onPress={goToEditProfile}>
                     <CustomText
                       text={"🎓" + gradYear}
-                      style={styles.detailsText}
+                      style={[styles.detailsText, { color: colors.textLight }]}
                     />
                   </TouchableOpacity>
                   <View style={{ width: 25 }} />
                   <TouchableOpacity onPress={goToEditProfile}>
-                    <CustomText text={major} style={styles.detailsText} />
+                    <CustomText
+                      text={major}
+                      style={[styles.detailsText, { color: colors.textLight }]}
+                    />
                   </TouchableOpacity>
                 </View>
               </View>
 
               <SettingsSection data={settingsData} loading={loading} />
-              
             </ScrollView>
 
             <IconButton
               icon="settings-outline"
               style={styles.settings}
               onPress={() => navigation.navigate("Settings")}
-              color={Colors.buttonBlue}
+              color={colors.button}
             />
 
             <Modal isVisible={deleteAccountModal}>
               <View style={styles.modalContainer}>
                 <CustomText
-                  style={styles.modalText}
+                  style={[ styles.modalText, { color: colors.text }]}
                   text="Are you sure you want to delete your account?"
                 />
                 <View style={styles.modalButtons}>
                   <CustomButton
                     text="Yes"
                     onPress={deleteAccount}
-                    color={Colors.red}
+                    color={colors.red}
                   />
                   <CustomButton
                     text="No"
                     onPress={() => setDeleteAccountModal(false)}
-                    color={Colors.green}
+                    color={colors.green}
                   />
                 </View>
               </View>
@@ -253,12 +249,12 @@ const Profile = ({ navigation }) => {
                   <CustomButton
                     text="Yes"
                     onPress={logOut}
-                    color={Colors.red}
+                    color={colors.red}
                   />
                   <CustomButton
                     text="No"
                     onPress={() => setLogoutModal(false)}
-                    color={Colors.green}
+                    color={colors.green}
                   />
                 </View>
               </View>
@@ -278,7 +274,7 @@ const styles = StyleSheet.create({
   profileContainer: {
     alignItems: "center",
     justifyContent: "center",
-    marginTop: '40%',
+    marginTop: "40%",
   },
   detailsView: {
     flexDirection: "row",
@@ -286,26 +282,10 @@ const styles = StyleSheet.create({
   },
   detailsText: {
     fontSize: 16,
-    color: Colors.darkGray,
-  },
-  settingsContent: {
-    justifyContent: "flex-start",
-    justifySelf: "flex-end",
-    paddingTop: 20,
-    paddingBottom: 10,
-    paddingLeft: 20,
-    backgroundColor: Colors.white,
-    borderTopLeftRadius: 30,
-    borderTopRightRadius: 30,
   },
   buttonContainerView: {
     marginTop: 0,
     marginBottom: 0,
-  },
-  separator: {
-    backgroundColor: Colors.lightGray,
-    height: 1,
-    marginRight: 20,
   },
   title: {
     fontSize: 25,
@@ -316,7 +296,6 @@ const styles = StyleSheet.create({
     fontSize: 30,
   },
   userName: {
-    color: Colors.darkGray,
     marginTop: 0,
     fontSize: 20,
     marginBottom: 30,
@@ -329,7 +308,6 @@ const styles = StyleSheet.create({
 
   // modal styles
   modalContainer: {
-    backgroundColor: Colors.white,
     justifyContent: "center",
     alignItems: "center",
     padding: 20,

@@ -11,22 +11,26 @@ import ClubList from "./club/ClubList";
 import CalendarScreen from "./calendar/CalendarScreen";
 import MyClubs from "./club/MyClubs";
 // styles
-import { Colors } from "../styles/Colors";
+import { useTheme } from "@react-navigation/native";
 
 const Tab = createBottomTabNavigator();
 function HomeScreen({ route }) {
+  const { colors } = useTheme();
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
         tabBarShowLabel: false,
-        tabBarActiveTintColor: Colors.black,
-        tabBarInactiveTintColor: Colors.black,
+        tabBarActiveTintColor: colors.text,
+        tabBarInactiveTintColor: colors.textLight,
         tabBarLabelStyle: {
           fontSize: 9,
           fontWeight: "bold",
         },
         tabBarStyle: {
-          backgroundColor: Colors.white,
+          backgroundColor: colors.card,
+          borderTopWidth: 0,
+          shadowColor: "black",
+          shadowOpacity: 0.1,
         },
         tabBarIcon: ({ focused, color }) => {
           let iconName;

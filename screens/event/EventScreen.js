@@ -3,16 +3,13 @@ import { View, StyleSheet, TouchableOpacity, ScrollView } from "react-native";
 // fade
 import Fade from "react-native-fade";
 // backend
-import { ref, get, set } from "firebase/database";
-import { doc, getDoc, updateDoc } from "firebase/firestore";
-import { db, firestore } from "../../backend/FirebaseConfig";
-import { getAuth } from "firebase/auth";
+import { doc, updateDoc } from "firebase/firestore";
+import { firestore } from "../../backend/FirebaseConfig";
 // my components
-import Header from "../../components/display/Header";
 import CustomText from "../../components/display/CustomText";
 import IconButton from "../../components/buttons/IconButton";
 import CircleButton from "../../components/buttons/CircleButton";
-import ToggleButton from "../../components/buttons/ToggleButton";
+import CustomButton from "../../components/buttons/CustomButton";
 // icons
 import { Ionicons } from "@expo/vector-icons";
 // functions
@@ -24,10 +21,8 @@ import {
 } from "../../functions/backendFunctions";
 import { timeToString, reformatDate } from "../../functions/timeFunctions";
 import { goToClubScreen } from "../../functions/navigationFunctions";
-// map
-import MapView, { Marker } from "react-native-maps";
 // colors
-import { Colors } from "../../styles/Colors";
+import { useTheme } from "@react-navigation/native";
 // clipboard
 import * as Clipboard from "expo-clipboard";
 
@@ -35,7 +30,7 @@ const EventScreen = ({ route, navigation }) => {
   const { eventId, fromScreen } = route.params;
 
   // event data
-  const [event, setEvent] = useState(undefined);
+  const [event, setEvent] = useState(null);
   const [currentUserPrivilege, setCurrentUserPrivilege] = useState("none");
   const [RSVPList, setRSVPList] = useState([]);
   const [userData, setUserData] = useState(null);
@@ -44,26 +39,19 @@ const EventScreen = ({ route, navigation }) => {
   // loading
   const [loading, setLoading] = useState(true);
 
+  const { colors } = useTheme();
+
   useLayoutEffect(() => {
     navigation.setOptions({
       headerRight: () => (
         <View style={{ flexDirection: "row" }}>
-          {/* go to clubs screen */}
-          {fromScreen != "ClubScreen" && (
-            <IconButton
-              icon={"enter-outline"}
-              onPress={() => goToClubScreen(event.clubId, navigation)}
-              color={Colors.buttonBlue}
-            />
-          )}
-
           {/* QR code button */}
 
           <IconButton
             icon={"qr-code-outline"}
             text=""
             onPress={onQRCodeButtonPress}
-            color={Colors.buttonBlue}
+            color={colors.button}
           />
         </View>
       ),
@@ -89,6 +77,9 @@ const EventScreen = ({ route, navigation }) => {
     asyncFunc();
   }, []);
 
+  console.log("rsvp list", RSVPList);
+  console.log("event", event);
+
   // check user privilege after event data is loaded
   useEffect(() => {
     if (event != undefined) {
@@ -110,17 +101,37 @@ const EventScreen = ({ route, navigation }) => {
 
   // edit event button
   const onEditButtonPress = () => {
-    navigation.navigate("EditEvent", {
-      event: event,
+    console.log("editing event", event);
+    console.log("date", new Date(event.date));
+    const editingEvent = {
+      ...event,
+    };
+    navigation.navigate("Edit Event", {
+      event: editingEvent,
     });
   };
 
   // duplicate event button
   const onDuplicateButtonPress = () => {
+    // create new event object
+    let newEvent = {
+      name: event.name + " (Copy)",
+      description: event.description,
+      address: event.address,
+      location: event.location,
+      clubId: event.clubId,
+      clubName: event.clubName,
+      clubCategories: event.clubCategories,
+      duration: event.duration,
+      instructions: event.instructions,
+      roomNumber: event.roomNumber,
+    };
+
     navigation.navigate("NewEvent", {
-      event: event,
+      event: newEvent,
       clubId: event.clubId,
       clubCategories: event.clubCategories,
+      clubName: event.clubName,
     });
   };
 
@@ -155,14 +166,15 @@ const EventScreen = ({ route, navigation }) => {
 
   // go to QR code screen
   const onQRCodeButtonPress = () => {
-    navigation.navigate("QRCodeScreen", {
-      name: event.name,
+    navigation.navigate("QR Code", {
       qrCodeData: "?screen=event&eventId=" + eventId,
     });
   };
 
+  const gap = 20;
+
   return (
-    <View style={{ flex: 1 }}>
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
       {event == {} && <CustomText text="Loading..." />}
       {event != undefined && (
         <ScrollView
@@ -170,10 +182,14 @@ const EventScreen = ({ route, navigation }) => {
           contentContainerStyle={styles.eventContent}
         >
           <View style={{ width: "100%", alignItems: "center", marginTop: 32 }}>
-            <CustomText style={styles.title} text={event.name} font="black" />
+            <CustomText
+              style={{ ...styles.title, color: colors.text }}
+              text={event.name}
+              font="black"
+            />
 
             <CustomText
-              style={{ ...styles.textNormal, color: Colors.darkGray }}
+              style={{ ...styles.textNormal, color: colors.textLight }}
               text={event.clubName}
             />
 
@@ -181,32 +197,34 @@ const EventScreen = ({ route, navigation }) => {
           </View>
 
           <CustomText
-            style={{ ...styles.textNormal, color: Colors.darkGray }}
-            text={`${RSVPList.length} people are going`}
+            style={{ ...styles.textNormal, color: colors.textLight }}
+            text={`${RSVPList.length} ${
+              RSVPList.length === 1 ? "person is" : "people are"
+            } going`}
           />
 
-          <View style={{ height: 16 }} />
+          <View style={{ height: gap }} />
 
           <CustomText
-            style={styles.textNormal}
+            style={{ ...styles.textNormal, color: colors.text }}
             text={event?.description?.trim()}
           />
 
-          <View style={{ height: 16 }} />
+          <View style={{ height: gap }} />
 
           <View>
             <CustomText
-              style={styles.textNormal}
+              style={{ ...styles.textNormal, color: colors.text }}
               text={reformatDate(event.date)}
               font="bold"
             />
-            <CustomText
+            {/* <CustomText
               style={styles.textNormal}
               text={timeToString(event.time)}
-            />
+            /> */}
           </View>
 
-          <View style={{ height: 16 }} />
+          <View style={{ height: gap }} />
 
           {/*} <MapView
             style={styles.mapStyle}
@@ -220,11 +238,11 @@ const EventScreen = ({ route, navigation }) => {
               <View style={{ flexDirection: "row" }}>
                 <View>
                   <CustomText
-                    style={styles.textNormal}
+                    style={{ ...styles.textNormal, color: colors.text }}
                     text={splitAddress(event.address)[0]}
                   />
                   <CustomText
-                    style={styles.textNormal}
+                    style={{ ...styles.textNormal, color: colors.textLight }}
                     text={splitAddress(event.address)[1]}
                   />
                 </View>
@@ -242,11 +260,15 @@ const EventScreen = ({ route, navigation }) => {
             ) : (
               <View style={{ flexDirection: "row" }}>
                 <CustomText
-                  style={styles.textNormal}
+                  style={{ ...styles.textNormal, color: colors.text }}
                   text="No address provided"
                 />
                 <View style={{ marginLeft: 8 }}>
-                  <Ionicons name={"location-outline"} size={20} color="black" />
+                  <Ionicons
+                    name={"location-outline"}
+                    size={20}
+                    color={colors.text}
+                  />
                 </View>
               </View>
             )}
@@ -254,9 +276,9 @@ const EventScreen = ({ route, navigation }) => {
 
           {/* duration */}
           {event.duration && (
-            <View style={{ marginTop: 16 }}>
+            <View style={{ marginTop: gap }}>
               <CustomText
-                style={styles.textNormal}
+                style={{ ...styles.textNormal, color: colors.text }}
                 text={`Duration: ${event.duration} min`}
               />
             </View>
@@ -264,9 +286,9 @@ const EventScreen = ({ route, navigation }) => {
 
           {/* instructions */}
           {event.instructions && (
-            <View style={{ marginTop: 16 }}>
+            <View style={{ marginTop: gap }}>
               <CustomText
-                style={styles.textNormal}
+                style={{ ...styles.textNormal, color: colors.text }}
                 text={`Instructions: ${event.instructions}`}
               />
             </View>
@@ -274,23 +296,36 @@ const EventScreen = ({ route, navigation }) => {
 
           {/* room number */}
           {event.room && (
-            <View style={{ marginTop: 16 }}>
+            <View style={{ marginTop: gap }}>
               <CustomText
-                style={styles.textNormal}
+                style={{ ...styles.textNormal, color: colors.text }}
                 text={`Room: ${event.roomNumber}`}
               />
             </View>
+          )}
+
+          {/* go to clubs screen */}
+          {fromScreen != "ClubScreen" && (
+            <TouchableOpacity
+              onPress={() => goToClubScreen(event.clubId, navigation)}
+              style={{ marginTop: gap }}
+            >
+              <CustomText
+                style={{ ...styles.textNormal, color: colors.button }}
+                text="Go to Club"
+              />
+            </TouchableOpacity>
           )}
         </ScrollView>
       )}
 
       {userData != null && userData.id && (
-        <View style={{ position: "absolute", alignSelf: 'center', bottom: 32 }}>
-          <ToggleButton
-            toggled={RSVPList.includes(userData.id) ? true : false}
+        <View style={{ position: "absolute", alignSelf: "center", bottom: 32 }}>
+          <CustomButton
             icon={RSVPList.includes(userData.id) ? "checkmark" : "people"}
-            toggledCol={Colors.red}
-            untoggledCol={Colors.lightRed}
+            color={
+              RSVPList.includes(userData.id) ? colors.darkGray : colors.button
+            }
             text={`RSVP`}
             onPress={toggleRSVP}
           />
@@ -299,17 +334,17 @@ const EventScreen = ({ route, navigation }) => {
 
       {(currentUserPrivilege == "admin" || currentUserPrivilege == "owner") && (
         <View>
-          <View
+          {/* <View
             style={{ position: "absolute", bottom: 5, right: 75, margin: 30 }}
           >
             <Fade visible={showText}>
               <CustomText
-                style={styles.popUpText}
+                style={{ ...styles.popUpText, color: colors.textLight }}
                 text="Edit the Event."
                 font="bold"
               />
             </Fade>
-          </View>
+          </View> */}
           <CircleButton
             icon="create-outline"
             onPress={onEditButtonPress}
@@ -332,7 +367,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: "flex-start",
-    backgroundColor: Colors.white,
   },
   eventContent: {
     justifyContent: "flex-start",
@@ -366,14 +400,6 @@ const styles = StyleSheet.create({
     right: 0,
     margin: 30,
   },
-  addEventButton: {
-    backgroundColor: Colors.red,
-    padding: 20,
-    borderRadius: 50,
-    shadowColor: "black",
-    shadowOffset: { width: 3, height: 5 },
-    shadowOpacity: 0.25,
-  },
   leftButtonView: {
     position: "absolute",
     bottom: 0,
@@ -383,18 +409,16 @@ const styles = StyleSheet.create({
 
   // fonts
   title: {
-    fontSize: 32,
+    fontSize: 28,
     textAlign: "center",
   },
   textNormal: {
     fontSize: 18,
-    color: Colors.black,
   },
   textSmall: {
     fontSize: 14,
   },
   popUpText: {
-    color: Colors.black,
     fontSize: 25,
     textAlign: "right",
   },

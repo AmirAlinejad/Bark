@@ -5,11 +5,14 @@ import { Image } from 'expo-image';
 // icons
 import Ionicons from 'react-native-vector-icons/Ionicons';
 // colors
-import { Colors } from '../../styles/Colors';
+import { useTheme } from '@react-navigation/native';
 
 const ProfileImg = ({ profileImg, width, editable }) => {
+
+    const { colors } = useTheme();
+
     return (
-        <View style={[styles.imgContainer, {width: width, height: width, borderRadius: width/2}]}>
+        <View style={[styles.imgContainer, {backgroundColor: colors.gray, width: width, height: width, borderRadius: width/2}]}>
             <Image source={{uri: profileImg}} style={[styles.imgContainer, {width: width, height: width, borderRadius: width/2}]}/>
 
             {/* if there is no profile image, display a person icon */}
@@ -35,7 +38,6 @@ const styles = StyleSheet.create({
         width: 100,
         height: 100,
         borderRadius: 50,
-        backgroundColor: Colors.gray,
     },
 });
 

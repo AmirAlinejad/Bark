@@ -3,7 +3,7 @@ import { View, StyleSheet, TouchableWithoutFeedback } from "react-native";
 // functions
 import { getSetUserData } from "../../functions/backendFunctions";
 // styles
-import { Colors } from "../../styles/Colors";
+import { useTheme } from "@react-navigation/native";
 // modal
 import SwipeUpDownModal from "react-native-swipe-modal-up-down";
 // my components
@@ -11,6 +11,7 @@ import CustomText from "../display/CustomText";
 import ProfileImg from "../display/ProfileImg";
 
 const ProfileOverlay = ({ visible, setVisible, userData }) => {
+  const { colors } = useTheme();
   // get current user data
   const [currentUserData, setCurrentUserData] = useState(null);
 
@@ -59,6 +60,8 @@ const ProfileOverlay = ({ visible, setVisible, userData }) => {
     return mutualClubs;
   };
 
+  console.log(userData);
+
   return (
     <SwipeUpDownModal
       modalVisible={visible}
@@ -67,35 +70,46 @@ const ProfileOverlay = ({ visible, setVisible, userData }) => {
       ContentModal={
         <TouchableWithoutFeedback>
           <View style={styles.modal}>
-            <View style={styles.modalContent}>
+            <View
+              style={[styles.modalContent, { backgroundColor: colors.card }]}
+            >
               {userData && (
                 <View style={styles.profileContainer}>
-                  <View style={styles.bar} />
+                  <View
+                    style={[styles.bar, { backgroundColor: colors.gray }]}
+                  />
                   <ProfileImg profileImg={userData.profileImg} width={80} />
+                  <View style={{ height: 8 }} />
                   <CustomText
-                    style={styles.name}
+                    style={[styles.name, { color: colors.text }]}
                     text={userData.firstName + " " + userData.lastName}
                     font="bold"
                   />
                   <CustomText
-                    style={styles.userName}
+                    style={[styles.userName, { color: colors.textLight }]}
                     text={"@" + userData.userName}
                     font={"bold"}
                   />
-                  <View style={styles.info}>
-                    {graduationYear() != "" && (
+                  <View style={[styles.info, { color: colors.textLight }]}>
+                    {graduationYear() !== "" && (
                       <CustomText
                         text={graduationYear()}
                         style={styles.secondaryText}
                       />
                     )}
-                    {major() != "" && (
-                      <CustomText text={major()} style={styles.secondaryText} />
+                    {major() !== "" && (
+                      <CustomText
+                        text={major()}
+                        style={[
+                          styles.secondaryText,
+                          { color: colors.textLight },
+                        ]}
+                      />
                     )}
                   </View>
                   <CustomText
                     text={`${getMutualClubs().length} Mutual Club(s)`}
-                    style={styles.secondaryText}
+                    style={[styles.secondaryText, { color: colors.textLight }]}
                   />
                 </View>
               )}
@@ -116,7 +130,6 @@ const styles = StyleSheet.create({
   modalContent: {
     flex: 1,
     width: "100%",
-    backgroundColor: Colors.white,
     alignItems: "center",
     justifyContent: "flex-start",
     borderTopLeftRadius: 30,
@@ -125,7 +138,6 @@ const styles = StyleSheet.create({
   bar: {
     width: 80,
     height: 5,
-    backgroundColor: Colors.lightGray,
     borderRadius: 5,
     marginTop: 20,
     marginBottom: 30,
@@ -135,24 +147,20 @@ const styles = StyleSheet.create({
     justifyContent: "flex-start",
   },
   info: {
-    width: "100%",
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
     gap: 80,
-    marginBottom: 20,
+    marginVertical: 12,
   },
   name: {
     fontSize: 24,
-    color: Colors.black,
   },
   userName: {
     fontSize: 16,
-    color: Colors.darkGray,
   },
   secondaryText: {
     fontSize: 16,
-    color: Colors.darkGray,
   },
 });
 

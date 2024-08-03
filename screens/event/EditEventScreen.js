@@ -1,285 +1,279 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from "react";
 // react native components
-import { View, StyleSheet, TouchableOpacity, TextInput } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, TextInput } from "react-native";
 // my components
-import CustomText from '../../components/display/CustomText';
-import CustomInput from '../../components/input/CustomInput';
-import CustomButton from '../../components/buttons/CustomButton';
-import PrivacySwitch from '../../components/input/PrivacySwitch';
-import CircleButton from '../../components/buttons/CircleButton';
-import Header from '../../components/display/Header';
-// google places autocomplete
-import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete';
-// date time picker
-import DateTimePicker from '@react-native-community/datetimepicker';
-// maps
-import MapView, { Marker } from 'react-native-maps';
+import CustomText from "../../components/display/CustomText";
+import CustomButton from "../../components/buttons/CustomButton";
+import CircleButton from "../../components/buttons/CircleButton";
+import Form from "../Form";
 // modal
-import Modal from 'react-native-modal';
+import Modal from "react-native-modal";
 // backend
-import { ref, set, update } from 'firebase/database';
-import { doc, updateDoc } from 'firebase/firestore';
-import { db, firestore } from '../../backend/FirebaseConfig';
+import { doc, setDoc, updateDoc } from "firebase/firestore";
+import { firestore } from "../../backend/FirebaseConfig";
 // functions
-import { emailSplit, deleteEvent, updateEventInGoogleCalendar, deleteEventFromGoogleCalendar } from '../../functions/backendFunctions';
-import { dateForObj, timeForObj } from '../../functions/timeFunctions';
+import {
+  emailSplit,
+  deleteEvent,
+  updateEventInGoogleCalendar,
+  deleteEventFromGoogleCalendar,
+} from "../../functions/backendFunctions";
 // icons
-import Ionicons from 'react-native-vector-icons/Ionicons';
-// keyboard aware scroll view
-import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 // styles
-import { Colors } from '../../styles/Colors';
+import { useTheme } from "@react-navigation/native";
 
 const EditEventScreen = ({ route, navigation }) => {
   // get user data from previous screen
   const event = route.params.event;
-  console.log('editing event', event);
+  const fromMap = route.params.fromMap;
+  console.log("editing event", event);
 
   // state variables
-  const [eventName, setEventName] = useState(event.name);
-  const [eventDescription, setEventDescription] = useState(event.description);
-  const [eventDate, setEventDate] = useState(new Date(dateForObj(event.date)));
-  const [eventTime, setEventTime] = useState(new Date(timeForObj(event.time)));
-  const [eventDuration, setEventDuration] = useState(event.duration);
-  const [eventRoomNumber, setEventRoomNumber] = useState(event.roomNumber);
-  const [eventInstructions, setEventInstructions] = useState(event.instructions);
-  const [publicEvent, setPublicEvent] = useState(event.publicEvent);
+  const [form, setForm] = useState({
+    eventName: event ? event.name : "",
+    eventDescription: event ? event.description : "",
+    date: event && event.date ? new Date(event.date) : new Date(),
+    // time: event && event.time ? new Date(event.time) : new Date(),
+    duration: event ? event.duration : 0,
+    roomNumber: event ? event.roomNumber : "",
+    instructions: event ? event.instructions : "",
+    publicEvent: event ? event.publicEvent : true,
+    address: event ? event.address : "",
+  });
   const [loading, setLoading] = useState(false);
   // overlay
   const [modalVisible, setModalVisible] = useState(false);
 
-  const eventAddress = event.address ? event.address : null;
+  // update address from map
+  const updateAddress = (address) => {
+    setForm({ ...form, address: address });
+  };
+
+  useEffect(() => {
+    if (fromMap) {
+      updateAddress(event.address);
+    }
+  }, [fromMap]);
+
+  const formPropertiesAndTypes = [
+    {
+      propName: "eventName",
+      type: "text",
+      title: "Event Name*",
+      placeholder: "Event Name",
+    },
+    {
+      propName: "eventDescription",
+      type: "textLong",
+      title: "Event Description*",
+      placeholder: "Tell us about your event!",
+    },
+    {
+      propName: "date",
+      type: "date",
+      title: "Date",
+    },
+    // {
+    //   propName: "time",
+    //   type: "time",
+    //   title: "Time",
+    // },
+    {
+      propName: "duration",
+      type: "text",
+      title: "Duration (mins)",
+      placeholder: "Duration",
+    },
+    {
+      propName: "roomNumber",
+      type: "text",
+      title: "Room Number",
+      placeholder: "Room Number",
+    },
+    {
+      propName: "instructions",
+      type: "text",
+      title: "Instructions",
+      placeholder: "Instructions",
+    },
+    {
+      propName: "publicEvent",
+      type: "boolean",
+      title: "Public Event",
+    },
+    {
+      propName: "address",
+      type: "location",
+      title: "Address",
+    },
+  ];
+
+  const { colors } = useTheme();
 
   // edit event
   const onEditEventSubmitted = async (e) => {
     setLoading(true);
     e.preventDefault();
 
+    console.log("form: ", form);
+
     // check if any fields are empty
-    if (!eventName || !eventDescription) {
-      alert('Please fill out all required fields');
+    if (!form.eventName || !form.eventDescription) {
+      alert("Please fill out all required fields");
       setLoading(false);
       return;
     }
 
     // try to submit the edit profile request
     try {
-
       const schoolKey = await emailSplit();
 
       const updatedEvent = {
         id: event.id,
         clubId: event.clubId,
-        clubName: event.clubName,
         categories: event.categories,
-        name: eventName,
-        description: eventDescription,
-        date: eventDate.toDateString(),
-        time: eventTime.toTimeString(),
-        publicEvent: publicEvent,
+        name: form.eventName,
+        description: form.eventDescription,
+        date: form.date.toString(),
+        // time: form.eventTime.toTimeString(),
+        publicEvent: form.publicEvent,
       };
 
-      console.log(updatedEvent);
-      if (eventDuration) updatedEvent.duration = eventDuration;
-      //if (location) updatedEvent.location = location;
-      if (eventAddress) updatedEvent.address = eventAddress;
-      if (eventRoomNumber) updatedEvent.roomNumber = eventRoomNumber;
-      if (eventInstructions) updatedEvent.instructions = eventInstructions;
+      if (form.duration) updatedEvent.duration = form.duration;
+      if (form.location) updatedEvent.location = form.location;
+      if (form.address) updatedEvent.address = form.address;
+      if (form.roomNumber) updatedEvent.roomNumber = form.roomNumber;
+      if (form.instructions) updatedEvent.instructions = form.instructions;
+      console.log("updatedEvent: ", updatedEvent);
 
       // update event in firestore
-      const eventDoc = doc(firestore, 'schools', schoolKey, 'eventData', event.id); // 'schools/{schoolId}/events/{eventId}
-      await updateDoc(eventDoc, updatedEvent);
+      const eventDoc = doc(
+        firestore,
+        "schools",
+        schoolKey,
+        "eventData",
+        event.id
+      ); // 'schools/{schoolId}/events/{eventId}
+      await setDoc(eventDoc, updatedEvent);
 
       // update calendar data
-      const calendarDataDoc = doc(firestore, 'schools', schoolKey, 'calendarData', event.id); // 'schools/{schoolId}/calendarData/{eventId}
-      await updateDoc(calendarDataDoc, {
+      const calendarDataDoc = doc(
+        firestore,
+        "schools",
+        schoolKey,
+        "calendarData",
+        event.id
+      ); // 'schools/{schoolId}/calendarData/{eventId}
+      await setDoc(calendarDataDoc, {
         clubId: event.clubId,
         id: event.id,
-        name: eventName,
-        date: eventDate.toDateString(),
-        time: eventTime.toTimeString(),
+        name: form.eventName,
+        date: form.date.toString(),
+        // time: form.eventTime.toTimeString(),
         categories: event.categories,
-        publicEvent: publicEvent,
+        publicEvent: form.publicEvent,
+        address: form.address,
       });
 
       updateEventInGoogleCalendar(updatedEvent);
 
-      navigation.navigate("HomeScreen"); // make go back to event screen eventually
+      navigation.navigate("Home Screen"); // make go back to event screen eventually
     } catch (error) {
       console.log(error);
-      alert('Edit Event failed: ' + error.message);
+      alert("Edit Event failed: " + error.message);
     } finally {
       setLoading(false);
     }
   };
 
-  // split address into two lines
-  const splitAddress = (address) => {
-    const split = address.split(", ");
-    return split;
-  };
-
   // navigate to map screen
-  const onMapPressed = () => {
-    navigation.navigate('MapPicker', {
-      // send event data to map picker screen
-      event: {
-        id: event.id,
-        eventName: eventName,
-        description: eventDescription,
-        //location: location,
-        address: eventAddress,
-        date: eventDate.toDateString(),
-        time: eventTime.toTimeString(),
-        duration: eventDuration,
-        roomNumber: eventRoomNumber,
-        instructions: eventInstructions,
-        clubId: event.clubId,
-        clubName: event.clubName,
-        categories: event.categories,
-        publicEvent: publicEvent,
-      },
-      fromEdit: true,
-    });
-  }
+  // const onMapPressed = () => {
+  //   navigation.navigate("MapPicker", {
+  //     // send event data to map picker screen
+  //     event: {
+  //       id: event.id,
+  //       eventName: eventName,
+  //       description: eventDescription,
+  //       //location: location,
+  //       address: eventAddress,
+  //       date: eventDate.toDateString(),
+  //       time: eventTime.toTimeString(),
+  //       duration: eventDuration,
+  //       roomNumber: eventRoomNumber,
+  //       instructions: eventInstructions,
+  //       clubId: event.clubId,
+  //       categories: event.categories,
+  //       publicEvent: publicEvent,
+  //     },
+  //     fromEdit: true,
+  //   });
+  // };
 
   // delete event
   const deleteThisEvent = async () => {
     deleteEvent(event.id);
     deleteEventFromGoogleCalendar(event);
-    navigation.navigate('HomeScreen');
-  }
+    navigation.navigate("Home Screen");
+  };
 
   return (
-    <View style={styles.container}>
-
-      <Header text={'Edit ' + eventName} back navigation={navigation}/>
-      <KeyboardAwareScrollView 
-        contentContainerStyle={styles.elementsContainer}
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <KeyboardAwareScrollView
         extraHeight={200}
+        contentInsetAdjustmentBehavior="automatic"
       >
-        <CustomText style={styles.textNormal} font="bold" text="Event Name*" />
-        <CustomInput
-          placeholder="Event Name"
-          value={eventName}
-          setValue={setEventName}
-        />
-
-        <CustomText style={[styles.textNormal, {marginTop: 10}]} font="bold" text="Public Event" />
-        <PrivacySwitch toggled={publicEvent} setToggled={setPublicEvent} />
-
-        <CustomText style={styles.textNormal} font="bold" text="Date" />
-        <View style={{ alignItems: 'flex-start'}}> 
-          <DateTimePicker
-            testID="dateTimePicker"
-            value={eventDate}
-            mode={'date'}
-            is24Hour={true}
-            onChange={(event, selectedDate) => setEventDate(selectedDate)}
+        <View style={{ margin: 20 }}>
+          <Form
+            formPropertiesAndTypes={formPropertiesAndTypes}
+            form={form}
+            setForm={setForm}
+            navigation={navigation}
+            clubId={event.clubId}
+            clubCategories={event.categories}
           />
-        </View>
 
-        <CustomText style={styles.textNormal} font="bold" text="Time" />
-        <View style={{ alignItems: 'flex-start' }}> 
-          <DateTimePicker
-            testID="dateTimePicker"
-            value={eventTime}
-            mode={'time'}
-            is24Hour={true}
-            onChange={(event, selectedTime) => setEventTime(selectedTime)}
+          <CustomText
+            style={[styles.smallText, { color: colors.textLight }]}
+            text="* Indicates a required field"
           />
-        </View>
 
-        {/*<CustomText style={[styles.textNormal, {marginVertical: 10}]} font="bold" text="Location" />
-        <TouchableOpacity style={styles.mapStyle} onPress={onMapPressed}>
-          <MapView
-            style={styles.mapStyle}
-            region={event.location}
-          >
-            <Marker
-              coordinate={{
-                latitude: event.location.latitude,
-                longitude: event.location.longitude,
-              }}
+          <View style={styles.buttonContainer}>
+            <CustomButton
+              text="Save Changes"
+              onPress={onEditEventSubmitted}
+              width={140}
             />
-          </MapView>
-          <View style={{position: 'absolute', top: 40, left: 40}} >
-            <Ionicons name="location" size={80} color='rgba(0,0,0,0.5)' />
           </View>
-        </TouchableOpacity>*/}
-        <CustomText style={styles.textNormal} font="bold" text="Location" />
-        {
-          eventAddress ? (
-            <TouchableOpacity onPress={onMapPressed}>
-              <CustomText style={styles.textPressableSmall} text={splitAddress(eventAddress)[0] + "\n" + splitAddress(eventAddress)[1]} />
-            </TouchableOpacity>
-          ) : (
-            <TouchableOpacity onPress={onMapPressed}>
-              <CustomText style={styles.textPressable} text="Select a location" />
-            </TouchableOpacity>
-          )
-        }
-
-        <CustomText style={styles.textNormal} font="bold" text="Duration" />
-        <CustomInput
-          placeholder="Duration"
-          value={eventDuration}
-          setValue={setEventDuration}
-          keyboardType="number-pad"
-          width={190}
-        />
-
-        <CustomText style={styles.textNormal} font="bold" text="Room Number" />
-        <CustomInput
-          placeholder="Room Number"
-          value={eventRoomNumber}
-          setValue={setEventRoomNumber}
-          keyboardType="number-pad"
-          width={190}
-        />
-
-        <CustomText style={styles.textNormal} font="bold" text="Instructions" />
-        <CustomInput
-          placeholder="ex. Up the stairs on your right"
-          value={eventInstructions}
-          setValue={setEventInstructions}
-          keyboardType="default"
-        />
-
-        <CustomText style={styles.textNormal} font="bold" text="Details*" />
-        <View style={styles.largeInputContainer}>
-          <TextInput
-            placeholder="What's happening?"
-            value={eventDescription}
-            onChangeText={setEventDescription}
-            keyboardType="default"
-            maxLength={500}
-            numberOfLines={5}
-            multiline={true}
-            textAlignVertical='top'
-          />
         </View>
-
-        <CustomText style={styles.smallText} text="* Indicates a required field" />
-
-        <View style={styles.buttonContainer}>
-          <CustomButton text="Save Changes" onPress={onEditEventSubmitted} />
-        </View>
-
       </KeyboardAwareScrollView>
-      
-      <CircleButton icon="trash-outline" onPress={() => setModalVisible(true)} position={{ bottom: 0, right: 0 }} size={80} />
+
+      <CircleButton
+        icon="trash-outline"
+        onPress={() => setModalVisible(true)}
+        position={{ bottom: 0, right: 0 }}
+        size={80}
+      />
 
       <Modal isVisible={modalVisible}>
-
-        <View style={styles.modalContainer}>
-          <CustomText style={styles.modalText} text="Are you sure you want to delete the event?" />
+        <View style={[styles.modalContainer, { backgroundColor: colors.card }]}>
+          <CustomText
+            style={styles.modalText}
+            text="Are you sure you want to delete the event?"
+          />
           <View style={styles.modalButtons}>
-            <CustomButton text="Yes" onPress={deleteThisEvent} color={Colors.red}/>
-            <CustomButton text="No" onPress={() => setModalVisible(false)} color={Colors.green}/>
+            <CustomButton
+              text="Yes"
+              onPress={deleteThisEvent}
+              color={colors.red}
+            />
+            <CustomButton
+              text="No"
+              onPress={() => setModalVisible(false)}
+              color={colors.green}
+            />
           </View>
         </View>
-
       </Modal>
     </View>
   );
@@ -288,11 +282,10 @@ const EditEventScreen = ({ route, navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.white,
-    justifyContent: 'flex-start',
+    justifyContent: "flex-start",
   },
   elementsContainer: {
-    justifyContent: 'flex-start',
+    justifyContent: "flex-start",
     marginTop: 20,
     marginLeft: 20,
     gap: 5,
@@ -304,15 +297,14 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   buttonContainer: {
-   width: 400,
-   height: 100,
+    width: 400,
+    height: 100,
   },
   largeInputContainer: {
-    borderColor: Colors.inputBorder,
     borderWidth: 1,
     borderRadius: 20,
     height: 100,
-    width: '90%',
+    width: "90%",
     padding: 15,
     marginBottom: 20,
   },
@@ -320,40 +312,37 @@ const styles = StyleSheet.create({
     fontSize: 20,
     marginLeft: 5,
   },
-  smallText: { // for required fields
+  smallText: {
+    // for required fields
     marginTop: -5,
     fontSize: 14,
-    color: Colors.darkGray,
   },
   textPressable: {
     fontSize: 18,
     marginLeft: 5,
-    color: Colors.buttonBlue,
   },
   textPressableSmall: {
     fontSize: 16,
     marginLeft: 5,
-    color: Colors.buttonBlue,
   },
 
   // modal styles
   modalContainer: {
-    backgroundColor: Colors.white,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     padding: 20,
     margin: 20,
     borderRadius: 20,
   },
   modalText: {
-    textAlign: 'center',
+    textAlign: "center",
     fontSize: 18,
     marginBottom: 20,
   },
   modalButtons: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 80,
-    justifyContent: 'space-between',
+    justifyContent: "space-between",
   },
 });
 export default EditEventScreen;

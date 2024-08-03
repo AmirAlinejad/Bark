@@ -28,7 +28,6 @@ import * as DocumentPicker from "expo-document-picker";
 import handleImageUpload from "./uploadImage";
 // google calendar
 import { apiCalendar } from "../backend/CalendarApiConfig";
-import { get } from "firebase/database";
 
 const emailSplit = async () => {
   // try async storage first
@@ -183,84 +182,92 @@ const getSetMyClubsData = async (setter, setMutedClubs) => {
   // get club data
   const clubData = [];
   let mutedClubs = [];
-  for (let i = 0; i < clubs.length; i++) {
-    const clubId = clubs[i];
-    const clubDocRef = doc(firestore, "schools", schoolKey, "clubData", clubId);
-    const clubDocSnapshot = await getDoc(clubDocRef);
-
-    if (clubDocSnapshot.exists()) {
-      clubData.push(clubDocSnapshot.data());
-
-      // get club member data
-      const clubMemberRef = doc(
+  if (clubs) {
+    for (let i = 0; i < clubs.length; i++) {
+      const clubId = clubs[i];
+      const clubDocRef = doc(
         firestore,
         "schools",
         schoolKey,
-        "clubMemberData",
-        "clubs",
-        clubId,
-        user.id
+        "clubData",
+        clubId
       );
-      const clubMemberSnapshot = await getDoc(clubMemberRef);
+      const clubDocSnapshot = await getDoc(clubDocRef);
 
-      if (clubMemberSnapshot.exists()) {
-        const clubMemberData = clubMemberSnapshot.data();
-        if (clubMemberData.muted) {
-          mutedClubs.push(clubId);
+      if (clubDocSnapshot.exists()) {
+        clubData.push(clubDocSnapshot.data());
+
+        // get club member data
+        const clubMemberRef = doc(
+          firestore,
+          "schools",
+          schoolKey,
+          "clubMemberData",
+          "clubs",
+          clubId,
+          user.id
+        );
+        const clubMemberSnapshot = await getDoc(clubMemberRef);
+
+        if (clubMemberSnapshot.exists()) {
+          const clubMemberData = clubMemberSnapshot.data();
+          if (clubMemberData.muted) {
+            mutedClubs.push(clubId);
+          }
+          if (clubMemberData.unreadMessages) {
+            clubData[i].unreadMessages = clubMemberData.unreadMessages;
+          }
         }
-        if (clubMemberData.unreadMessages) {
-          clubData[i].unreadMessages = clubMemberData.unreadMessages;
-        }
-      }
 
-      // get most recent message from club
-      const clubMessagesRef = collection(
-        firestore,
-        "schools",
-        schoolKey,
-        "chatData",
-        "clubs",
-        clubId,
-        "chats",
-        "chat"
-      );
-      const clubMessagesQuery = query(
-        clubMessagesRef,
-        orderBy("createdAt", "desc"),
-        limit(1)
-      );
-      const clubMessagesSnapshot = await getDocs(clubMessagesQuery);
+        // get most recent message from club
+        const clubMessagesRef = collection(
+          firestore,
+          "schools",
+          schoolKey,
+          "chatData",
+          "clubs",
+          clubId,
+          "chats",
+          "chat"
+        );
+        const clubMessagesQuery = query(
+          clubMessagesRef,
+          orderBy("createdAt", "desc"),
+          limit(1)
+        );
+        const clubMessagesSnapshot = await getDocs(clubMessagesQuery);
 
-      if (!clubMessagesSnapshot.empty) {
-        const messageData = clubMessagesSnapshot.docs[0].data();
-        if (messageData.text == "") {
-          if (messageData.image) {
-            clubData[i].lastMessage = "An image was sent";
-          } else if (messageData.gif) {
-            clubData[i].lastMessage = "A gif was sent";
+        if (!clubMessagesSnapshot.empty) {
+          const messageData = clubMessagesSnapshot.docs[0].data();
+          if (messageData.text == "") {
+            if (messageData.image) {
+              clubData[i].lastMessage = "An image was sent";
+            } else if (messageData.gif) {
+              clubData[i].lastMessage = "A gif was sent";
+            }
+          } else {
+            clubData[i].lastMessage = messageData.text;
+          }
+
+          // most recent message time
+          if (messageData.createdAt) {
+            // say date if message was not sent today
+            const today = new Date();
+            if (messageData.createdAt.toDate().getDate() !== today.getDate()) {
+              clubData[i].lastMessageTime = messageData.createdAt
+                .toDate()
+                .toLocaleDateString();
+            } else {
+              // take out seconds
+              clubData[i].lastMessageTime = messageData.createdAt
+                .toDate()
+                .toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+            }
           }
         } else {
-          clubData[i].lastMessage = messageData.text;
+          clubData[i].lastMessage = "No messages yet";
+          clubData[i].lastMessageTime = null;
         }
-
-        // most recent message time
-        if (messageData.createdAt) {
-          // say date if message was not sent today
-          const today = new Date();
-          if (messageData.createdAt.toDate().getDate() !== today.getDate()) {
-            clubData[i].lastMessageTime = messageData.createdAt
-              .toDate()
-              .toLocaleDateString();
-          } else {
-            // take out seconds
-            clubData[i].lastMessageTime = messageData.createdAt
-              .toDate()
-              .toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-          }
-        }
-      } else {
-        clubData[i].lastMessage = "No messages yet";
-        clubData[i].lastMessageTime = null;
       }
     }
   }
@@ -395,13 +402,15 @@ const joinClub = async (id, privilege, userId) => {
       privilege: privilege ? privilege : "member",
       firstName: userData.firstName,
       lastName: userData.lastName,
-      expoPushToken: userData.expoPushToken,
       muted: false,
       unreadMessages: 0,
       id: userData.id,
     };
     if (userData.profileImg) {
       clubMember.profileImg = userData.profileImg;
+    }
+    if (userData.expoPushToken) {
+      clubMember.expoPushToken = userData.expoPushToken;
     }
 
     const clubMembersDoc = doc(
@@ -965,9 +974,13 @@ const deleteAccount = async () => {
   const clubArray = userData.clubs;
 
   // remove user from all clubs
-  clubArray.forEach((club) => {
-    leaveClubConfirmed(club, id);
-  });
+  if (clubArray) {
+    console.log("Leaving clubs...");
+    console.log(clubArray);
+    clubArray.forEach((club) => {
+      leaveClubConfirmed(club, id);
+    });
+  }
 
   // remove user from database
   const schoolKey = await emailSplit();
@@ -1054,7 +1067,7 @@ const getAttendeesData = async (attendees, setter) => {
   setter(attendeesData);
 };
 
-const getClubCalendarData = async (clubId) => {
+const getClubCalendarData = async (clubId, setter) => {
   const schoolKey = await emailSplit();
 
   const eventsDocRef = collection(
@@ -1071,7 +1084,7 @@ const getClubCalendarData = async (clubId) => {
     return;
   }
 
-  return eventsSnapshot.docs.map((doc) => doc.data());
+  return setter(eventsSnapshot.docs.map((doc) => doc.data()));
 };
 
 // sync events to google calendar
@@ -1263,6 +1276,17 @@ const voteInPoll = async (messageRef, voteId, userId) => {
   }
 };
 
+// save dark mode setting
+const setDarkMode = async (darkMode) => {
+  await AsyncStorage.setItem("darkMode", darkMode);
+};
+
+// get dark mode setting
+const getDarkMode = async () => {
+  const darkMode = await AsyncStorage.getItem("darkMode");
+  return darkMode === "true";
+};
+
 export {
   emailSplit,
   getSetSchoolData,
@@ -1308,4 +1332,6 @@ export {
   deleteEventFromGoogleCalendar,
   updateEventInGoogleCalendar,
   deleteAccount,
+  setDarkMode,
+  getDarkMode,
 };

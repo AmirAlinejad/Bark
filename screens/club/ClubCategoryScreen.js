@@ -1,11 +1,5 @@
 import React, { useEffect, useState, useLayoutEffect } from "react";
-import {
-  View,
-  ScrollView,
-  StyleSheet,
-  RefreshControl,
-  FlatList,
-} from "react-native";
+import { StyleSheet, FlatList } from "react-native";
 // firebase
 import {
   collection,
@@ -16,16 +10,9 @@ import {
 } from "firebase/firestore";
 import { firestore } from "../../backend/FirebaseConfig";
 // my components
-import Header from "../../components/display/Header";
-import SearchBar from "../../components/input/SearchBar";
 import ClubCardVertical from "../../components/club/ClubCardVertical";
-import CustomText from "../../components/display/CustomText";
 // functions
 import { fetchClubs } from "../../functions/backendFunctions";
-// icons
-import Ionicon from "react-native-vector-icons/Ionicons";
-// styles
-import { Colors } from "../../styles/Colors";
 // functions
 import { goToClubScreen } from "../../functions/navigationFunctions";
 
@@ -50,7 +37,7 @@ const ClubCategoryScreen = ({ route, navigation }) => {
         onChangeText: (event) => {
           setSearchText(event.nativeEvent.text);
         },
-        hideWhenScrolling: false
+        hideWhenScrolling: false,
       },
     });
   }, [navigation]);
@@ -136,7 +123,6 @@ const ClubCategoryScreen = ({ route, navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.white,
     paddingHorizontal: 16,
   },
   basicView: { flex: 1, justifyContent: "center", alignItems: "center" },
@@ -161,7 +147,6 @@ const styles = StyleSheet.create({
   },
   noClubsText: {
     fontSize: 25,
-    color: Colors.darkGray,
     marginTop: 10,
   },
 });

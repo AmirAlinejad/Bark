@@ -1,20 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, } from "react";
 // react native components
-import { View, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, StyleSheet } from "react-native";
 // my components
-import CustomButton from '../../components/buttons/CustomButton';
-// maps
-import MapView, { Marker } from 'react-native-maps';
-import Geocoder from 'react-native-geocoding';
-import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete';
-// icons
-import { Ionicons } from '@expo/vector-icons';
+import CustomButton from "../../components/buttons/CustomButton";
+import { GooglePlacesAutocomplete } from "react-native-google-places-autocomplete";
 // styles
-import { Colors } from '../../styles/Colors';
+import { useTheme } from "@react-navigation/native";
 // initialize geocoder
 //Geocoder.init('AIzaSyAoX4MTi2eAw2b_W3RzA35Cy5yjpwQYV3E');
 
 const MapPicker = ({ route, navigation }) => {
+  const { colors } = useTheme();
   // get club name from previous screen
   const { event, fromEdit } = route.params;
   // create states for event info
@@ -31,28 +27,28 @@ const MapPicker = ({ route, navigation }) => {
     };
     if (fromEdit) {
       // go back to edit event screen
-      navigation.navigate('EditEvent', { 
+      navigation.navigate("Edit Event", {
         event: newEvent,
+        fromMap: true,
       });
       return;
     } else {
       // go back to new event screen
-      navigation.navigate('NewEvent', { 
+      navigation.navigate("NewEvent", {
         event: newEvent,
-        
         clubId: event.clubId,
         clubName: event.clubName,
         clubCategories: event.categories,
         fromMap: true,
       });
     }
-  }
+  };
 
   // select a location from autocomplete
   const onLocationSelected = (data, details = null) => {
     // 'details' is provided when fetchDetails = true
     setAddress(data.description);
-    console.log(data.description);
+    console.log("description: ".data.description);
 
     /*// geo code the address
     Geocoder.from(data.description)
@@ -69,13 +65,10 @@ const MapPicker = ({ route, navigation }) => {
       .catch(error => console.warn(error));
 
     console.log(data, details);*/
-  }
+  };
 
   return (
-    <View style={styles.container}>
-      <TouchableOpacity style={styles.backButton} onPress={onSubmitPressed}>
-        <Ionicons name="chevron-back" size={30} color={Colors.black} />
-      </TouchableOpacity>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/*<MapView
         style={styles.biggerMapStyle}
         region={myLocation}
@@ -83,80 +76,103 @@ const MapPicker = ({ route, navigation }) => {
         <Marker coordinate={myLocation} />
       </MapView>*/}
       <GooglePlacesAutocomplete
-        placeholder='Where is the event?'
-        styles={styles.googleAutocomplete}
-        onPress={onLocationSelected}
+        placeholder="Where is the event?"
+        styles={{
+          ...styles.googleAutocomplete,
+          textInput: {
+            height: 30,
+            fontSize: 16,
+            textAlignVertical: "center",
+            backgroundColor: "transparent",
+            borderRadius: 20,
+          },
+          textInputContainer: {
+            margin: 20,
+            paddingTop: 4,
+            backgroundColor: "transparent",
+            borderRadius: 12,
+            borderWidth: 1,
+            borderColor: colors.inputBorder,
+          },
+          listView: {
+            borderWidth: 1,
+            borderRadius: 12,
+            borderColor: colors.inputBorder,
+            backgroundColor: colors.card,
+            marginHorizontal: 20,
+            maxHeight: 268,
+          },
+          predefinedPlacesDescription: {
+            color: colors.text,
+          },
+          separator: {
+            backgroundColor: colors.inputBorder,
+          },
+          description: {
+            color: colors.text,
+          },
+          poweredContainer: {
+            display: "none",
+          },
+        }}
+        onPress={(data, details = null) => {
+          console.log(data, details);
+          setAddress(data.description);
+        }}
         query={{
-          key: 'AIzaSyDbtwDnxvz_M7N8UytcICGgkwpsiY4k72Y',
-          language: 'en',
+          key: "AIzaSyA3tXNlmAh0UWxm-HKH1KlIQcIxi7BqdbU",
+          language: "en",
         }}
       />
+      
       <View style={styles.submitButton}>
         <CustomButton text="Submit" onPress={onSubmitPressed} />
       </View>
     </View>
   );
-}
+};
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
-    backgroundColor: Colors.white,
+    justifyContent: "center",
+    alignItems: "center",
   },
-  biggerMapStyle: {
-    flex: 1,
-    width: '100%',
-    height: '100%',
-  },
+  // biggerMapStyle: {
+  //   flex: 1,
+  //   width: '100%',
+  //   height: '100%',
+  // },
   googleAutocomplete: {
     container: {
-      flex: 1,
-      marginTop: 70,
-    },
-    textInputContainer: {
-      borderBottomWidth: 1,
-      borderColor: Colors.inputBorder,
-      paddingBottom: 10,
-    },
-    textInput: {
-      marginLeft: 60, 
-      marginRight: 20, 
-      height: 30,
-      color: '#5d5d5d',
-      fontSize: 18,
-      textAlignVertical: 'center',
+      width: "100%",
+      marginTop: "35%",
+      zIndex: 1000,
     },
     predefinedPlacesDescription: {
-      color: '#1faadb',
-    },
-    listView: {
-      marginRight: 20,
+      color: "#1faadb",
     },
     separator: {
-      backgroundColor: '#e0e0e0',
+      backgroundColor: "#e0e0e0",
       height: 1,
       marginHorizontal: 20,
-    },
-    poweredContainer: {
-      display: 'none',
     },
   },
   backButton: {
     flex: 1,
-    position: 'absolute',
+    position: "absolute",
     top: 70,
     left: 25,
     zIndex: 1,
   },
   submitButton: {
-    position: 'absolute',
+    position: "absolute",
     left: 0,
     right: 0,
     bottom: 50,
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    width: '100%',
+    alignItems: "center",
+    justifyContent: "flex-end",
+    width: "100%",
     height: 100,
   },
 });

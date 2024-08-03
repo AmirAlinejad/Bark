@@ -5,13 +5,14 @@ import CustomText from "./CustomText";
 // icons
 import { Ionicons } from "@expo/vector-icons";
 // colors
-import { Colors } from "../../styles/Colors";
+import { useTheme } from "@react-navigation/native";
 
 const Chip = ({ text, icon, color, textColor }) => {
+    const { colors } = useTheme();
 
     return (
-        <View style={[styles.container, { backgroundColor: color ? color : Colors.lightGray }]}>
-            {icon && <Ionicons name={icon} size={20} color={Colors.black} />}
+        <View style={[styles.container, { backgroundColor: color ? color : colors.gray }]}>
+            {icon && <Ionicons name={icon} size={20} color={colors.textColor} />}
             <CustomText style={[styles.text, { color: textColor}]} text={text} font="bold"/>
         </View>
     );

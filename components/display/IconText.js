@@ -2,10 +2,6 @@ import React from "react";
 import { View, StyleSheet } from "react-native";
 // my components
 import CustomText from "./CustomText";
-// colors
-import { Colors } from "../../styles/Colors";
-// icons
-import { Ionicons } from "@expo/vector-icons";
 
 const IconText = ({ icon, iconColor, text, onPress }) => {
   return (
@@ -23,7 +19,6 @@ const styles = StyleSheet.create({
   iconCircle: {
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: Colors.primary,
     padding: 12,
     width: 40,
     height: 40,

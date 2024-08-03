@@ -9,7 +9,7 @@ import Header from '../../components/display/Header';
 // icons
 import { MaterialIcons } from '@expo/vector-icons'; // Add this import
 // styles
-import { Colors } from '../../styles/Colors'
+import { useTheme } from '@react-navigation/native';
 
 const GifSelectionScreen = ({ navigation, route }) => { 
   // create states for gifs
@@ -25,6 +25,8 @@ const GifSelectionScreen = ({ navigation, route }) => {
     setGifs(data.map(item => item.images.fixed_height.url));
   };
 
+  const { colors } = useTheme();
+
   useEffect(() => {
     fetchGifs();
   }, [searchTerm]);
@@ -34,17 +36,17 @@ const GifSelectionScreen = ({ navigation, route }) => {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[ styles.container, { backgroundColor: colors.background } ]}>
       <Header navigation={navigation} text="" back />
-      <View style={styles.searchContainer}>
+      <View style={[styles.searchContainer, { borderBottomColor: colors.gray }]}>
 
-        <MaterialIcons name="search" size={24} color={Colors.gray} style={{marginLeft: 5}} />
+        <MaterialIcons name="search" size={24} color={colors.gray} style={{marginLeft: 5}} />
         <TextInput
           style={styles.searchInput}
           value={searchTerm}
           onChangeText={setSearchTerm}
           placeholder="Search for GIFs"
-          placeholderTextColor="gray" // Add placeholder text color
+          placeholderTextColor={colors.textLight}
         />
       </View>
 
@@ -71,13 +73,11 @@ const GifSelectionScreen = ({ navigation, route }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.white,
   },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     borderBottomWidth: 1,
-    borderBottomColor: Colors.lightGray,
     paddingVertical: 10,
     paddingHorizontal: 15,
   },

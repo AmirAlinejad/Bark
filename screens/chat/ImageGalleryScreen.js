@@ -15,7 +15,7 @@ import CustomText from '../../components/display/CustomText';
 // image
 import { Image } from 'expo-image';
 // colors
-import { Colors } from '../../styles/Colors';
+import { useTheme } from '@react-navigation/native';
 
 const windowWidth = Dimensions.get('window').width;
 const numColumns = 3; // Adjust based on your desired layout
@@ -26,6 +26,8 @@ const ImageGalleryScreen = ({ route }) => {
   const navigation = useNavigation();
 
   const [messages, setMessages] = useState([]);
+
+  const { colors } = useTheme();
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -66,14 +68,14 @@ const ImageGalleryScreen = ({ route }) => {
   );
 
   return (
-    <ScrollView style={styles.container} contentInsetAdjustmentBehavior='automatic'>
+    <ScrollView style={[styles.container, { backgroundColor: colors.background, }]} contentInsetAdjustmentBehavior='automatic'>
       <View style={{height: 15}} />
 
       {/* Show if no messages */}
       {imageUrls.length === 0 && (
           <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: 200 }}>
-            <Ionicons name="images" size={100} color={Colors.gray} />
-            <CustomText text="No images found" font='bold' style={{ fontSize: 20, color: Colors.darkGray }} />
+            <Ionicons name="images" size={100} color={colors.gray} />
+            <CustomText text="No images found" font='bold' style={{ fontSize: 20, color: colors.textLight }} />
           </View>
         )}
 
@@ -94,7 +96,6 @@ const ImageGalleryScreen = ({ route }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.lightGray,
   },
   flatlistContainer: {
     alignItems: 'flex-start',

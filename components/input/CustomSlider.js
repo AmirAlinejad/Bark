@@ -1,11 +1,12 @@
 import React from 'react';
 import { View } from 'react-native';
 // colors
-import { Colors } from '../../styles/Colors';
+import { useTheme } from '@react-navigation/native';
 // slider
 import MultiSlider from '@ptomasroos/react-native-multi-slider';
 
 const CustomSlider = ({ values, onValuesChange }) => {
+    const { colors } = useTheme();
     return (
         <MultiSlider
             values={values}
@@ -17,12 +18,12 @@ const CustomSlider = ({ values, onValuesChange }) => {
             borderRadius: 15,
             slipDisplacement: 200,
             }}
-            selectedStyle={{backgroundColor: Colors.black, height: 4}}
-            unselectedStyle={{backgroundColor: Colors.gray, height: 4}}
+            selectedStyle={{backgroundColor: colors.text, height: 4}}
+            unselectedStyle={{backgroundColor: colors.gray, height: 4}}
             markerContainerStyle={{marginTop: 2}}
             customMarker={() => {
             return (
-                <View style={{height: 20, width: 20, borderRadius: 10, backgroundColor: Colors.black}} />
+                <View style={{height: 20, width: 20, borderRadius: 10, backgroundColor: colors.text}} />
             )
             }}
             containerStyle={{height: 30}}

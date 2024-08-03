@@ -21,7 +21,7 @@ import { doc, getDoc, updateDoc } from "firebase/firestore";
 // icons
 import Ionicon from "react-native-vector-icons/Ionicons";
 // colors
-import { Colors } from "../../styles/Colors";
+import { useTheme } from "@react-navigation/native";
 // stack navigator
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 // swipeable
@@ -42,6 +42,8 @@ const MyClubs = ({ navigation }) => {
   const [searchText, setSearchText] = useState("");
   // loading
   const [loading, setLoading] = useState(true);
+
+  const { colors } = useTheme();
 
   const asyncFunc = async () => {
     setLoading(true);
@@ -137,64 +139,75 @@ const MyClubs = ({ navigation }) => {
               setSearchText(event.nativeEvent.text);
             },
             hideWhenScrolling: false,
+            textColor: colors.text,
           },
           headerTransparent: true,
           headerBlurEffect: "light",
           // add club button top right
+          headerLargeTitleStyle: {
+            fontWeight: "bold",
+            fontFamily: "Nunito",
+            fontSize: 32,
+          },
+          headerStyle: {
+            backgroundColor: colors.background,
+            shadowColor: "transparent",
+            elevation: 0,
+          },
         }}
       >
         {() => (
-          <View style={{ flex: 1, backgroundColor: Colors.lightGray }}>
+          <View style={{ flex: 1, backgroundColor: colors.background }}>
             <ScrollView
               style={{ flex: 1 }}
               contentContainerStyle={styles.container}
               contentInsetAdjustmentBehavior="automatic"
             >
-            <GestureHandlerRootView>
-              {
-                // if no clubs found
-                sortedClubs.length === 0 ? (
-                  <View style={styles.noClubsView}>
-                    <Ionicon
-                      name="chatbubbles"
-                      size={100}
-                      color={Colors.mediumGray}
-                    />
-                    <CustomText
-                      style={styles.title}
-                      text="No clubs found."
-                      font="bold"
-                    />
-                  </View>
-                ) : (
-                  // create a chat club card for each club
-                  sortedClubs.map((item, index) => {
-                    return (
-                      <View key={index}>
-                        <ChatClubCard
-                          name={item.clubName}
-                          description={item.clubDescription}
-                          img={item.clubImg}
-                          muted={
-                            mutedClubs !== undefined
-                              ? mutedClubs.includes(item.clubId)
-                              : false
-                          }
-                          toggleMute={() => toggleMute(item.clubId)}
-                          unreadMessages={item.unreadMessages}
-                          lastMessage={item.lastMessage}
-                          lastMessageTime={item.lastMessageTime}
-                          clubId={item.clubId}
-                          navigation={navigation}
-                        />
-                        {index === sortedClubs.length - 1 ? null : (
-                          <View style={styles.separator}></View>
-                        )}
-                      </View>
-                    );
-                  })
-                )
-              }
+              <GestureHandlerRootView>
+                {
+                  // if no clubs found
+                  sortedClubs.length === 0 ? (
+                    <View style={styles.noClubsView}>
+                      <Ionicon
+                        name="chatbubbles"
+                        size={100}
+                        color={colors.gray}
+                      />
+                      <CustomText
+                        style={[styles.title, { color: colors.textLight }]}
+                        text="No clubs found."
+                        font="bold"
+                      />
+                    </View>
+                  ) : (
+                    // create a chat club card for each club
+                    sortedClubs.map((item, index) => {
+                      return (
+                        <View key={index}>
+                          <ChatClubCard
+                            name={item.clubName}
+                            description={item.clubDescription}
+                            img={item.clubImg}
+                            muted={
+                              mutedClubs !== undefined
+                                ? mutedClubs.includes(item.clubId)
+                                : false
+                            }
+                            toggleMute={() => toggleMute(item.clubId)}
+                            unreadMessages={item.unreadMessages}
+                            lastMessage={item.lastMessage}
+                            lastMessageTime={item.lastMessageTime}
+                            clubId={item.clubId}
+                            navigation={navigation}
+                          />
+                          {index === sortedClubs.length - 1 ? null : (
+                            <View style={styles.separator}></View>
+                          )}
+                        </View>
+                      );
+                    })
+                  )
+                }
               </GestureHandlerRootView>
             </ScrollView>
           </View>
@@ -224,7 +237,6 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 25,
     margin: 5,
-    color: Colors.gray,
   },
 });
 

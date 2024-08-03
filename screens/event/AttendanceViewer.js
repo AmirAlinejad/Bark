@@ -19,7 +19,7 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons'; // Ensure r
 // functions
 import { getSetEventAttendance, getAttendeesData } from '../../functions/backendFunctions';
 // styles
-import { Colors } from '../../styles/Colors';
+import { useTheme } from '@react-navigation/native';
 
 const AttendanceViewer = ({ route, navigation }) => {
     const { eventId } = route.params;
@@ -31,6 +31,8 @@ const AttendanceViewer = ({ route, navigation }) => {
     const [overlayUserData, setOverlayUserData] = useState({});
     // loading
     const [loading, setLoading] = useState(true);
+
+    const { colors } = useTheme();
   
     // get attendees on initial render
     useEffect(() => {
@@ -62,7 +64,7 @@ const AttendanceViewer = ({ route, navigation }) => {
                 <View style={{flexDirection: 'row', justifyContent: 'space-between', width: '75%'}}>
                     <View style={{ flex: 1}}>
                         <CustomText style={styles.memberName} text={`${item.firstName} ${item.lastName}`} font="bold"/>
-                        <CustomText style={styles.memberPrivilege} text={`@${item.userName}`} />
+                        <CustomText style={[styles.memberPrivilege, { color: colors.textLight }]} text={`@${item.userName}`} />
                     </View>
                 </View>
             </View>
@@ -71,14 +73,14 @@ const AttendanceViewer = ({ route, navigation }) => {
   };
   
   return (
-    <View style={styles.container}>
+    <View style={[ styles.container, { backgroundColor: colors.background } ]}>
       <Header navigation={navigation} text="Attendees" back={true} />
 
       <FlatList
         data={attendeesData}
         renderItem={renderMember}
         keyExtractor={(item) => item.id}
-        style={{paddingHorizontal: 0, backgroundColor: Colors.white}}
+        style={{paddingHorizontal: 0, backgroundColor: colors.white}}
       />
 
       {/* Overlay */}
@@ -94,7 +96,6 @@ const AttendanceViewer = ({ route, navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.lightGray,
   },
   searchBarView: {
     margin: 15,
@@ -103,7 +104,6 @@ const styles = StyleSheet.create({
   },
   upperContent: {
     justifyContent: 'flex-start',
-    backgroundColor: Colors.white,
     paddingTop: 10,
     borderTopLeftRadius: 30,
     borderTopRightRadius: 30,
@@ -117,12 +117,6 @@ const styles = StyleSheet.create({
   },
   filterText: {
     fontSize: 16,
-  },
-  separator: {
-    height: 1,
-    width: '95%',
-    marginRight: 20,
-    backgroundColor: Colors.lightGray,
   },
   memberContainer: {
     flex: 1,
@@ -138,11 +132,9 @@ const styles = StyleSheet.create({
   memberName: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: Colors.black,
   },
   memberPrivilege: {
     fontSize: 16,
-    color: Colors.darkGray,
     marginRight: -5,
     textTransform: 'capitalize',
   },

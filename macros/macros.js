@@ -19,7 +19,7 @@ export const CLUBCATEGORIES = [
     {
         key:'3', 
         value:'Career', 
-        color: '#ECA400',
+        color: '#edbb32',
         lightColor: '#FFE194',
         icon: 'briefcase',
         emoji: '👔',
@@ -59,7 +59,7 @@ export const CLUBCATEGORIES = [
     {
         key:'8', 
         value:'Sports', 
-        color: '#ECA400',
+        color: '#edbb32',
         lightColor: '#FFE194',
         icon: 'american-football',
         emoji: '🏈',

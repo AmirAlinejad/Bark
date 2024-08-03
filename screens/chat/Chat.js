@@ -39,13 +39,10 @@ import { auth, firestore } from "../../backend/FirebaseConfig";
 // icons
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import Ionicons from "react-native-vector-icons/Ionicons";
-// styles
-import { Colors } from "../../styles/Colors";
 // image
 import { Image } from "expo-image";
 // my components
 import BottomSheetModal from "../../components/chat/BottomSheetModal";
-import CreatePollModal from "../../components/chat/CreatePollModal";
 import ChatMessage from "../../components/chat/ChatMessage";
 import LikesModal from "../../components/chat/LikesModal";
 import Header from "../../components/display/Header";
@@ -68,6 +65,8 @@ import { deleteImageFromStorage } from "../../functions/chatFunctions";
 import { isSameDay } from "../../functions/timeFunctions";
 import { goToClubScreen } from "../../functions/navigationFunctions";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+// colors
+import { useTheme } from "@react-navigation/native";
 
 async function sendPushNotification(
   expoPushToken,
@@ -142,6 +141,8 @@ export default function Chat({ route, navigation }) {
   const flatListRef = useRef(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
 
+  const { colors } = useTheme();
+
   useLayoutEffect(() => {
     navigation.setOptions({
       headerLargeTitle: false,
@@ -156,7 +157,7 @@ export default function Chat({ route, navigation }) {
             </View>
             <CustomText
               text={clubName}
-              style={styles.clubNameText}
+              style={[styles.clubNameText, { color: colors.text }]}
               font="bold"
             />
           </View>
@@ -363,8 +364,29 @@ export default function Chat({ route, navigation }) {
         }
 
         // clear invalid data types from replyTo message
-        let newReplyingToMessage;
+
+        // Create the message object
+        const message = {
+          id: new Date().getTime().toString(),
+          createdAt: new Date(),
+          user: sender,
+          likeCount: 0,
+          pinned: false,
+          likes: [],
+          userId: userData.id,
+        };
+        if (messageText.trim() != "") {
+          message.text = messageText.trim();
+        }
+        if (imageUrl) {
+          message.image = imageUrl;
+        }
+        if (gifUrl) {
+          message.gif = gifUrl;
+        }
+
         if (replyingToMessage) {
+          let newReplyingToMessage;
           newReplyingToMessage = {
             id: replyingToMessage.id,
             createdAt: replyingToMessage.createdAt,
@@ -382,27 +404,7 @@ export default function Chat({ route, navigation }) {
           if (replyingToMessage.gif) {
             newReplyingToMessage.gif = replyingToMessage.gif;
           }
-        }
-
-        // Create the message object
-        const message = {
-          id: new Date().getTime().toString(),
-          createdAt: new Date(),
-          user: sender,
-          likeCount: 0,
-          pinned: false,
-          likes: [],
-          userId: userData.id,
-          replyTo: newReplyingToMessage,
-        };
-        if (messageText.trim() != "") {
-          message.text = messageText.trim();
-        }
-        if (imageUrl) {
-          message.image = imageUrl;
-        }
-        if (gifUrl) {
-          message.gif = gifUrl;
+          message.replyTo = newReplyingToMessage;
         }
 
         // Check for threat words
@@ -580,28 +582,40 @@ export default function Chat({ route, navigation }) {
 
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-      <View style={styles.container}>
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
         {/* Keyboard listener */}
         <KeyboardListener
           onWillShow={openKeyboard}
           onWillHide={closeKeyboard}
         />
 
-        <View style={{ height: 15 }} />
+        <View style={{ height: 39 }} />
+
+        {/* Admin Chat */}
+        {chatName === "admin" && (  
+          <View
+            style={[styles.adminChatBanner, { backgroundColor: colors.red }]}
+          >
+            <Ionicons name="key" size={20} color={colors.white} />
+            <CustomText
+              style={[styles.pinnedMessagesText, { color: colors.white }]}
+              text={`Admin Chat`}
+            />
+          </View>
+        )}
 
         {/* Pinned Messages */}
         {pinnedMessageCount > 0 && (
           <TouchableOpacity
-            style={styles.pinnedMessagesContainer}
-            onPress={goToMessageSearchScreen}
+            style={[
+              styles.pinnedMessagesContainer,
+              { backgroundColor: colors.button },
+            ]}
+            onPress={() => navigateToMessageSearchScreen(true)}
           >
-            <MaterialCommunityIcons
-              name="pin"
-              size={20}
-              color={Colors.darkGray}
-            />
+            <MaterialCommunityIcons name="pin" size={20} color={colors.white} />
             <CustomText
-              style={styles.pinnedMessagesText}
+              style={[styles.pinnedMessagesText, { color: colors.white }]}
               text={`Pinned Messages: ${pinnedMessageCount}`}
             />
           </TouchableOpacity>
@@ -635,11 +649,11 @@ export default function Chat({ route, navigation }) {
             }}
           >
             <View style={{ justifyContent: "center", alignItems: "center" }}>
-              <Ionicons name="chatbubbles" size={100} color={Colors.gray} />
+              <Ionicons name="chatbubbles" size={100} color={colors.gray} />
               <CustomText
                 text="Start chatting!"
                 font="bold"
-                style={{ fontSize: 20, color: Colors.darkGray }}
+                style={{ fontSize: 20, color: colors.textLight }}
               />
             </View>
           </View>
@@ -675,7 +689,18 @@ export default function Chat({ route, navigation }) {
         <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : "height"}
         >
-          <View style={styles.toolbar}>
+          <View
+            style={[
+              styles.toolbar,
+              {
+                shadowColor: 'black',
+                shadowOffset: { width: 0, height: -3 },
+                shadowOpacity: 0.1,
+                borderTopWidth: 0,
+                backgroundColor: colors.card,
+              },
+            ]}
+          >
             {/* Reply Preview */}
             {replyingToMessage && (
               <ReplyPreview
@@ -690,7 +715,7 @@ export default function Chat({ route, navigation }) {
                 style={styles.toolbarButton}
                 onPress={openModal}
               >
-                <Ionicons name="add" size={30} color={Colors.darkGray} />
+                <Ionicons name="add" size={30} color={colors.textLight} />
               </TouchableOpacity>
 
               {/* Modal for toolbar buttons*/}
@@ -742,7 +767,15 @@ export default function Chat({ route, navigation }) {
               />*/}
 
               {/* Container for TextInput and Image Preview */}
-              <View style={styles.inputWithPreview}>
+              <View
+                style={[
+                  styles.inputWithPreview,
+                  {
+                    backgroundColor: colors.background,
+                    borderColor: colors.gray,
+                  },
+                ]}
+              >
                 {tempImageUrl && (
                   <View style={styles.imagePreviewContainer}>
                     <Image
@@ -774,7 +807,7 @@ export default function Chat({ route, navigation }) {
                 )}
 
                 <TextInput
-                  style={styles.input}
+                  style={{ ...styles.input, color: colors.text }}
                   value={messageText}
                   onChangeText={setMessageText}
                   placeholder={
@@ -785,7 +818,7 @@ export default function Chat({ route, navigation }) {
                   multiline={true}
                   maxHeight={120}
                   returnKeyType="done" // Prevents new lines
-                  placeholderTextColor="#888888"
+                  placeholderTextColor={colors.textLight}
                 />
               </View>
 
@@ -796,8 +829,8 @@ export default function Chat({ route, navigation }) {
                   size={24}
                   color={
                     tempImageUrl || gifUrl || messageText
-                      ? Colors.buttonBlue
-                      : Colors.gray
+                      ? colors.button
+                      : colors.gray
                   }
                 />
               </TouchableOpacity>
@@ -808,7 +841,7 @@ export default function Chat({ route, navigation }) {
           <View
             style={{
               height: keyboardIsOpen ? 0 : 10,
-              backgroundColor: Colors.white,
+              backgroundColor: colors.card,
             }}
           />
         </KeyboardAvoidingView>
@@ -828,18 +861,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: "flex-end",
-    backgroundColor: Colors.lightGray,
     paddingTop: 60,
-  },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    marginTop: 50,
-    paddingHorizontal: 10,
-    justifyContent: "space-between",
-    marginBottom: 10,
-    width: "100%",
   },
   headerIcon: {
     padding: 5,
@@ -854,8 +876,6 @@ const styles = StyleSheet.create({
     paddingTop: 15,
     paddingBottom: 15,
     borderTopWidth: 1,
-    borderTopColor: Colors.inputBorder,
-    backgroundColor: Colors.white,
   },
   toolbarContent: {
     flexDirection: "row",
@@ -873,12 +893,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     flex: 1,
     marginLeft: 10,
-    backgroundColor: Colors.lightGray,
-    borderRadius: 20,
+    borderRadius: 16,
+    borderWidth: 1,
   },
   input: {
     flex: 1,
-    borderRadius: 10,
+    borderRadius: 8,
     marginLeft: -5,
     marginTop: 10,
     marginBottom: 5,
@@ -893,13 +913,9 @@ const styles = StyleSheet.create({
   },
   sendButton: {
     padding: 10,
-    backgroundColor: "white",
     borderRadius: 10,
     paddingRight: 15,
     marginLeft: 10,
-  },
-  sendButtonText: {
-    color: Colors.white,
   },
   imagePreview: {
     width: 50, // Adjust size as needed
@@ -912,19 +928,19 @@ const styles = StyleSheet.create({
     top: 5,
   },
   pinnedMessagesContainer: {
+    marginTop: 0,
     flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "flex-start",
     paddingLeft: 10,
-    borderBottomWidth: 1,
+    height: 40,
     gap: 5,
-    borderBottomColor: Colors.inputBorder,
   },
   pinnedMessagesText: {
-    color: "gray",
     marginTop: 0,
     fontSize: 16,
-    textAlign: "left",
     fontStyle: "italic",
-    paddingBottom: 10,
+    textAlignVertical: "center",
   },
   clubNameButton: {
     alignItems: "center",
@@ -940,6 +956,20 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
+    marginBottom: 5,
     flex: 1,
+  },
+
+  // admin chat banner
+  adminChatBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "flex-start",
+    paddingLeft: 10,
+    height: 40,
+    gap: 5,
+  },
+  adminChatBannerText: {
+    color: "white",
   },
 });

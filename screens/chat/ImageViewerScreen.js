@@ -5,7 +5,7 @@ import { useNavigation } from '@react-navigation/native'; // Make sure to import
 // icons
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons'; // Import MaterialIcons
 // styles
-import { Colors } from '../../styles/Colors';
+import { useTheme } from '@react-navigation/native';
 
 export default function ImageViewerScreen({ route }) {
   const { imageUri } = route.params;
@@ -18,6 +18,8 @@ export default function ImageViewerScreen({ route }) {
     navigation.goBack(); // Navigate back to the previous screen in the stack
   };
 
+  const { colors } = useTheme();
+
   return (
     <Modal
       animationType="fade" // Smooth transition
@@ -28,7 +30,7 @@ export default function ImageViewerScreen({ route }) {
       <TouchableOpacity style={styles.container} onPress={closeModalAndGoBack}>
         <Image source={{ uri: imageUri }} style={styles.image} />
         <TouchableOpacity style={styles.closeButton} onPress={closeModalAndGoBack}>
-          <MaterialIcons name="close" size={30} color={Colors.white} />
+          <MaterialIcons name="close" size={30} color={colors.white} />
         </TouchableOpacity>
       </TouchableOpacity>
     </Modal>

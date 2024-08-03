@@ -9,7 +9,7 @@ import { goToChatScreen } from "../../functions/navigationFunctions";
 // icons
 import { Ionicons } from "@expo/vector-icons";
 // colors
-import { Colors } from "../../styles/Colors";
+import { useTheme } from "@react-navigation/native";
 // swipeable
 import { Swipeable, RectButton } from "react-native-gesture-handler";
 
@@ -26,6 +26,7 @@ const ChatClubCard = ({
   lastMessageTime,
   navigation,
 }) => {
+  const { colors } = useTheme();
   onPress = () => {
     goToChatScreen(name, clubId, img, navigation);
   };
@@ -34,7 +35,10 @@ const ChatClubCard = ({
 
   const renderRightActions = (progress, dragX) => {
     return (
-      <RectButton style={styles.rightAction} onPress={toggleMute}>
+      <RectButton
+        style={[styles.rightAction, { backgroundColor: colors.button }]}
+        onPress={toggleMute}
+      >
         <Animated.View
           style={{
             transform: [
@@ -46,13 +50,13 @@ const ChatClubCard = ({
                 }),
               },
             ],
-            opacity: progress
+            opacity: progress,
           }}
         >
           <Ionicons
-            name={muted ? "notifications-off-outline" : "notifications-outline"}
+            name={muted ? "notifications-outline" : "notifications-off-outline"}
             size={30}
-            color={Colors.white}
+            color={colors.white}
           />
         </Animated.View>
       </RectButton>
@@ -71,7 +75,7 @@ const ChatClubCard = ({
         })
       }
     >
-      <View style={styles.clubCard}>
+      <View style={[styles.clubCard, { backgroundColor: colors.background }]}>
         <View style={styles.container}>
           <TouchableOpacity onPress={onPress}>
             <ClubImg clubImg={img} width={100} />
@@ -82,19 +86,19 @@ const ChatClubCard = ({
               {/* club name and description */}
               <View>
                 <CustomText
-                  style={styles.textName}
+                  style={[styles.textName, { color: colors.text }]}
                   text={name}
                   numberOfLines={1}
                   font="bold"
                 />
                 <CustomText
-                  style={styles.textNormal}
+                  style={[styles.textNormal, { color: colors.text }]}
                   text={lastMessage}
                   numberOfLines={3}
                 />
               </View>
               <CustomText
-                style={styles.timeText}
+                style={[styles.timeText, { color: colors.textLight }]}
                 text={lastMessageTime}
                 numberOfLines={1}
               />
@@ -103,11 +107,19 @@ const ChatClubCard = ({
             <View style={styles.cardRight}>
               {/* notification counter */}
               {unreadMessages > 0 && (
-                <View style={styles.unreadMessageCircle}>
+                <View
+                  style={[
+                    styles.unreadMessageCircle,
+                    { backgroundColor: colors.button },
+                  ]}
+                >
                   <CustomText
                     text={unreadMessages}
                     font="bold"
-                    style={styles.notificationCounterText}
+                    style={[
+                      styles.notificationCounterText,
+                      { color: colors.white },
+                    ]}
                   />
                 </View>
               )}
@@ -132,7 +144,7 @@ const styles = StyleSheet.create({
   clubCard: {
     marginBottom: 15,
     flex: 1,
-    backgroundColor: Colors.lightGray,
+
     paddingHorizontal: 12,
   },
   container: {
@@ -160,7 +172,6 @@ const styles = StyleSheet.create({
     padding: 10,
   },
   unreadMessageCircle: {
-    backgroundColor: Colors.red,
     borderRadius: 15,
     padding: 5,
     marginRight: 0,
@@ -181,14 +192,11 @@ const styles = StyleSheet.create({
   },
   timeText: {
     fontSize: 15,
-    color: Colors.darkGray,
   },
   notificationCounterText: {
     fontSize: 15,
-    color: Colors.white,
   },
   rightAction: {
-    backgroundColor: Colors.buttonBlue,
     justifyContent: "center",
     alignItems: "center",
     width: 80,

@@ -1,9 +1,8 @@
 // parent component for main screens
-import React, { useState } from "react";
+import React from "react";
 // screens
 import HomeScreen from "./HomeScreen";
 
-import CalendarScreen from "./calendar/CalendarScreen";
 import ClubCalendar from "./calendar/ClubCalendar";
 
 import EventScreen from "./event/EventScreen";
@@ -14,7 +13,6 @@ import AttendanceScreen from "./event/AttendanceScreen";
 import AttendanceViewer from "./event/AttendanceViewer";
 
 import Chat from "./chat/Chat";
-import AdminChat from "./chat/AdminChat";
 import GifSelectionScreen from "./chat/GifSelectionScreen";
 import ImageGalleryScreen from "./chat/ImageGalleryScreen";
 import ImageViewerScreen from "./chat/ImageViewerScreen";
@@ -22,7 +20,6 @@ import MessageSearchScreen from "./chat/MessageSearchScreen";
 import UserList from "./chat/UserList";
 
 import MyClubs from "./club/MyClubs";
-import ClubList from "./club/ClubList";
 import ClubCategoryScreen from "./club/ClubCategoryScreen";
 import NewClub from "./club/NewClub";
 import ClubScreen from "./club/ClubScreen";
@@ -30,7 +27,6 @@ import InClubView from "./club/InClubView";
 import EditClubScreen from "./club/EditClubScreen";
 import Requests from "./club/Requests";
 
-import Profile from "./profile/Profile";
 import EditProfile from "./profile/EditProfile";
 import FeedbackScreen from "./profile/FeedbackScreen";
 import Settings from "./profile/Settings";
@@ -40,6 +36,8 @@ import QRCodeScreen from "./QRCodeScreen";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { getFocusedRouteNameFromRoute } from "@react-navigation/native";
 import { setParams } from "@react-navigation/native";
+// colors
+import { useTheme } from "@react-navigation/native";
 
 function getHeaderTitle(route) {
   // If the focused route is not found, we need to assume it's the initial screen
@@ -81,8 +79,28 @@ const headerProps = {
 const Stack = createNativeStackNavigator();
 
 const Main = () => {
+  const { colors } = useTheme();
+
   return (
-    <Stack.Navigator initialRouteName={"Home Screen"}>
+    <Stack.Navigator
+      initialRouteName={"Home Screen"}
+      screenOptions={{
+        headerLargeTitleStyle: {
+          fontWeight: "bold",
+          fontFamily: "Nunito",
+          fontSize: 32,
+        },
+        headerBackTitleStyle: {
+          fontFamily: "Nunito",
+          fontSize: 18,
+        },
+        headerStyle: {
+          backgroundColor: colors.background,
+          shadowColor: "transparent",
+          elevation: 0,
+        },
+      }}
+    >
       {/* main */}
       <Stack.Screen
         name="Home Screen"
@@ -98,6 +116,11 @@ const Main = () => {
       <Stack.Screen
         name="ClubCategoryScreen"
         component={ClubCategoryScreen}
+        options={headerProps}
+      />
+       <Stack.Screen
+        name="Club Calendar"
+        component={ClubCalendar}
         options={headerProps}
       />
       <Stack.Screen
@@ -126,16 +149,11 @@ const Main = () => {
         options={headerProps}
       />
       <Stack.Screen
-        name="MapPicker"
+        name="Map Picker"
         component={MapPicker}
         options={headerProps}
       />
       <Stack.Screen name="Chat" component={Chat} options={headerProps} />
-      <Stack.Screen
-        name="AdminChat"
-        component={AdminChat}
-        options={headerProps}
-      />
       <Stack.Screen
         name="GifSelectionScreen"
         component={GifSelectionScreen}
@@ -173,12 +191,12 @@ const Main = () => {
         options={headerProps}
       />
       <Stack.Screen
-        name="EditClub"
+        name="Edit Club"
         component={EditClubScreen}
         options={headerProps}
       />
       <Stack.Screen
-        name="EditEvent"
+        name="Edit Event"
         component={EditEventScreen}
         options={headerProps}
       />
@@ -188,7 +206,7 @@ const Main = () => {
         options={headerProps}
       />
       <Stack.Screen
-        name="QRCodeScreen"
+        name="QR Code"
         component={QRCodeScreen}
         options={headerProps}
       />

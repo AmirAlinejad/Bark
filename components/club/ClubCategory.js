@@ -5,9 +5,11 @@ import { View, StyleSheet, FlatList, TouchableOpacity } from "react-native";
 import ClubCard from "./ClubCard";
 import CustomText from "../display/CustomText";
 // colors
-import { Colors } from "../../styles/Colors";
+import { useTheme } from "@react-navigation/native";
 
 const ClubCategory = ({ name, data, schoolKey, navigation }) => {
+  const { colors } = useTheme();
+
   // go to club category screen
   const goToClubCategoryScreen = () => {
     navigation.navigate("ClubCategoryScreen", {
@@ -20,7 +22,11 @@ const ClubCategory = ({ name, data, schoolKey, navigation }) => {
   return (
     <View style={styles.clubCategory}>
       <View style={{ height: 10 }} />
-      <CustomText style={styles.title} font="bold" text={name} />
+      <CustomText
+        style={[styles.title, { color: colors.text }]}
+        font="bold"
+        text={name}
+      />
       <FlatList
         contentContainerStyle={styles.list}
         data={data}
@@ -42,7 +48,7 @@ const ClubCategory = ({ name, data, schoolKey, navigation }) => {
         style={styles.rightButtonView}
         onPress={goToClubCategoryScreen}
       >
-        <CustomText text="View All" style={styles.viewAll} />
+        <CustomText text="View All" style={{ color: colors.button }} />
       </TouchableOpacity>
     </View>
   );
@@ -63,9 +69,6 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 20,
     marginBottom: 10,
-  },
-  viewAll: {
-    color: Colors.buttonBlue,
   },
 });
 

@@ -33,7 +33,7 @@ import {
   fetchClubMembers,
 } from "../../functions/backendFunctions";
 // styles
-import { Colors } from "../../styles/Colors";
+import { useTheme } from "@react-navigation/native";
 // icons
 import { Ionicons } from "@expo/vector-icons";
 
@@ -53,6 +53,8 @@ const UserList = ({ route, navigation }) => {
   // loading
   const [loading, setLoading] = useState(true);
 
+  const { colors } = useTheme();
+
   useLayoutEffect(() => {
     navigation.setOptions({
       headerTitle: "Members",
@@ -62,6 +64,7 @@ const UserList = ({ route, navigation }) => {
           setSearchQuery(event.nativeEvent.text);
         },
         hideWhenScrolling: false,
+        textColor: colors.text,
       },
     });
   }, [navigation]);
@@ -265,37 +268,37 @@ const UserList = ({ route, navigation }) => {
           >
             <View style={{ flex: 1 }}>
               <CustomText
-                style={styles.memberName}
+                style={[styles.memberName, { color: colors.text }]}
                 text={`${item.firstName} ${item.lastName}`}
                 font="bold"
               />
               <CustomText
-                style={styles.memberPrivilege}
+                style={[styles.memberPrivilege, { color: colors.textLight }]}
                 text={`@${item.userName}`}
               />
             </View>
 
             <CustomText
-              style={[styles.memberPrivilege, { marginTop: 12 }]}
+              style={[styles.memberPrivilege, { marginTop: 12, color: colors.textLight }]}
               text={item.privilege}
             />
           </View>
         </View>
 
         {/* {item.name !== currentUserId && ( */}
-          <TouchableOpacity
-            onPress={() => actionButtonPressed(item)}
-            style={{ marginRight: 5 }}
-          >
-            <Icon name="dots-vertical" size={24} color="black" />
-          </TouchableOpacity>
+        <TouchableOpacity
+          onPress={() => actionButtonPressed(item)}
+          style={{ marginRight: 5 }}
+        >
+          <Icon name="dots-vertical" size={24} color="black" />
+        </TouchableOpacity>
         {/* )} */}
       </View>
     );
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={styles.container}
@@ -309,8 +312,8 @@ const UserList = ({ route, navigation }) => {
                 text={privilege.charAt(0).toUpperCase() + privilege.slice(1)}
                 toggled={selectedPrivilege === privilege}
                 onPress={() => setSelectedPrivilege(privilege)}
-                toggledCol={Colors.red}
-                untoggledCol={Colors.gray}
+                toggledCol={colors.bark}
+                untoggledCol={colors.gray}
               />
             ))}
           </View>
@@ -322,7 +325,7 @@ const UserList = ({ route, navigation }) => {
           data={filteredMembers}
           renderItem={renderMember}
           keyExtractor={(item) => item.id}
-          style={{ paddingHorizontal: 0, backgroundColor: Colors.white }}
+          style={{ paddingHorizontal: 0 }}
           scrollEnabled={false}
         />
       </ScrollView>
@@ -337,7 +340,7 @@ const UserList = ({ route, navigation }) => {
       <Modal isVisible={removeMember !== null}>
         <View style={styles.modalContainer}>
           <CustomText
-            style={styles.modalText}
+            style={{ ...styles.modalText, color: colors.text }}
             text="Are you sure you want to remove this user from the club?"
           />
           <View style={styles.modalButtons}>
@@ -347,12 +350,12 @@ const UserList = ({ route, navigation }) => {
                 removeMemberConfirmed(removeMember);
                 setRemoveMember(null);
               }}
-              color={Colors.red}
+              color={colors.bark}
             />
             <CustomButton
               text="No"
               onPress={() => setRemoveMember(null)}
-              color={Colors.buttonBlue}
+              color={colors.button}
             />
           </View>
         </View>
@@ -364,7 +367,6 @@ const UserList = ({ route, navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.white,
   },
   searchBarView: {
     margin: 15,
@@ -373,7 +375,6 @@ const styles = StyleSheet.create({
   },
   upperContent: {
     justifyContent: "flex-start",
-    backgroundColor: Colors.white,
     paddingTop: 10,
     borderTopLeftRadius: 30,
     borderTopRightRadius: 30,
@@ -392,7 +393,6 @@ const styles = StyleSheet.create({
     height: 1,
     width: "95%",
     marginRight: 20,
-    backgroundColor: Colors.lightGray,
   },
   memberContainer: {
     flex: 1,
@@ -400,7 +400,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     padding: 10,
-    backgroundColor: Colors.white,
   },
   memberInfo: {
     flexDirection: "column",
@@ -409,11 +408,9 @@ const styles = StyleSheet.create({
   memberName: {
     fontSize: 18,
     fontWeight: "bold",
-    color: Colors.black,
   },
   memberPrivilege: {
     fontSize: 16,
-    color: Colors.darkGray,
     marginRight: -5,
     textTransform: "capitalize",
   },
@@ -442,7 +439,6 @@ const styles = StyleSheet.create({
 
   // modal styles
   modalContainer: {
-    backgroundColor: Colors.white,
     justifyContent: "center",
     alignItems: "center",
     padding: 20,

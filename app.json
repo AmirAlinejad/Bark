@@ -2,12 +2,12 @@
   "expo": {
     "name": "Bark",
     "slug": "Bark",
-    "version": "1.0.1",
+    "version": "1.0.8",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "splash": {
-      "image": "./assets/splash.png",
+      "image": "./assets/splashScreen.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
@@ -17,6 +17,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.sbpete.Bark",
+      "buildNumber": "1.0.8",
       "infoPlist": {
         "NSPrivacyAccessedAPITypes": [
           {

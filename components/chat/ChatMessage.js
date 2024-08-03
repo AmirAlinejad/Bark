@@ -8,7 +8,7 @@ import { Ionicons } from "@expo/vector-icons";
 // firebase
 import { getDoc, updateDoc } from "firebase/firestore";
 // styles
-import { Colors } from "../../styles/Colors";
+import { useTheme } from "@react-navigation/native";
 // functions
 import {
   handleLongPress,
@@ -32,6 +32,8 @@ const ChatMessage = ({
   userId,
   navigation,
 }) => {
+  const { colors } = useTheme();
+  
   // toggle like
   const toggleLike = async () => {
     // compares by id
@@ -73,11 +75,11 @@ const ChatMessage = ({
   // get background color based on pinned and user id
   const getBackgroundColor = () => {
     if (message.pinned) {
-      return Colors.chatBubblePinned;
+      return colors.mediumLightGray;
     } else if (message.user._id == userId) {
-      return Colors.lightGray;
+      return;
     } else {
-      return Colors.lightGray;
+      return;
     }
   };
 
@@ -85,7 +87,7 @@ const ChatMessage = ({
   const likeCount = message.likes ? message.likes.length : 0;
 
   // heart icon color
-  const heartColor = isLikedByUser ? "red" : "black";
+  const heartColor = isLikedByUser ? colors.red : colors.darkGray;
   const heartIcon = isLikedByUser ? "heart" : "heart-outline";
 
   return (
@@ -94,7 +96,7 @@ const ChatMessage = ({
         <View style={styles.dateContainer}>
           <View style={styles.dateWrapper}>
             <CustomText
-              style={styles.dateText}
+              style={[styles.dateText, { color: colors.textLight }]}
               text={chatFormatDate(message.createdAt)}
             />
           </View>
@@ -129,11 +131,12 @@ const ChatMessage = ({
           userId={userId}
           messageRef={messageRef}
           setReplyingToMessage={setReplyingToMessage}
+          swipeable={true}
         />
         {!message.voteOptions && (
           <TouchableOpacity onPress={toggleLike} style={styles.likeButton}>
             <Ionicons name={heartIcon} size={24} color={heartColor} />
-            <CustomText style={styles.likeCountText} text={likeCount} />
+            <CustomText style={[styles.likeCountText, { color: colors.textLight }]} text={likeCount} />
           </TouchableOpacity>
         )}
       </TouchableOpacity>
@@ -151,7 +154,6 @@ const styles = StyleSheet.create({
     padding: 5,
   },
   dateText: {
-    color: Colors.darkGray,
     fontSize: 16,
     marginTop: -15,
   },

@@ -1,15 +1,16 @@
 import React from "react";
 // react native components
-import { StyleSheet, TouchableOpacity, View } from "react-native";
+import { StyleSheet, TouchableOpacity } from "react-native";
 // my components
 import CustomText from "../display/CustomText";
 // icons
 import Ionicons from "react-native-vector-icons/Ionicons";
 // colors
-import { Colors } from "../../styles/Colors";
+import { useTheme } from "@react-navigation/native";
 
 const CustomButton = ({ onPress, text, color, icon, width }) => {
-  const backgroundColor = color ? color : Colors.buttonBlue;
+  const { colors } = useTheme();
+  const backgroundColor = color ? color : colors.button;
 
   return (
     <TouchableOpacity
@@ -23,11 +24,15 @@ const CustomButton = ({ onPress, text, color, icon, width }) => {
         <Ionicons
           name={icon}
           size={22}
-          color={Colors.white}
+          color={colors.white}
           style={styles.icon}
         />
       )}
-      <CustomText style={styles.text} text={text} font="bold" />
+      <CustomText
+        style={[styles.text, { color: colors.white }]}
+        text={text}
+        font="bold"
+      />
     </TouchableOpacity>
   );
 };
@@ -40,9 +45,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     marginVertical: 5,
     borderRadius: 25,
+    justifyContent: "center",
   },
   text: {
-    color: Colors.white,
     textAlign: "center",
     alignSelf: "center",
   },

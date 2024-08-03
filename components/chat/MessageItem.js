@@ -16,7 +16,7 @@ import {
 import ProfileImg from "../display/ProfileImg";
 import CustomText from "../display/CustomText";
 // styles
-import { Colors } from "../../styles/Colors";
+import { useTheme } from "@react-navigation/native";
 // icons
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 // image
@@ -38,7 +38,9 @@ const MessageItem = ({
   userId,
   messageRef,
   setReplyingToMessage,
+  swipeable,
 }) => {
+  const { colors } = useTheme();
   const maxReplyToTextLength = 20; // Maximum length of the reply to text
 
   // format date time
@@ -113,6 +115,9 @@ const MessageItem = ({
       outputRange: [-20, 0, 0, 1],
     });
 
+    if (!swipeable) {
+      return;
+    }
     return (
       <View style={styles.rightAction}>
         <Animated.View
@@ -132,6 +137,9 @@ const MessageItem = ({
       inputRange: [0, 50, 100, 101],
       outputRange: [-20, 0, 0, 1],
     });
+    if (!swipeable) {
+      return;
+    }
     return (
       <View style={styles.rightAction}>
         <Animated.View
@@ -153,13 +161,15 @@ const MessageItem = ({
       renderLeftActions={renderLeftActions}
       containerStyle={{ flex: 1 }}
       onSwipeableOpen={(direction) => {
-        if (direction == "right") {
-          pinMessage(messageRef, !item.pinned);
-        } else {
-          setReplyingToMessage(item);
+        if (swipeable) {
+          if (direction == "right") {
+            pinMessage(messageRef, !item.pinned);
+          } else {
+            setReplyingToMessage(item);
+          }
+          // Close the swipeable row
+          swipeableRef.current.close();
         }
-        // Close the swipeable row
-        swipeableRef.current.close();
       }}
     >
       <View style={styles.messageItem}>
@@ -172,15 +182,20 @@ const MessageItem = ({
         <View style={{ flex: 1 }}>
           {item.user._id != userId && (
             <CustomText
-              style={styles.senderName}
+              style={[styles.senderName, { color: colors.text }]}
               text={item.user.first + " " + item.user.last}
-              font="bold"
+              font="light"
             />
           )}
           {/* Display text message */}
           {item.text && (
-            <Hyperlink linkDefault={true} linkStyle={styles.linkStyle}>
-              <Text style={styles.messageText}>{item.text}</Text>
+            <Hyperlink
+              linkDefault={true}
+              linkStyle={[styles.linkStyle, { color: colors.button }]}
+            >
+              <Text style={[styles.messageText, { color: colors.text }]}>
+                {item.text}
+              </Text>
             </Hyperlink>
           )}
           {/* Display image with option to view larger */}
@@ -199,16 +214,21 @@ const MessageItem = ({
             </TouchableOpacity>
           )}
           {item.replyTo && (
-            <View style={styles.replyContextContainer}>
+            <View
+              style={[
+                styles.replyContextContainer,
+                { backgroundColor: colors.gray },
+              ]}
+            >
               <View style={styles.arrowIcon}>
                 <MaterialCommunityIcons
                   name="arrow-left-top"
                   size={24}
-                  color={Colors.darkGray}
+                  color={colors.gray}
                 />
               </View>
               <CustomText
-                style={styles.replyContextLabel}
+                style={[styles.replyContextLabel, { color: colors.text }]}
                 text={`${item.replyTo.user.first} ${item.replyTo.user.last}`}
                 font="bold"
               />
@@ -230,7 +250,7 @@ const MessageItem = ({
               )}
               {item.replyTo.text && (
                 <CustomText
-                  style={styles.replyContextText}
+                  style={[styles.replyContextText, { color: colors.text }]}
                   text={replyToText}
                 />
               )}
@@ -238,28 +258,30 @@ const MessageItem = ({
           )}
           {/* Poll */}
           {item.voteOptions && (
-            <View style={styles.pollContainer}>
+            <View
+              style={[styles.pollContainer, { backgroundColor: colors.gray }]}
+            >
               <CustomText
-                style={styles.pollQuestion}
-                text={item.pollQuestion}
+                style={[styles.pollQuestion, { color: colors.text }]}
+                text="hi"
                 font="bold"
               />
               {item.voteOptions.map((option, index) => (
                 <View key={index}>
                   <CustomText
-                    style={styles.pollOptionText}
+                    style={{ fontSize: 14, color: colors.text }}
                     font="bold"
                     text={option.text}
                   />
                   <View style={styles.pollOption}>
                     <CustomText
-                      style={styles.pollOptionText}
+                      style={{fontSize: 12, color: colors.textLight }}
                       text={`(${votesArray()[option.id]})  `}
                     />
 
                     <View style={styles.pollGraph}>
                       <LinearGradient // Background Linear Gradient
-                        colors={[Colors.purple, Colors.buttonBlue]}
+                        colors={[colors.purple, colors.button]}
                         locations={[0, 1]}
                         start={{ x: 0, y: 0 }}
                         end={{ x: 1, y: 0 }}
@@ -274,14 +296,14 @@ const MessageItem = ({
                       />
                     </View>
 
-                    {!item.voters.includes(userId) && (
+                    {item.voters.includes(userId) && (
                       <View style={styles.pollOptionButton}>
                         <CustomButton
                           text="Vote"
                           onPress={() =>
                             voteInPoll(messageRef, option.id, userId)
                           }
-                          color={Colors.buttonBlue}
+                          color={colors.button}
                         />
                       </View>
                     )}
@@ -291,7 +313,11 @@ const MessageItem = ({
             </View>
           )}
           {/* Display view image text */}
-          <CustomText style={styles.dateTime} text={messageTime} font="light" />
+          <CustomText
+            style={[styles.dateTime, { color: colors.textLight }]}
+            text={messageTime}
+            font="light"
+          />
         </View>
       </View>
     </Swipeable>
@@ -310,10 +336,11 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
   senderName: {
-    fontSize: 16,
+    fontSize: 14,
   },
   dateTime: {
-    color: Colors.darkGray,
+    fontSize: 12,
+    marginTop: 4,
   },
   messageImage: {
     width: 140, // Adjust the size as needed
@@ -326,23 +353,10 @@ const styles = StyleSheet.create({
   messageText: {
     marginTop: 0,
     marginRight: 110,
+    fontSize: 16,
   },
   linkStyle: {
-    color: Colors.buttonBlue,
     textDecorationLine: "underline",
-  },
-
-  // View image text styles
-  viewImageText: {
-    color: Colors.primary,
-    textAlign: "center",
-    marginTop: 5,
-  },
-  viewImageText: {
-    fontSize: 14,
-    color: Colors.primary, // Use a color that indicates it's clickable
-    textDecorationLine: "underline",
-    textAlign: "center", // Center the text below the image
   },
 
   // Reply context styles
@@ -361,7 +375,6 @@ const styles = StyleSheet.create({
     transform: [{ rotate: "180deg" }], // Rotate the arrow icon
   },
   replyContextLabel: {
-    color: Colors.black,
     marginBottom: 5,
   },
   replyContent: {
@@ -375,7 +388,6 @@ const styles = StyleSheet.create({
   },
   replyContextText: {
     marginTop: 0,
-    color: Colors.darkGray,
   },
 
   // Poll styles
@@ -386,23 +398,27 @@ const styles = StyleSheet.create({
     borderRadius: 15,
     marginBottom: 5,
     marginRight: 16,
-    backgroundColor: Colors.gray,
   },
   pollQuestion: {
-    color: Colors.black,
-    marginBottom: 5,
+    marginBottom: 12,
+    marginTop: 16,
+    fontSize: 16,
   },
   pollOption: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: 5,
+    fontSize: 12,
+    gap: 8,
   },
   pollGraph: {
     flex: 1,
     height: 30,
     flexDirection: "row",
     alignItems: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.1)",
+    borderRadius: 8,
   },
   pollGraphBar: {
     width: 200,
@@ -410,12 +426,6 @@ const styles = StyleSheet.create({
     backgroundColor: "black",
     maskImage: "linear-gradient(to right, rgba(0,0,0,0), rgba(0,0,0,1))",
     borderRadius: 8,
-  },
-  pollOptionText: {
-    color: Colors.black,
-  },
-  pollOptionVotes: {
-    color: Colors.darkGray,
   },
   pollOptionButton: {
     alignSelf: "flex-end",

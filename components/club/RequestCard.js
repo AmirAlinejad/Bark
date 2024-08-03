@@ -1,80 +1,89 @@
 // card for accepting or rejecting club requests
-import React from 'react';
+import React from "react";
 // react-native components
-import { View, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, TouchableOpacity } from "react-native";
 // my components
-import CustomText from '../display/CustomText';
-import ProfileImg from '../display/ProfileImg';
+import CustomText from "../display/CustomText";
+import ProfileImg from "../display/ProfileImg";
 // icons
-import Ionicon from 'react-native-vector-icons/Ionicons';
+import Ionicon from "react-native-vector-icons/Ionicons";
 // colors
-import { Colors } from '../../styles/Colors';
-import IconButton from '../buttons/IconButton';
+import { useTheme } from "@react-navigation/native";
 
 const RequestCard = ({ item, onPressAccept, onPressDecline }) => {
+  console.log("item", item);
 
-    console.log('item', item);
+  const { colors } = useTheme();
 
-    return (
-        <View style={styles.container}>
-            <ProfileImg profileImg={item.userPhoto} width={50} />
-            <View style={styles.cardContent}>
-                <View style={{flex: 1, marginLeft: 20}}>
-                    <CustomText style={styles.memberName} font='bold'text={item.userFirstName + ' ' + item.userLastName} />
-                    <CustomText style={styles.memberPrivilege} font='bold' text={`@${item.userName}`} />
-                </View>
-
-                <View style={{flexDirection: 'row'}}>
-                    <TouchableOpacity onPress={onPressAccept} style={styles.greenCircle}>
-                        <Ionicon name="checkmark" size={20} color={Colors.white} />
-                    </TouchableOpacity>
-                    
-                    <TouchableOpacity onPress={onPressDecline} style={styles.redCircle}>
-                        <Ionicon name="close" size={20} color={Colors.white} />
-                    </TouchableOpacity>
-                </View>
-            </View>
+  return (
+    <View style={styles.container}>
+      <ProfileImg profileImg={item.userPhoto} width={50} />
+      <View style={styles.cardContent}>
+        <View style={{ flex: 1, marginLeft: 20 }}>
+          <CustomText
+            style={styles.memberName}
+            font="bold"
+            text={item.userFirstName + " " + item.userLastName}
+          />
+          <CustomText
+            style={[styles.memberPrivilege, { color: colors.textLight }]}
+            font="bold"
+            text={`@${item.userName}`}
+          />
         </View>
-    );
-}
+
+        <View style={{ flexDirection: "row" }}>
+          <TouchableOpacity
+            onPress={onPressAccept}
+            style={[styles.greenCircle, { backgroundColor: colors.green }]}
+          >
+            <Ionicon name="checkmark" size={20} color={colors.white} />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={onPressDecline}
+            style={[styles.redCircle, { backgroundColor: colors.red }]}
+          >
+            <Ionicon name="close" size={20} color={colors.white} />
+          </TouchableOpacity>
+        </View>
+      </View>
+    </View>
+  );
+};
 
 const styles = StyleSheet.create({
-    container: {
-        flexDirection: 'row',
-        width: '100%',
-        backgroundColor: Colors.white,
-        padding: 20,
-        borderRadius: 20,
-    },
-    cardContent: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        flex: 1,
-    },
-    memberName: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        color: Colors.black,
-      },
-      memberPrivilege: {
-        fontSize: 16,
-        color: Colors.darkGray,
-        marginRight: -5,
-        textTransform: 'capitalize',
-      },
-      greenCircle: {
-        backgroundColor: Colors.green,
-        borderRadius: 50,
-        padding: 10,
-        margin: 5,
-      },
-    redCircle: {
-        backgroundColor: Colors.red,
-        borderRadius: 50,
-        padding: 10,
-        margin: 5,
-    },
+  container: {
+    flexDirection: "row",
+    width: "100%",
+    padding: 20,
+    borderRadius: 20,
+  },
+  cardContent: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    flex: 1,
+  },
+  memberName: {
+    fontSize: 18,
+    fontWeight: "bold",
+  },
+  memberPrivilege: {
+    fontSize: 16,
+    marginRight: -5,
+    textTransform: "capitalize",
+  },
+  greenCircle: {
+    borderRadius: 50,
+    padding: 10,
+    margin: 5,
+  },
+  redCircle: {
+    borderRadius: 50,
+    padding: 10,
+    margin: 5,
+  },
 });
 
 export default RequestCard;

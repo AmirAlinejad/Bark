@@ -6,7 +6,7 @@ import { Ionicons } from "@expo/vector-icons";
 // my components
 import CustomText from "../display/CustomText";
 // styles
-import { Colors } from "../../styles/Colors";
+import { useTheme } from "@react-navigation/native";
 
 const ToggleButton = ({
   text,
@@ -16,6 +16,8 @@ const ToggleButton = ({
   untoggledCol,
   icon,
 }) => {
+  const { colors } = useTheme();
+  
   const containerStyle = [
     styles.container,
     // set bg color if toggled
@@ -38,14 +40,14 @@ const ToggleButton = ({
   // set text color if toggled
   const textStyle = [
     styles.text,
-    toggled ? { color: Colors.white } : { color: Colors.darkGray },
+    toggled ? { color: colors.white } : { color: colors.textLight },
   ];
 
   // icon type
   const iconType = toggled ? icon : icon + "-outline";
 
   // icon color
-  const iconColor = toggled ? Colors.white : Colors.darkGray;
+  const iconColor = toggled ? colors.white : colors.textLight;
 
   return (
     <Pressable style={containerStyle} onPress={onPress}>

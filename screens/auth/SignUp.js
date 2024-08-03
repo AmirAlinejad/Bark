@@ -1,41 +1,52 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 // react native components
-import { View, StyleSheet, ActivityIndicator } from 'react-native';
-import { Image } from 'expo-image';
+import {
+  View,
+  StyleSheet,
+  ActivityIndicator,
+  TouchableOpacity,
+} from "react-native";
+import { Image } from "expo-image";
 // assets
-import Logo from '../../assets/logo.png';
-// styles
-import { Colors } from '../../styles/Colors';
+import Logo from "../../assets/logo.png";
+// async storage
+import AsyncStorage from "@react-native-async-storage/async-storage";
 // my components
-import CustomText from '../../components/display/CustomText';
-import CustomInput from '../../components//input/CustomInput';
-import CustomButton from '../../components/buttons/CustomButton';
+import CustomText from "../../components/display/CustomText";
+import CustomInput from "../../components//input/CustomInput";
+import CustomButton from "../../components/buttons/CustomButton";
 // backend
-import { createUserWithEmailAndPassword, sendEmailVerification } from 'firebase/auth';
+import {
+  createUserWithEmailAndPassword,
+  sendEmailVerification,
+} from "firebase/auth";
 // keyboard aware scroll view
-import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 // firebase
-import { doc, setDoc } from 'firebase/firestore';
-import { FIREBASE_AUTH, firestore } from '../../backend/FirebaseConfig';
+import { doc, setDoc } from "firebase/firestore";
+import { FIREBASE_AUTH, firestore } from "../../backend/FirebaseConfig";
+// theme
+import { useTheme } from "@react-navigation/native";
 
 const SignUp = ({ route, navigation }) => {
-
   const expoPushToken = route.params?.expoPushToken;
   console.log(expoPushToken);
 
   // state variables
-  const [userName, setUserName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [passwordVisible, setPasswordVisible] = useState(false);
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
+  const [userName, setUserName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [passwordVisible, setPasswordVisible] = useState(true);
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   // loading and error handling
   const [loading, setLoading] = useState(false);
-  const [errorMessage, setErrorMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState("");
   // firebase
   const auth = FIREBASE_AUTH;
+
+  const { colors } = useTheme();
 
   // password visibility
   const togglePasswordVisibility = () => {
@@ -44,75 +55,98 @@ const SignUp = ({ route, navigation }) => {
 
   // go to sign in page
   const onLoginIn = () => {
-    navigation.navigate('SignIn');
+    navigation.navigate("SignIn");
   };
 
   // sign up
   const onSignUpPressed = async (e) => {
     setLoading(true);
-    setErrorMessage('');
+    setErrorMessage("");
     e.preventDefault();
 
     if (!userName || !email || !password || !confirmPassword) {
-      setErrorMessage('Please fill in all fields');
+      setErrorMessage("Please fill in all fields");
       setLoading(false);
       return;
     }
 
     if (password !== confirmPassword) {
-      setErrorMessage('Passwords do not match');
+      setErrorMessage("Passwords do not match");
       setLoading(false);
       return;
     }
 
-    if (!email.endsWith('.edu')) {
-      setErrorMessage('Email must end with .edu');
+    if (!email.endsWith(".edu")) {
+      setErrorMessage("Email must end with .edu");
       setLoading(false);
       return;
     }
 
     try {
       // create user with email and password
-      const response = await createUserWithEmailAndPassword(auth, email, password);
+      const response = await createUserWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
       // send email verification
       await sendEmailVerification(response.user);
       // update user profile in auth
-      const emailSplit = email.split('@')[1].split('.')[0];
+      const emailSplit = email.split("@")[1].split(".")[0];
 
       // create user in firestore
-      await setDoc(doc(firestore, 'schools', emailSplit, 'userData', response.user.uid), {
+      const user = {
         userName: userName,
         email: email,
         firstName: firstName,
         lastName: lastName,
-        expoPushToken: expoPushToken,
         id: response.user.uid,
-      });
+      };
+      if (expoPushToken !== undefined) {
+        user.expoPushToken = expoPushToken;
+      }
+      await setDoc(
+        doc(firestore, "schools", emailSplit, "userData", response.user.uid),
+        {
+          ...user,
+        }
+      );
+
+      // clear async storage
+      await AsyncStorage.clear();
 
       // navigate to verify school
-      navigation.navigate('VerifySchool');
+      navigation.navigate("VerifySchool");      
     } catch (error) {
       console.log(error);
-      setErrorMessage('Signup failed: ' + error.message);
+      setErrorMessage("Signup failed: " + error.message);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <View style={styles.container}>
-      <KeyboardAwareScrollView 
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <KeyboardAwareScrollView
         contentContainerStyle={styles.elementsContainer}
-        style={{width: '100%'}}
+        style={{ width: "100%" }}
       >
         <View style={styles.topElements}>
           <Image source={Logo} style={styles.logo} />
         </View>
 
         <View style={styles.signInContainer}>
-          <CustomText style={styles.title} text='Nice to meet you.' font='bold'/>
+          <CustomText
+            style={styles.title}
+            text="Nice to meet you."
+            font="bold"
+          />
 
-          <CustomInput placeholder="School Email" value={email} setValue={setEmail} />
+          <CustomInput
+            placeholder="School Email"
+            value={email}
+            setValue={setEmail}
+          />
           <CustomInput
             placeholder="Password"
             value={password}
@@ -127,24 +161,46 @@ const SignUp = ({ route, navigation }) => {
             secureTextEntry={passwordVisible}
             onEyeIconPress={togglePasswordVisibility}
           />
-          <CustomInput placeholder="Username" value={userName} setValue={setUserName} />
-          <CustomInput placeholder="First Name" value={firstName} setValue={setFirstName} />
-          <CustomInput placeholder="Last Name" value={lastName} setValue={setLastName} />
+          <CustomInput
+            placeholder="Username"
+            value={userName}
+            setValue={setUserName}
+          />
+          <CustomInput
+            placeholder="First Name"
+            value={firstName}
+            setValue={setFirstName}
+          />
+          <CustomInput
+            placeholder="Last Name"
+            value={lastName}
+            setValue={setLastName}
+          />
 
           {errorMessage ? (
             <CustomText style={styles.errorMessage} text={errorMessage} />
           ) : null}
 
           {loading ? (
-            <ActivityIndicator size="large" />
+            <ActivityIndicator size="large" color={colors.gray} />
           ) : (
-            <CustomButton text="Sign Up" onPress={onSignUpPressed} bgColor={'#FF5349'} />
+            <CustomButton
+              text="Sign Up"
+              width={93}
+              onPress={onSignUpPressed}
+              bgColor={"#FF5349"}
+            />
           )}
 
-          <CustomText style={styles.signupText} text={'Have an account already?'} />
-          <CustomText style={styles.signupLink} onPress={onLoginIn} text="Log In" />
-        
-          <View style={{height: 50}} /> 
+          <CustomText
+            style={styles.signupText}
+            text={"Have an account already?"}
+          />
+          <TouchableOpacity onPress={onLoginIn}>
+            <CustomText style={styles.signupLink} text="Log In" />
+          </TouchableOpacity>
+
+          <View style={{ height: 50 }} />
         </View>
       </KeyboardAwareScrollView>
     </View>
@@ -154,14 +210,14 @@ const SignUp = ({ route, navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.lightGray,
   },
   elementsContainer: {
-    width: '100%',
-    height: 'auto',
+    width: "100%",
+    height: "auto",
   },
   topElements: {
-    justifyContent: 'center',
+    justifyContent: "center",
+    marginTop: 40,
     marginLeft: 40,
   },
   signInContainer: {
@@ -182,16 +238,16 @@ const styles = StyleSheet.create({
   },
   signupText: {
     fontSize: 16,
-    color: 'black',
+    color: "black",
     marginTop: 15,
   },
   signupLink: {
     marginTop: 5,
-    color: '#3498db',
+    color: "#3498db",
     fontSize: 16,
   },
   errorMessage: {
-    color: 'red',
+    color: "red",
     marginBottom: 10,
   },
 });

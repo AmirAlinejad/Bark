@@ -29,7 +29,7 @@ import {
   updateDoc,
 } from "firebase/firestore";
 // colors
-import { Colors } from "../../styles/Colors";
+import { useTheme } from "@react-navigation/native";
 // icons
 import { Ionicons } from "@expo/vector-icons";
 // my components
@@ -58,6 +58,8 @@ const BottomSheetModal = ({
   const [gifs, setGifs] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
 
+  const { colors } = useTheme();
+
   // get images from async storage
   useEffect(() => {
     const getImages = async () => {
@@ -83,8 +85,8 @@ const BottomSheetModal = ({
 
   // options data
   const options = [
-    { key: "Photo", onPress: () => setModalMode("upload"), icon: "image" },
-    { key: "GIF", onPress: () => setModalMode("gif"), icon: "film" },
+    { key: "Photo", onPress: () => setModalMode("Photo"), icon: "image" },
+    { key: "GIF", onPress: () => setModalMode("GIF"), icon: "film" },
     {
       key: "Camera",
       onPress: () => {
@@ -101,24 +103,29 @@ const BottomSheetModal = ({
       },
       icon: "document",
     },
-    { key: "Poll", onPress: () => setModalMode("poll"), icon: "ticket" },
+    { key: "Poll", onPress: () => setModalMode("Poll"), icon: "ticket" },
     { key: "Cancel", onPress: onClose, cancel: true },
   ];
 
   const renderItem = ({ item }) => {
     return item.cancel ? (
       <TouchableOpacity style={styles.option} onPress={item.onPress}>
-        <Ionicons name="close" size={24} color={Colors.red} />
-        <Text style={styles.cancelButtonText}>{item.key}</Text>
+        <Ionicons name="close" size={24} color={colors.bark} />
+        <Text style={[styles.cancelButtonText, { color: colors.bark }]}>
+          {item.key}
+        </Text>
       </TouchableOpacity>
     ) : (
       <TouchableOpacity style={styles.option} onPress={item.onPress}>
         <Ionicons
           name={item.icon || "image"}
           size={24}
-          color={Colors.darkGray}
+          color={modalMode === item.key ? colors.button : colors.textLight}
         />
-        <Text style={styles.optionText}>{item.key}</Text>
+        <CustomText
+          style={[styles.optionText, { color: modalMode === item.key ? colors.button : colors.textLight }]}
+          text={item.key}
+        />
       </TouchableOpacity>
     );
   };
@@ -130,19 +137,16 @@ const BottomSheetModal = ({
       return (
         <TouchableOpacity
           style={{
-            width: '33%',
-            backgroundColor: "darkgray",
+            width: "33%",
+            aspectRatio: 1,
+            backgroundColor: colors.gray,
             margin: 1,
             alignItems: "center",
             justifyContent: "center",
           }}
           onPress={onUploadImage}
         >
-          <Ionicons
-            name="camera"
-            size={50}
-            color={Colors.darkGray}
-          />
+          <Ionicons name="camera" size={50} color={colors.darkGray} />
         </TouchableOpacity>
       );
     }
@@ -150,15 +154,16 @@ const BottomSheetModal = ({
     return (
       <TouchableOpacity
         style={{
-          width: '33%',
-          backgroundColor: "darkgray",
+          width: "33%",
+          aspectRatio: 1,
+          backgroundColor: colors.gray,
           margin: 1,
         }}
         onPress={() => setImageAndClose(item)}
       >
         <Image
           source={{ uri: item }}
-          style={{ width: '100%', aspectRatio: 1 }}
+          style={{ width: "100%", aspectRatio: 1 }}
         />
       </TouchableOpacity>
     );
@@ -183,11 +188,7 @@ const BottomSheetModal = ({
           value={newVoteOptionText}
         />
         <View style={{ justifyContent: "center" }}>
-          <IconButton
-            onPress={onAddOption}
-            color={Colors.buttonBlue}
-            icon="add"
-          />
+          <IconButton onPress={onAddOption} color={colors.button} icon="add" />
         </View>
       </View>
     );
@@ -303,8 +304,8 @@ const BottomSheetModal = ({
       onClose={onClose}
       ContentModal={
         <TouchableWithoutFeedback style={styles.overlay}>
-          <View style={styles.modal}>
-            <View style={styles.bar} />
+          <View style={[styles.modal, { backgroundColor: colors.card }]}>
+            <View style={[styles.bar, { backgroundColor: colors.lightGray }]} />
 
             {/* Option select */}
             <View style={{ height: 160 }}>
@@ -317,12 +318,12 @@ const BottomSheetModal = ({
             </View>
 
             <View
-              style={{ width: "100%", height: 1, backgroundColor: Colors.gray }}
+              style={{ width: "100%", height: 1, backgroundColor: colors.gray }}
             />
 
             {/* Content */}
             {/* eventually make last square a button to upload image */}
-            {modalMode === "upload" && (
+            {modalMode === "Photo" && (
               <FlatList
                 data={[...images, "add"]}
                 keyExtractor={(item, index) => index.toString()}
@@ -331,7 +332,7 @@ const BottomSheetModal = ({
                 style={{ width: "100%" }}
               />
             )}
-            {modalMode === "gif" && (
+            {modalMode === "GIF" && (
               <View style={{ width: "100%" }}>
                 <View style={styles.searchContainer}>
                   <SearchBar
@@ -357,7 +358,7 @@ const BottomSheetModal = ({
                 <Image source={{ uri: GiphyAttribution }} />
               </View>
             )}
-            {modalMode === "poll" && (
+            {modalMode === "Poll" && (
               <ScrollView
                 style={{
                   flex: 1,
@@ -379,7 +380,7 @@ const BottomSheetModal = ({
                 >
                   <View style={{ flex: 1 }}>
                     <CustomText
-                      style={{ fontSize: 24, color: Colors.darkGray }}
+                      style={{ fontSize: 24, color: colors.textLight }}
                       text="Question"
                     />
                     <CustomInput
@@ -393,7 +394,7 @@ const BottomSheetModal = ({
 
                 {/* List of options */}
                 <CustomText
-                  style={{ fontSize: 24, color: Colors.darkGray }}
+                  style={{ fontSize: 24, color: colors.textLight }}
                   text="Answers"
                 />
                 <FlatList
@@ -424,7 +425,6 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
   },
   modal: {
-    backgroundColor: Colors.white,
     width: "100%",
     height: 800,
     justifyContent: "flex-start",
@@ -437,7 +437,6 @@ const styles = StyleSheet.create({
     marginTop: 15,
     width: 50,
     height: 5,
-    backgroundColor: Colors.lightGray,
     borderRadius: 5,
     alignSelf: "center",
     marginBottom: 10,
@@ -448,7 +447,7 @@ const styles = StyleSheet.create({
     margin: 5,
     padding: 10,
     borderWidth: 1,
-    borderColor: Colors.lightGray,
+    borderColor: "#cccccc",
   },
   voteOption: {
     marginVertical: 5,
@@ -463,17 +462,16 @@ const styles = StyleSheet.create({
   },
   optionText: {
     fontSize: 18,
-    color: Colors.darkGray,
   },
   cancelButtonText: {
     fontSize: 18,
-    color: Colors.red,
   },
   searchContainer: {
     alignSelf: "center",
     width: 460,
     marginLeft: 90,
-    paddingVertical: 12,
+    paddingTop: 12,
+    paddingBottom: 4,
     paddingHorizontal: 20,
   },
 });

@@ -1,6 +1,6 @@
 import React, { memo } from "react";
 // react native components
-import { View, StyleSheet, TouchableOpacity } from "react-native";
+import { StyleSheet, TouchableOpacity } from "react-native";
 // functions
 import { goToClubScreen } from "../../functions/navigationFunctions";
 // my components

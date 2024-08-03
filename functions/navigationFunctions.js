@@ -26,8 +26,8 @@ export const goToChatScreen = async (clubName, clubId, clubImg, navigation) => {
 export const goToAdminChatScreen = async (club, navigation) => {
     const schoolKey = await emailSplit();
 
-    navigation.navigate("Chat", {
-        chatName: 'adminChat',
+    navigation.push("Chat", {
+        chatName: 'admin',
         name: club.clubName,
         id: club.clubId,
         img: club.clubImg,

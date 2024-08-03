@@ -1,14 +1,22 @@
-import React from 'react';
-import { Modal, View, StyleSheet, TouchableOpacity, FlatList } from 'react-native';
+import React from "react";
+import {
+  Modal,
+  View,
+  StyleSheet,
+  TouchableOpacity,
+  FlatList,
+} from "react-native";
 // my components
-import CustomText from '../display/CustomText';
-import ProfileImg from '../display/ProfileImg';
+import CustomText from "../display/CustomText";
+import ProfileImg from "../display/ProfileImg";
 // icons
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons } from "@expo/vector-icons";
 // colors
-import { Colors } from '../../styles/Colors';
+import { useTheme } from "@react-navigation/native";
 
-const LikesModal = ({ isVisible, onClose, userNames, profileImages }) => { // change to make users contain usernames and profile pictures
+const LikesModal = ({ isVisible, onClose, userNames, profileImages }) => {
+  const { colors } = useTheme();
+  // change to make users contain usernames and profile pictures
 
   // convert set of profile images to array
   const profileImagesArray = Array.from(profileImages);
@@ -27,14 +35,22 @@ const LikesModal = ({ isVisible, onClose, userNames, profileImages }) => { // ch
             renderItem={({ item, index }) => (
               <View style={styles.userDetails}>
                 <ProfileImg profileImg={item} width={50} />
-                <Ionicons name="heart" size={20} color={Colors.red} style={styles.heartIcon} />
+                <Ionicons
+                  name="heart"
+                  size={20}
+                  color={colors.red}
+                  style={styles.heartIcon}
+                />
               </View>
             )}
             keyExtractor={(item, index) => index.toString()}
             ItemSeparatorComponent={() => <View style={{ width: 10 }} />}
             horizontal={true}
           />
-          <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+          <TouchableOpacity
+            onPress={onClose}
+            style={[styles.closeButton, { backgroundColor: colors.lightGray }]}
+          >
             <CustomText text="Close" font="bold" />
           </TouchableOpacity>
         </View>
@@ -46,18 +62,18 @@ const LikesModal = ({ isVisible, onClose, userNames, profileImages }) => { // ch
 const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
   },
   modalContent: {
-    alignItems: 'center',
-    width: '90%', // Adjust
+    alignItems: "center",
+    width: "90%", // Adjust
     margin: 20,
-    backgroundColor: 'white',
+    backgroundColor: "white",
     borderRadius: 25,
     padding: 20,
-    shadowColor: Colors.black,
+    shadowColor: "black",
     shadowOffset: {
       width: 0,
       height: 2,
@@ -73,15 +89,14 @@ const styles = StyleSheet.create({
     padding: 5,
   },
   closeButton: {
-    alignItems: 'center',
+    alignItems: "center",
     marginTop: 20,
-    backgroundColor: Colors.lightGray,
     paddingVertical: 10,
     paddingHorizontal: 25,
     borderRadius: 20,
   },
   heartIcon: {
-    position: 'absolute',
+    position: "absolute",
     right: 0,
     bottom: 0,
   },

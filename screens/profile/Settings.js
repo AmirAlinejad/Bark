@@ -1,16 +1,14 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useContext, useEffect } from "react";
 import {
   View,
   StyleSheet,
   ScrollView,
-  FlatList,
-  Switch,
   Linking,
 } from "react-native";
 import Modal from "react-native-modal";
 import { getAuth } from "firebase/auth";
 import { signOut } from "firebase/auth";
-import { Colors } from "../../styles/Colors";
+import { useTheme } from "@react-navigation/native";
 import {
   getSetUserData,
   deleteAccount,
@@ -21,14 +19,14 @@ import {
   checkToggleSyncGoogleCalendar,
   toggleSyncGoogleCalendar,
   signInToGoogleCalendar,
+  setDarkMode,
 } from "../../functions/backendFunctions";
-import Header from "../../components/display/Header";
-import IconText from "../../components/display/IconText";
-import IconButton from "../../components/buttons/IconButton";
+
 import CustomText from "../../components/display/CustomText";
 import CustomButton from "../../components/buttons/CustomButton";
 import SettingsSection from "../../components/display/SettingsSection";
-import { dateForObj } from "../../functions/timeFunctions";
+import { GlobalContext } from "../../App";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const Settings = ({ navigation }) => {
   const [userData, setUserData] = useState(null);
@@ -40,6 +38,16 @@ const Settings = ({ navigation }) => {
   // toggle sync to google calendar
   const [syncGoogleCalendar, setSyncGoogleCalendar] = useState(false);
 
+  const [state, setState] = useContext(GlobalContext);
+
+  const switchTheme = () => {
+    const newTheme = state.theme === "light" ? "dark" : "light";
+    setDarkMode(newTheme === "dark" ? "true" : "false");
+    setState({ ...state, theme: newTheme });
+  };
+
+  const { colors } = useTheme();
+
   // data for settings flatlist
   const settingsData = [
     {
@@ -50,7 +58,7 @@ const Settings = ({ navigation }) => {
           icon: "create-outline",
           text: "Edit Profile",
           onPress: () => {
-            navigation.navigate("EditProfile", {
+            navigation.navigate("Edit Profile", {
               userData: userData,
               navigation: navigation,
             });
@@ -69,31 +77,31 @@ const Settings = ({ navigation }) => {
     {
       title: "App Settings",
       data: [
-        {
-          id: "7",
-          switch: true,
-          icon: "calendar-outline",
-          text: "Sync to Google Calendar",
-          onPress: () => {
-            if (syncGoogleCalendar) {
-              unSyncFromGoogleCalendar();
-              setSyncGoogleCalendar(false);
-            } else {
-              syncToGoogleCalendar();
-              setSyncGoogleCalendar(true);
-            }
-          },
-          value: syncGoogleCalendar,
-        },
+        // {
+        //   id: "7",
+        //   switch: true,
+        //   icon: "calendar-outline",
+        //   text: "Sync to Google Calendar",
+        //   onPress: () => {
+        //     if (syncGoogleCalendar) {
+        //       unSyncFromGoogleCalendar();
+        //       setSyncGoogleCalendar(false);
+        //     } else {
+        //       syncToGoogleCalendar();
+        //       setSyncGoogleCalendar(true);
+        //     }
+        //   },
+        //   value: syncGoogleCalendar,
+        // },
         {
           id: "8",
           switch: true,
           icon: "moon-outline",
           text: "Dark Mode",
           onPress: () => {
-            console.log("dark mode");
+            switchTheme();
           },
-          value: null,
+          value: state.theme === "dark",
         },
         {
           id: "3",
@@ -130,7 +138,7 @@ const Settings = ({ navigation }) => {
       ],
     },
     {
-      title: ' ',
+      title: " ",
       data: [
         {
           id: "9",
@@ -139,7 +147,7 @@ const Settings = ({ navigation }) => {
           onPress: () => {
             setDeleteAccountModal(true);
           },
-          color: Colors.red,
+          color: colors.red,
         },
       ],
     },
@@ -200,7 +208,7 @@ const Settings = ({ navigation }) => {
   const deleteAccountFunc = () => {
     deleteAccount();
     setDeleteAccountModal(false);
-    navigation.navigate("SignIn");
+    navigation.navigate("Onboarding");
   };
 
   // log out
@@ -208,7 +216,12 @@ const Settings = ({ navigation }) => {
     const auth = getAuth();
     signOut(auth)
       .then(() => {
-        navigation.navigate("SignIn");
+        navigation.navigate("Onboarding");
+        setLogoutModal(false);
+        // set to light mode
+        if (state.theme === "dark") {
+          switchTheme();
+        }
       })
       .catch((error) => {
         console.error("Error signing out:", error);
@@ -223,45 +236,44 @@ const Settings = ({ navigation }) => {
   return (
     <View style={{ flex: 1 }}>
       <ScrollView
-        style={{ backgroundColor: Colors.lightGray }}
+        style={{ backgroundColor: colors.background }}
         contentInsetAdjustmentBehavior="automatic"
       >
         <SettingsSection data={settingsData} />
       </ScrollView>
 
       <Modal isVisible={deleteAccountModal}>
-        <View style={styles.modalContainer}>
+        <View style={[styles.modalContainer, { backgroundColor: colors.card }]}>
           <CustomText
-            style={styles.modalText}
+            style={[styles.modalText, { color: colors.text }]}
             text="Are you sure you want to delete your account?"
           />
           <View style={styles.modalButtons}>
             <CustomButton
               text="Yes"
-              onPress={deleteAccount}
-              color={Colors.red}
+              onPress={deleteAccountFunc}
+              color={colors.red}
             />
             <CustomButton
               text="No"
               onPress={() => setDeleteAccountModal(false)}
-              color={Colors.green}
             />
           </View>
         </View>
       </Modal>
 
       <Modal isVisible={logoutModal}>
-        <View style={styles.modalContainer}>
+        <View style={[styles.modalContainer, { backgroundColor: colors.card }]}>
           <CustomText
-            style={styles.modalText}
+            style={[ styles.modalText, { color: colors.text }]}
             text="Are you sure you want to log out of your account?"
           />
           <View style={styles.modalButtons}>
-            <CustomButton text="Yes" onPress={logOut} color={Colors.red} />
+            <CustomButton text="Yes" onPress={logOut} color={colors.red} />
             <CustomButton
               text="No"
               onPress={() => setLogoutModal(false)}
-              color={Colors.buttonBlue}
+              color={colors.green}
             />
           </View>
         </View>
@@ -273,19 +285,7 @@ const Settings = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.lightGray,
     marginTop: 80,
-  },
-  setttingsContent: {
-    justifyContent: "flex-start",
-    flex: 4,
-    marginTop: 20,
-    paddingTop: 20,
-    paddingLeft: 20,
-    backgroundColor: Colors.white,
-
-    borderTopLeftRadius: 30,
-    borderTopRightRadius: 30,
   },
   settingsButton: {
     marginVertical: 10,
@@ -295,11 +295,6 @@ const styles = StyleSheet.create({
     marginTop: 0,
     marginBottom: 20,
   },
-  separator: {
-    backgroundColor: Colors.white,
-    height: 1,
-    marginRight: 20,
-  },
   title: {
     fontSize: 25,
     marginVertical: 0,
@@ -307,12 +302,6 @@ const styles = StyleSheet.create({
   name: {
     marginTop: 10,
     fontSize: 30,
-  },
-  userName: {
-    color: Colors.darkGray,
-    marginTop: 0,
-    fontSize: 20,
-    marginBottom: 30,
   },
   settings: {
     position: "absolute",
@@ -322,7 +311,6 @@ const styles = StyleSheet.create({
 
   // modal styles
   modalContainer: {
-    backgroundColor: Colors.white,
     justifyContent: "center",
     alignItems: "center",
     padding: 20,

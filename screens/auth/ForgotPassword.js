@@ -6,10 +6,12 @@ import CustomButton from "../../components/buttons/CustomButton";
 import Header from "../../components/display/Header";
 // auth functions
 import { sendPasswordResetEmail, getAuth } from "firebase/auth";
-// styles
-import { Colors } from "../../styles/Colors";
+import { useTheme } from "@react-navigation/native";
+import CustomText from "../../components/display/CustomText";
 
 const ForgotPassword = ({ navigation }) => {
+  const { colors } = useTheme();
+
   const [email, setEmail] = useState("");
   const [emailSent, setEmailSent] = useState(false);
   const auth = getAuth();
@@ -39,15 +41,15 @@ const ForgotPassword = ({ navigation }) => {
   };
 
   return (
-    <View style={styles.container}>
-      <Header
-        navigation={navigation}
-        text="Forgot Password"
-        back={true}
-        onBack={onBackToSignInPressed}
-      />
-
+    <View style={[styles.container, { color: colors.background }]}>
       <View style={styles.content}>
+        <CustomText text="Forgot Password" style={styles.text} font="bold" />
+        {!emailSent && (
+          <CustomText
+            text="Enter your email address to reset your password."
+            style={styles.buttonText}
+          />
+        )}
         <CustomInput
           placeholder="Email"
           value={email}
@@ -61,13 +63,16 @@ const ForgotPassword = ({ navigation }) => {
           <View>
             <CustomText
               text="A link to reset your password has been sent to your email address."
-              style={styles.text}
+              style={styles.buttonText}
             />
-            <TouchableOpacity onPress={onBackToSignInPressed}>
-              <CustomText style={styles.buttonText} text="Back to sign in" />
-            </TouchableOpacity>
           </View>
         )}
+        <TouchableOpacity onPress={onBackToSignInPressed}>
+          <CustomText
+            style={{ ...styles.buttonText, color: colors.button }}
+            text="Go back to sign up"
+          />
+        </TouchableOpacity>
       </View>
 
       <View
@@ -79,9 +84,9 @@ const ForgotPassword = ({ navigation }) => {
         }}
       >
         <CustomButton
-          width={"50%"}
           text="Reset Password"
           onPress={onResetPasswordPressed}
+          color={email.includes(".edu") ? colors.button : colors.gray}
         />
       </View>
     </View>
@@ -92,25 +97,23 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     alignItems: "flex-start",
-    backgroundColor: Colors.lightGray,
   },
   content: {
     flex: 1,
     width: "100%",
     padding: 20,
-    alignItems: "flex-start",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
   },
   input: {
     marginBottom: 20,
   },
   text: {
-    color: Colors.black,
-    fontSize: 16,
+    fontSize: 24,
   },
   buttonText: {
-    color: "white",
     fontSize: 16,
-    fontWeight: "bold",
   },
 });
 

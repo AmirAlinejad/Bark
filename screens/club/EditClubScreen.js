@@ -1,25 +1,32 @@
-import React, { useState } from 'react'
+import React, { useState } from "react";
 // react native components
-import { View, StyleSheet, TouchableOpacity, TextInput, ActivityIndicator } from 'react-native';
+import {
+  View,
+  StyleSheet,
+  TouchableOpacity,
+  TextInput,
+  ActivityIndicator,
+} from "react-native";
 // my components
-import CustomText from '../../components/display/CustomText';
-import CustomInput from '../../components/input/CustomInput';
-import CustomButton from '../../components/buttons/CustomButton';
-import Header from '../../components/display/Header';
-import ClubImg from '../../components/club/ClubImg';
-import PrivacySwitch from '../../components/input/PrivacySwitch';
+import CustomText from "../../components/display/CustomText";
+import CustomInput from "../../components/input/CustomInput";
+import CustomButton from "../../components/buttons/CustomButton";
+import Header from "../../components/display/Header";
+import ClubImg from "../../components/club/ClubImg";
+import PrivacySwitch from "../../components/input/PrivacySwitch";
+import Form from "../Form";
 // functions
-import { emailSplit } from '../../functions/backendFunctions';
+import { emailSplit } from "../../functions/backendFunctions";
 // image picking
-import { handleImageUploadAndSend } from '../../functions/backendFunctions';
+import { handleImageUploadAndSend } from "../../functions/backendFunctions";
 // backend
-import { ref, update } from 'firebase/database';
-import { db, firestore } from '../../backend/FirebaseConfig';
-import { updateDoc, doc } from 'firebase/firestore';
+import { ref, update } from "firebase/database";
+import { db, firestore } from "../../backend/FirebaseConfig";
+import { updateDoc, doc } from "firebase/firestore";
 // colors
-import { Colors } from '../../styles/Colors';
+import { useTheme } from "@react-navigation/native";
 // keyboard avoiding view
-import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scrollview';
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scrollview";
 
 const EditClubScreen = ({ route, navigation }) => {
   // get user data from previous screen
@@ -28,112 +35,110 @@ const EditClubScreen = ({ route, navigation }) => {
   console.log(route.params);
 
   // state variables
-  const [clubName, setClubName] = useState(name);
+  const [form, setForm] = useState({ 
+    clubName: name, 
+    clubDescription: description
+  });
   const [clubImg, setClubImg] = useState(img);
-  const [clubDescription, setClubDescription] = useState(description);
-  const [publicClubState, setpublicClub] = useState(publicClub);
   const [loading, setLoading] = useState(false);
+
+  const { colors } = useTheme();
+
+  const formPropertiesAndTypes = [
+    {
+      propName: "clubName",
+      type: "text",
+      title: "Club Name",
+      placeholder: "Club Name",
+    },
+    {
+      propName: "clubDescription",
+      type: "text",
+      title: "Club Description",
+      placeholder: "Club Description",
+    },
+  ];
 
   // edit club
   const onEditClubSubmitted = async (e) => {
-
     setLoading(true);
     // prevent default form submission if there is an error
     e.preventDefault();
 
     // make sure all fields are filled out
-    if (!clubName || !clubDescription) {
-      alert('Please fill out all fields.');
+    if (!form.clubName || !form.clubDescription) {
+      alert("Please fill out all fields.");
       setLoading(false);
       return;
     }
 
     // try to submit the edit profile request
     try {
+      const schoolKey = await emailSplit();
 
-        const schoolKey = await emailSplit();
+      const newClubData = {
+        clubName: form.clubName,
+        clubDescription: form.clubDescription,
+        // publicClub: form.publicClubState,
+      };
+      if (clubImg) newClubData.clubImg = clubImg;
 
-        const newClubData = {
-          clubName: clubName,
-          clubDescription: clubDescription,
-          publicClub: publicClubState,
-        };
-        if (clubImg) newClubData.clubImg = clubImg;
+      // update clubData
+      await updateDoc(
+        doc(firestore, "schools", schoolKey, "clubData", id),
+        newClubData
+      );
 
-        // update clubData
-        await updateDoc(doc(firestore, 'schools', schoolKey, 'clubData', id), newClubData);
+      // update clubSearch data for each category
+      for (let i = 0; i < categories.length; i++) {
+        const category = categories[i];
+        const categoryDoc = doc(
+          firestore,
+          "schools",
+          schoolKey,
+          "clubSearchData",
+          category,
+          "clubs",
+          id
+        );
+       
+        await updateDoc(categoryDoc, newClubData);
+      }
 
-        // update clubSearch data for each category
-        for (let i = 0; i < categories.length; i++) {
-          const category = categories[i];
-          const categoryDoc = doc(firestore, 'schools', schoolKey, 'clubSearchData', category, 'clubs', id);
-          const updatedClub = {
-            clubName: clubName,
-            clubDescription: clubDescription,
-            publicClub: publicClubState,
-          }
-          if (clubImg) updatedClub.clubImg = clubImg;
-
-          await updateDoc(categoryDoc, updatedClub);
-        }
-
-        navigation.navigate('ClubScreen', {
-          clubId: id,
-        });
+      navigation.navigate("ClubScreen", {
+        clubId: id,
+      });
     } catch (error) {
       console.log(error);
-      alert('Edit Club failed: ' + error.message);
+      alert("Edit Club failed: " + error.message);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <View style={styles.container}>
-      <Header text={'Edit Club'} back navigation={navigation}/>
-
-      <KeyboardAwareScrollView 
-        contentContainerStyle={{flex: 1}}
-        extraHeight={-100}
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <KeyboardAwareScrollView
+        contentContainerStyle={styles.elementsContainer}
+        extraHeight={200}
+        contentInsetAdjustmentBehavior="automatic"
       >
-        <View style={styles.clubImg} >
-          <TouchableOpacity onPress={() => handleImageUploadAndSend('club', setClubImg)}>
-            <ClubImg clubImg={clubImg} width={170} editable/>
+        <View style={styles.clubImg}>
+          <TouchableOpacity
+            onPress={() => handleImageUploadAndSend("club", setClubImg)}
+          >
+            <ClubImg clubImg={clubImg} width={170} editable />
           </TouchableOpacity>
         </View>
 
         <View style={styles.clubContainer}>
-
-          <CustomText style={styles.text} font="bold" text="Club Name" />
-          <CustomInput placeholder="New Club Name"
-            value={clubName}
-            setValue={setClubName}
-          />
-
-          <CustomText style={[styles.text, {marginTop: 10}]} font="bold" text="Public Club" />
-          <PrivacySwitch toggled={publicClubState} setToggled={setpublicClub} style={{marginTop: 10}} />
-          <View style={{height: 10}}></View>
-
-          <CustomText style={styles.text} font="bold" text="Description" />
-          <View style={styles.inputContainer}>
-            <TextInput
-              placeholder="Tell us about your club. (200 characters)"
-              value={clubDescription}
-              onChangeText={setClubDescription}
-              keyboardType="default"
-              maxLength={200}
-              numberOfLines={5}
-              style={styles.input}
-              multiline={true}
-              textAlignVertical='top'
-            />
-          </View>
+          <Form formPropertiesAndTypes={formPropertiesAndTypes} form={form} setForm={setForm} />
         </View>
 
         <View style={styles.buttonContainer}>
           <CustomButton text="Save Changes" onPress={onEditClubSubmitted} />
         </View>
-        {loading && <ActivityIndicator size="large" color={Colors.buttonBlue} />}
+        {loading && <ActivityIndicator size="large" color={colors.gray} />}
       </KeyboardAwareScrollView>
     </View>
   );
@@ -142,31 +147,29 @@ const EditClubScreen = ({ route, navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.white,
-    justifyContent: 'flex-start',
+    justifyContent: "flex-start",
   },
   clubImg: {
     marginTop: 20,
-    alignItems: 'center',
+    alignItems: "center",
   },
   clubContainer: {
-    justifyContent: 'flex-start',
+    justifyContent: "flex-start",
     marginTop: 20,
     marginLeft: 20,
     gap: 0,
   },
   inputContainer: {
-    borderColor: Colors.inputBorder,
     borderWidth: 1,
     borderRadius: 20,
     height: 100,
-    width: '90%',
+    width: "90%",
     padding: 15,
     marginBottom: 10,
   },
   buttonContainer: {
-   marginLeft: 20,
-   width: 400,
+    marginLeft: 20,
+    width: 135,
   },
   text: {
     fontSize: 20,

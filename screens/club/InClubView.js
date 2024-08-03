@@ -12,7 +12,7 @@ import CustomText from "../../components/display/CustomText";
 import CustomButton from "../../components/buttons/CustomButton";
 import SettingsSection from "../../components/display/SettingsSection";
 // styles
-import { Colors } from "../../styles/Colors";
+import { useTheme } from "@react-navigation/native";
 // functions
 import {
   getSetClubData,
@@ -26,6 +26,8 @@ const InClubView = ({ navigation, route }) => {
   const [isLeaveClubModalVisible, setLeaveClubModalVisible] = useState(false);
 
   console.log(clubData);
+  
+  const { colors } = useTheme();
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -43,7 +45,7 @@ const InClubView = ({ navigation, route }) => {
 
   // go to edit club screen
   const onEditButtonPress = () => {
-    navigation.navigate("EditClub", {
+    navigation.navigate("Edit Club", {
       name: clubData.clubName,
       id: clubData.clubId,
       img: clubData.clubImg,
@@ -83,6 +85,7 @@ const InClubView = ({ navigation, route }) => {
 
   const setttingsData = [
     {
+      title: "",
       data: [
         {
           id: 1,
@@ -101,6 +104,7 @@ const InClubView = ({ navigation, route }) => {
           id: 3,
           icon: "log-out-outline",
           text: "Leave Club",
+          color: colors.red,
           onPress: toggleLeaveClubModal,
         },
       ],
@@ -108,7 +112,7 @@ const InClubView = ({ navigation, route }) => {
   ];
 
   return (
-    <View style={{ flex: 1 }}>
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
       <ScrollView
         contentContainerStyle={styles.container}
         style={{ flex: 1 }}
@@ -124,11 +128,11 @@ const InClubView = ({ navigation, route }) => {
             text="Are you sure you want to leave this club?"
           />
           <View style={styles.modalButtons}>
-            <CustomButton text="Yes" onPress={leaveClub} color={Colors.red} />
+            <CustomButton text="Yes" onPress={leaveClub} color={colors.bark} />
             <CustomButton
               text="No"
               onPress={toggleLeaveClubModal}
-              color={Colors.green}
+              color={colors.green}
             />
           </View>
         </View>

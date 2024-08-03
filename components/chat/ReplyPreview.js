@@ -8,10 +8,12 @@ import CustomText from "../display/CustomText";
 // icons
 import { Ionicons } from "@expo/vector-icons";
 // styles
-import { Colors } from "../../styles/Colors";
+import { useTheme } from "@react-navigation/native";
 
 const ReplyPreview = ({ replyingToMessage, setReplyingToMessage }) => {
   const maxReplyToTextLength = 20; // Maximum length of the reply to text
+
+  const { colors } = useTheme();
 
   // close preview
   closeMessage = () => {
@@ -25,7 +27,7 @@ const ReplyPreview = ({ replyingToMessage, setReplyingToMessage }) => {
       : replyingToMessage.text;
 
   return (
-    <View style={styles.replyPreview}>
+    <View style={[styles.replyPreview, { backgroundColor: colors.card }]}>
       <ProfileImg profileImg={replyingToMessage.user.avatar} width={40} />
 
       <View style={{ marginLeft: 10 }}>
@@ -55,7 +57,7 @@ const ReplyPreview = ({ replyingToMessage, setReplyingToMessage }) => {
       </View>
 
       <TouchableOpacity onPress={closeMessage} style={styles.closeMessage}>
-        <Ionicons name="close-circle" size={20} color={Colors.gray} />
+        <Ionicons name="close-circle" size={20} color={colors.gray} />
       </TouchableOpacity>
     </View>
   );
@@ -64,7 +66,6 @@ const ReplyPreview = ({ replyingToMessage, setReplyingToMessage }) => {
 const styles = StyleSheet.create({
   // reply
   replyPreview: {
-    backgroundColor: Colors.white,
     width: "75%",
     flexDirection: "row",
     bottom: 80,
@@ -85,7 +86,7 @@ const styles = StyleSheet.create({
     marginTop: 5,
   },
   replyImageText: {
-    color: Colors.black,
+    color: "black",
     marginBottom: 0,
   },
   closeMessage: {

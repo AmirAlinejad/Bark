@@ -1,4 +1,4 @@
-export const Colors = {
+export const baseColors = {
   // base colors
   primary: "#f57c00",
   mediumGray: "#DCDCDC",
@@ -27,3 +27,4 @@ export const Colors = {
   chatBubblePinned: "#E0E0E0",
   lightBlue: "#E0F7FA",
 };
+

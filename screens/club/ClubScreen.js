@@ -15,12 +15,10 @@ import {
   goToAdminChatScreen,
 } from "../../functions/navigationFunctions";
 // my components
-import Header from "../../components/display/Header";
 import UpcomingEvents from "../../components/event/UpcomingEvents";
 import CustomText from "../../components/display/CustomText";
 import ClubImg from "../../components/club/ClubImg";
 import IconButton from "../../components/buttons/IconButton";
-import IconText from "../../components/display/IconText";
 import Chip from "../../components/display/Chip";
 import IconOverlay from "../../components/overlays/IconOverlay";
 import CircleButton from "../../components/buttons/CircleButton";
@@ -28,7 +26,7 @@ import CustomButton from "../../components/buttons/CustomButton";
 // macros
 import { CLUBCATEGORIES } from "../../macros/macros";
 // colors
-import { Colors } from "../../styles/Colors";
+import { useTheme } from "@react-navigation/native";
 import SettingsSection from "../../components/display/SettingsSection";
 
 const ClubScreen = ({ route, navigation }) => {
@@ -50,6 +48,8 @@ const ClubScreen = ({ route, navigation }) => {
     useState(false);
   const [isRequestSent, setIsRequestSent] = useState(false);
 
+  const { colors } = useTheme();
+
   useLayoutEffect(() => {
     navigation.setOptions({
       headerRight: () => (
@@ -59,14 +59,14 @@ const ClubScreen = ({ route, navigation }) => {
             onPress={onQRCodeButtonPress}
             style={styles.shareButton}
             text=""
-            color={Colors.buttonBlue}
+            color={colors.button}
           />
           <IconButton
             icon="calendar-outline"
             onPress={onCalendarButtonPress}
             style={styles.calendarButton}
             text=""
-            color={Colors.buttonBlue}
+            color={colors.button}
           />
         </View>
       ),
@@ -80,9 +80,8 @@ const ClubScreen = ({ route, navigation }) => {
       await getSetClubData(clubId, setClubData);
       await getSetClubCalendarData(clubId, setEventData);
 
-      setLoading(false);
-
       checkMembership(clubId, setCurrentUserPrivilege, setIsRequestSent);
+      setLoading(false);
     };
 
     asyncFunction();
@@ -98,15 +97,14 @@ const ClubScreen = ({ route, navigation }) => {
 
   // go to calendar with this club's events
   const onCalendarButtonPress = () => {
-    navigation.navigate("ClubCalendar", {
-      club: clubData,
+    navigation.navigate("Club Calendar", {
+      clubId: clubId,
     });
   };
 
   // go to QR code screen
   const onQRCodeButtonPress = () => {
-    navigation.navigate("QRCodeScreen", {
-      mame: clubData.clubName,
+    navigation.navigate("QR Code", {
       qrCodeData: "?screen=club&clubId=" + clubId,
     });
   };
@@ -236,8 +234,10 @@ const ClubScreen = ({ route, navigation }) => {
     },
   ];
 
+  console.log("clubData", clubData);
+
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       {clubData && (
         <ScrollView contentInsetAdjustmentBehavior="automatic">
           <View style={styles.content}>
@@ -245,7 +245,7 @@ const ClubScreen = ({ route, navigation }) => {
 
             <View style={styles.clubContent}>
               <CustomText
-                style={styles.clubName}
+                style={[styles.clubName, { color: colors.text }]}
                 text={clubData.clubName}
                 font="black"
               />
@@ -273,13 +273,13 @@ const ClubScreen = ({ route, navigation }) => {
 
               {/* description */}
               <CustomText
-                style={styles.clubDescription}
+                style={[styles.clubDescription, { color: colors.textLight }]}
                 text={clubData.clubDescription}
                 numberOfLines={5}
               />
 
               {/* join club button */}
-              {currentUserPrivilege === "none" && (
+              {currentUserPrivilege === "none" && !loading && (
                 <View style={{ marginBottom: 10 }}>
                   <CustomButton
                     text="Join the club!"
@@ -301,7 +301,7 @@ const ClubScreen = ({ route, navigation }) => {
               >
                 <CustomText
                   font="bold"
-                  style={{ fontSize: 24 }}
+                  style={{ fontSize: 24, color: colors.text }}
                   text="Upcoming Events"
                 />
               </View>
@@ -320,7 +320,7 @@ const ClubScreen = ({ route, navigation }) => {
                   bottom: -600,
                   left: 0,
                   right: 0,
-                  backgroundColor: Colors.white,
+                  backgroundColor: colors.background,
                   height: 600,
                 }}
               />
@@ -335,13 +335,13 @@ const ClubScreen = ({ route, navigation }) => {
           <View
             style={{ position: "absolute", bottom: 5, right: 75, margin: 30 }}
           >
-            <Fade visible={showText}>
+            {/* <Fade visible={showText}>
               <CustomText
-                style={styles.popUpText}
+                style={[styles.popUpText, { color: colors.text }]}
                 text="Create an Event."
                 font="bold"
               />
-            </Fade>
+            </Fade> */}
           </View>
           <CircleButton
             icon="calendar-number-outline"
@@ -357,14 +357,14 @@ const ClubScreen = ({ route, navigation }) => {
         visible={isJoinClubModalVisible}
         setVisible={setJoinClubModalVisible}
         icon="checkmark-circle-outline"
-        iconColor={Colors.green}
+        iconColor={colors.green}
         text="You have joined the club."
       />
       <IconOverlay
         visible={isRequestClubModalVisible}
         setVisible={setRequestClubModalVisible}
         icon="mail-outline"
-        iconColor={Colors.green}
+        iconColor={colors.green}
         text="Your request has been sent."
       />
     </View>
@@ -374,7 +374,6 @@ const ClubScreen = ({ route, navigation }) => {
 const styles = StyleSheet.create({
   container: {
     justifyContent: "flex-start",
-    backgroundColor: Colors.lightGray,
     flex: 1,
   },
   content: {
@@ -409,7 +408,6 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginHorizontal: 40,
     marginBottom: 10,
-    color: Colors.darkGray,
   },
   clubButtons: {
     flex: 1,
@@ -419,12 +417,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 30,
     borderTopRightRadius: 30,
   },
-  separator: {
-    backgroundColor: Colors.lightGray,
-    height: 1,
-  },
   popUpText: {
-    color: Colors.black,
     fontSize: 25,
     textAlign: "right",
   },

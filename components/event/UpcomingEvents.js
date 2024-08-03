@@ -9,9 +9,10 @@ import Ionicon from "react-native-vector-icons/Ionicons";
 // macros
 import { CLUBCATEGORIES } from "../../macros/macros";
 // colors
-import { Colors } from "../../styles/Colors";
+import { useTheme } from "@react-navigation/native";
 
 const UpcomingEvents = ({ filteredEvents, screenName, navigation }) => {
+  const { colors } = useTheme();
   const [categorizedEvents, setCategorizedEvents] = useState({});
 
   useEffect(() => {
@@ -20,7 +21,7 @@ const UpcomingEvents = ({ filteredEvents, screenName, navigation }) => {
     if (filteredEvents != []) {
       sortedEvents = filteredEvents.sort((a, b) => {
         return (
-          new Date(a.date + "T" + a.time) - new Date(b.date + "T" + b.time)
+          new Date(a.date) - new Date(b.date)
         );
       });
     }
@@ -55,7 +56,10 @@ const UpcomingEvents = ({ filteredEvents, screenName, navigation }) => {
           Object.keys(categorizedEvents).map((date, index) => {
             return (
               <View key={index} style={{ width: "100%" }}>
-                <CustomText style={styles.dateTitle} text={date} />
+                <CustomText
+                  style={[styles.dateTitle, { color: colors.textLight }]}
+                  text={date}
+                />
                 {
                   // map through the event data for each date
                   categorizedEvents[date].map((item, index) => {
@@ -78,7 +82,7 @@ const UpcomingEvents = ({ filteredEvents, screenName, navigation }) => {
                           key={index}
                           id={item.id}
                           name={item.name}
-                          time={item.time}
+                          date={item.date}
                           icon={icon}
                           iconColor={iconColor}
                           screenName={screenName}
@@ -93,11 +97,11 @@ const UpcomingEvents = ({ filteredEvents, screenName, navigation }) => {
           })}
         {filteredEvents.length == 0 && (
           <View style={styles.message}>
-            <Ionicon name="calendar" size={100} color={Colors.mediumGray} />
+            <Ionicon name="calendar" size={100} color={colors.gray} />
             <CustomText
               text="No upcoming events."
               font="bold"
-              style={styles.messageText}
+              style={[styles.messageText, { color: colors.gray }]}
             />
           </View>
         )}
@@ -112,13 +116,8 @@ const styles = StyleSheet.create({
     alignItems: "flex-start",
     width: "100%",
   },
-  separator: {
-    height: 1,
-    backgroundColor: Colors.lightGray,
-  },
   dateTitle: {
     fontSize: 20,
-    color: Colors.darkGray,
     marginBottom: 10,
     marginLeft: 8,
   },
@@ -129,7 +128,6 @@ const styles = StyleSheet.create({
   },
   messageText: {
     fontSize: 20,
-    color: Colors.gray,
     textAlign: "center",
     marginTop: 10,
     marginBottom: 64,

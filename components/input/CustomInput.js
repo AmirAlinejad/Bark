@@ -1,31 +1,52 @@
 import React from "react";
 // react native components
-import { View, TextInput, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, TextInput, StyleSheet, TouchableOpacity } from "react-native";
 // icons
-import { Ionicons } from 'react-native-vector-icons';
+import { Ionicons } from "react-native-vector-icons";
 // colors
-import { Colors } from '../../styles/Colors';
+import { useTheme } from "@react-navigation/native";
 
-const CustomInput = ({ width, value, setValue, placeholder, keyboardType, secureTextEntry, onEyeIconPress, maxLength, multiline }) => {
+const CustomInput = ({
+  width,
+  value,
+  setValue,
+  placeholder,
+  keyboardType,
+  secureTextEntry,
+  onEyeIconPress,
+  maxLength,
+  multiline,
+}) => {
   const isPasswordInput = placeholder.toLowerCase().includes("password");
-  return (
-    <View style={[styles.container, { width: width ? width : "80%" }]}>
 
+  const { colors } = useTheme();
+
+  return (
+    <View
+      style={[
+        styles.container,
+        { borderColor: colors.inputBorder, width: width ? width : "80%" },
+      ]}
+    >
       <TextInput
         placeholder={placeholder}
         value={value}
         onChangeText={setValue}
         keyboardType={keyboardType}
         secureTextEntry={secureTextEntry}
-        style={styles.input}
-        placeholderTextColor={Colors.gray}
+        style={[styles.input, { color: colors.text, borderColor: colors.inputBorder }]}
+        placeholderTextColor={colors.textLight}
         maxLength={maxLength}
         multiline={multiline}
       />
 
-      {isPasswordInput  && (
+      {isPasswordInput && (
         <TouchableOpacity onPress={onEyeIconPress} style={styles.eyeIcon}>
-          <Ionicons name={secureTextEntry ? 'eye-outline' : 'eye-off-outline'} size={24} color={Colors.black} />
+          <Ionicons
+            name={secureTextEntry ? "eye-outline" : "eye-off-outline"}
+            size={24}
+            color={colors.text}
+          />
         </TouchableOpacity>
       )}
     </View>
@@ -34,21 +55,17 @@ const CustomInput = ({ width, value, setValue, placeholder, keyboardType, secure
 
 const styles = StyleSheet.create({
   container: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderColor: Colors.inputBorder,
+    flexDirection: "row",
+    alignItems: "center",
     borderWidth: 1,
-    borderRadius: 20,
-    marginBottom: 5,
+    borderRadius: 12,
+    marginBottom: 15,
     paddingHorizontal: 10,
   },
   input: {
     flex: 1,
-    height: 50,
-    color: Colors.black,
-    fonyColor: Colors.black,
-    fontFamily: 'Nunito_400Regular',
-    backgroundColor: 'transparent',
+    height: 40,
+    fontFamily: "Nunito_400Regular",
   },
   eyeIcon: {
     padding: 10,

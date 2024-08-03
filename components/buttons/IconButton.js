@@ -5,9 +5,10 @@ import CustomText from "../display/CustomText";
 // icons
 import Ionicons from "react-native-vector-icons/Ionicons";
 // colors
-import { Colors } from "../../styles/Colors";
+import { useTheme } from "@react-navigation/native";
 
 const IconButton = ({ icon, text, onPress, style, color }) => {
+  const { colors } = useTheme();
   // add style to button
   const buttonStyle = {
     ...styles.button,
@@ -17,7 +18,7 @@ const IconButton = ({ icon, text, onPress, style, color }) => {
   // add color to text
   const textStyle = {
     ...styles.buttonText,
-    color: color ? color : Colors.black,
+    color: color ? color : colors.text,
   };
 
   return (
@@ -25,7 +26,7 @@ const IconButton = ({ icon, text, onPress, style, color }) => {
       <Ionicons
         name={icon}
         size={25}
-        color={color ? color : Colors.black}
+        color={color ? color : colors.text}
         style={styles.icon}
       />
       <CustomText style={textStyle} text={text} />

@@ -1,36 +1,37 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from "react";
 // storage
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import AsyncStorage from "@react-native-async-storage/async-storage";
 // auth
-import { auth } from '../../backend/FirebaseConfig';
+import { auth } from "../../backend/FirebaseConfig";
 // react native components
-import { View, StyleSheet } from 'react-native';
-import { Image } from 'expo-image';
+import { View, StyleSheet, TouchableOpacity } from "react-native";
 // assets
-import Logo from '../../assets/logo.png';
+import Logo from "../../assets/logo.png";
 // firestore
-import { firestore } from '../../backend/FirebaseConfig';
-import { doc, getDoc } from 'firebase/firestore';
+import { firestore } from "../../backend/FirebaseConfig";
+import { doc, getDoc } from "firebase/firestore";
 // my components
-import CustomText from '../../components/display/CustomText';
-import CustomInput from '../../components//input/CustomInput';
-import CustomButton from '../../components/buttons/CustomButton';
+import CustomText from "../../components/display/CustomText";
+import CustomInput from "../../components//input/CustomInput";
+import CustomButton from "../../components/buttons/CustomButton";
 // keyboard aware scroll view
-import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 // backend
-import { signInWithEmailAndPassword } from 'firebase/auth';
+import { signInWithEmailAndPassword } from "firebase/auth";
 // styling
-import { Colors } from '../../styles/Colors';
-import Animated, { FadeInUp } from 'react-native-reanimated';
+import { useTheme } from "@react-navigation/native";
+import Animated, { FadeInUp } from "react-native-reanimated";
 
 const SignIn = ({ route, navigation }) => {
   // state variables
-  const [email, setEmail] = useState(route.params?.email || '');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState(route.params?.email || "");
+  const [password, setPassword] = useState("");
   const [passwordVisible, setPasswordVisible] = useState(true);
   // loading and error handling
   const [loading, setLoading] = useState(false);
-  const [errorMessage, setErrorMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState("");
+
+  const { colors } = useTheme();
 
   // password visibility
   const togglePasswordVisibility = () => {
@@ -40,14 +41,14 @@ const SignIn = ({ route, navigation }) => {
   // Function to handle Firebase errors
   const handleFirebaseError = (error) => {
     switch (error.code) {
-      case 'auth/user-not-found':
-        return 'User not found.';
-      case 'auth/wrong-password':
-        return 'Invalid password.';
-      case 'auth/invalid-email':
-        return 'Invalid email address.';
+      case "auth/user-not-found":
+        return "User not found.";
+      case "auth/wrong-password":
+        return "Invalid password.";
+      case "auth/invalid-email":
+        return "Invalid email address.";
       default:
-        return 'Sign-in failed. Please try again.';
+        return "Sign-in failed. Please try again.";
     }
   };
 
@@ -57,11 +58,11 @@ const SignIn = ({ route, navigation }) => {
     if (loading) return;
 
     setLoading(true);
-    setErrorMessage('');
+    setErrorMessage("");
 
     // Validate input
     if (!email || !password) {
-      setErrorMessage('Please enter both email and password.');
+      setErrorMessage("Please enter both email and password.");
       setLoading(false);
       return;
     }
@@ -72,25 +73,27 @@ const SignIn = ({ route, navigation }) => {
 
       // make sure email is verified
       if (!response.user.emailVerified) {
-        setErrorMessage('Please verify your email before signing in.');
+        setErrorMessage("Please verify your email before signing in.");
         setLoading(false);
         return;
       }
 
       // Navigate to the home screen
-      navigation.navigate('Main');
+      navigation.navigate("Main");
 
-      const schoolKey = response.user.email.split('@')[1].split('.')[0];
+      const schoolKey = response.user.email.split("@")[1].split(".")[0];
 
       // get user data from firestore
-      const userData = await getDoc(doc(firestore, 'schools', schoolKey, 'userData', response.user.uid));
-      console.log('user data from firestore: ', userData.data());
-      
+      const userData = await getDoc(
+        doc(firestore, "schools", schoolKey, "userData", response.user.uid)
+      );
+      console.log("user data from firestore: ", userData.data());
+
       // set user data in async storage
-      await AsyncStorage.setItem('user', JSON.stringify(userData.data()));
+      await AsyncStorage.setItem("user", JSON.stringify(userData.data()));
 
       // set school key in async storage
-      await AsyncStorage.setItem('schoolKey', schoolKey);
+      await AsyncStorage.setItem("schoolKey", schoolKey);
     } catch (error) {
       console.log(error);
       setErrorMessage(handleFirebaseError(error));
@@ -101,27 +104,31 @@ const SignIn = ({ route, navigation }) => {
 
   // forgot password
   const onForgotPasswordPressed = () => {
-    navigation.navigate('ForgotPassword');
+    navigation.navigate("ForgotPassword");
   };
 
   const onSignUp = () => {
     // Navigate to the sign-up screen
-    navigation.navigate('SignUp');
+    navigation.navigate("SignUp");
   };
 
   return (
-    <View style={styles.container}>
-      <KeyboardAwareScrollView 
+    <View style={[styles.container, { color: colors.background }]}>
+      <KeyboardAwareScrollView
         contentContainerStyle={styles.elementsContainer}
-        style={{ width: '100%' }}
+        style={{ width: "100%" }}
         extraHeight={-100}
       >
         <View style={styles.topElements}>
-          <Animated.Image etnering={FadeInUp} source={Logo} style={styles.logo} />
+          <Animated.Image
+            etnering={FadeInUp}
+            source={Logo}
+            style={styles.logo}
+          />
         </View>
 
         <View style={styles.signInContainer}>
-          <CustomText style={styles.title} text='Welcome back!' font='bold'/>
+          <CustomText style={styles.title} text="Welcome back!" font="bold" />
 
           <CustomInput
             placeholder="Email"
@@ -141,21 +148,45 @@ const SignIn = ({ route, navigation }) => {
           {errorMessage ? (
             <CustomText style={styles.errorMessage} text={errorMessage} />
           ) : null}
-          {errorMessage == 'Please verify your email before signing in.' ? (
-            <CustomText style={styles.signupLink} text="Still waiting on an email?." onPress={() => {
-              navigation.navigate('VerifyEmail');
-            }} />
+          {errorMessage == "Please verify your email before signing in." ? (
+            <CustomText
+              style={styles.signupLink}
+              text="Still waiting on an email?."
+              onPress={() => {
+                navigation.navigate("VerifyEmail");
+              }}
+            />
           ) : null}
 
-          <CustomButton text="Sign In" onPress={onSignInPressed} color={Colors.red} />
+          <CustomButton
+            text="Sign In"
+            onPress={onSignInPressed}
+            color={colors.bark}
+          />
 
-          <CustomText text="Forgot Password?" onPress={onForgotPasswordPressed} style={styles.signupLink} />
+          <TouchableOpacity onPress={onForgotPasswordPressed}>
+            <CustomText text="Forgot Password?" style={styles.signupLink} />
+          </TouchableOpacity>
           <CustomText style={styles.signupText} text="Don't have an account?" />
-          <CustomText style={styles.signupLink} onPress={onSignUp} text="Sign Up" />
+          <TouchableOpacity onPress={onSignUp}>
+            <CustomText
+              style={styles.signupLink}
+              text="Sign Up"
+            />
+          </TouchableOpacity>
         </View>
 
         {/* make sure bottom part is white*/}
-        <View style={{position: "absolute", bottom: -600, left: 0, right: 0, backgroundColor: Colors.white, height: 600}}/>
+        <View
+          style={{
+            position: "absolute",
+            bottom: -600,
+            left: 0,
+            right: 0,
+            backgroundColor: colors.background,
+            height: 600,
+          }}
+        />
       </KeyboardAwareScrollView>
     </View>
   );
@@ -164,25 +195,25 @@ const SignIn = ({ route, navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    width: '100%',
-    justifyContent: 'flex-start',
-    alignItems: 'flex-start',
+    width: "100%",
+    justifyContent: "flex-start",
+    alignItems: "flex-start",
   },
   elementsContainer: {
     flex: 1,
-    width: '100%',
+    width: "100%",
   },
   topElements: {
     flex: 1,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'flex-end',
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "flex-end",
   },
   signInContainer: {
     flex: 2,
-    display: 'flex',
-    justifyContent: 'flex-start',
-    alignItems: 'center',
+    display: "flex",
+    justifyContent: "flex-start",
+    alignItems: "center",
     paddingTop: 30,
   },
   logo: {
@@ -197,16 +228,16 @@ const styles = StyleSheet.create({
   },
   signupText: {
     fontSize: 16,
-    color: 'black',
+    color: "black",
     marginTop: 5,
   },
   signupLink: {
     marginTop: 5,
-    color: Colors.buttonBlue,
+    color: "#3498db",
     fontSize: 16,
   },
   errorMessage: {
-    color: Colors.red,
+    color: "red",
     marginBottom: 10,
   },
 });

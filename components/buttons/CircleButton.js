@@ -4,16 +4,18 @@ import { TouchableOpacity, StyleSheet } from "react-native";
 // icons
 import Icon from "react-native-vector-icons/Ionicons";
 // colors
-import { Colors } from "../../styles/Colors";
+import { useTheme } from "@react-navigation/native";
 
 const size = 60;
 
 const CircleButton = ({ icon, onPress, position, color }) => {
+  const { colors } = useTheme();
+
   // create button with given position and icon
   const buttonStyle = {
     ...styles.circleButton,
     ...position,
-    backgroundColor: color ? color : Colors.red,
+    backgroundColor: color ? color : colors.bark,
     height: size,
     width: size,
     borderRadius: size / 2,
