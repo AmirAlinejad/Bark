@@ -62,13 +62,17 @@ const VerifyEmail = ({ navigation }) => {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={styles.content}>
         <CustomText
-          style={[styles.text, { color: colors.textLight }]}
+          style={[styles.text, { color: colors.text }]}
           text="Please verify your email. Check your inbox for a verification link."
+          font={"bold"}
         />
 
         <Ionicons name="mail-outline" size={100} color={colors.textLight} />
 
-        <CustomText style={styles.text} text="This may take a few minutes." />
+        <CustomText
+          style={{ ...styles.text, color: colors.textLight }}
+          text="This may take a few minutes."
+        />
 
         {isSending ? (
           <ActivityIndicator size="small" />

@@ -33,7 +33,7 @@ const ChatMessage = ({
   navigation,
 }) => {
   const { colors } = useTheme();
-  
+
   // toggle like
   const toggleLike = async () => {
     // compares by id
@@ -45,7 +45,6 @@ const ChatMessage = ({
       newLikedMessages.add(message.id);
     }
     setLikedMessages(newLikedMessages);
-    console.log("newLikedMessages:", newLikedMessages);
 
     try {
       const messageDoc = await getDoc(messageRef);
@@ -132,11 +131,22 @@ const ChatMessage = ({
           messageRef={messageRef}
           setReplyingToMessage={setReplyingToMessage}
           swipeable={true}
+          onLongPress={() => {
+            handleLongPress(
+              message,
+              currentUserPrivilege,
+              setReplyingToMessage,
+              messageRef
+            );
+          }}
         />
         {!message.voteOptions && (
           <TouchableOpacity onPress={toggleLike} style={styles.likeButton}>
             <Ionicons name={heartIcon} size={24} color={heartColor} />
-            <CustomText style={[styles.likeCountText, { color: colors.textLight }]} text={likeCount} />
+            <CustomText
+              style={[styles.likeCountText, { color: colors.textLight }]}
+              text={likeCount}
+            />
           </TouchableOpacity>
         )}
       </TouchableOpacity>

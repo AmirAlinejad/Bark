@@ -1,9 +1,7 @@
-import * as ImagePicker from "expo-image-picker";
-import { set } from "firebase/database";
 import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "firebase/storage";
 
 // image upload function
-const handleImageUpload = async (image_type, setter, image) => {
+export const handleImageUpload = async (image_type, setter, image) => {
     storage = getStorage();
 
     const selectedImageUri = image;
@@ -21,4 +19,20 @@ const handleImageUpload = async (image_type, setter, image) => {
     }
   };
 
-  export default handleImageUpload;
+export const handleDocumentUpload = async (document_type, setter, document) => {
+    storage = getStorage();
+
+    const selectedDocumentUri = document;
+    const fileName = `${document_type}_${Date.now()}`; // unique filename
+    const documentRef = storageRef(storage, `${document_type}_documents/${fileName}`);
+    try {
+      const response = await fetch(selectedDocumentUri);
+      const blob = await response.blob();
+      await uploadBytes(documentRef, blob);
+      const downloadURL = await getDownloadURL(documentRef);
+      setter(downloadURL);
+    } catch (error) {
+      console.error("Error uploading document:", error);
+      alert("Error uploading document.");
+    }
+  }

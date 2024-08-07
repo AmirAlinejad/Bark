@@ -57,9 +57,8 @@ import {
   fetchMessages,
   handleCameraPress,
   handleImageUploadAndSend,
-  handleDocumentPress,
-  emailSplit,
   getSetUserData,
+  handleDocumentUploadAndSend,
 } from "../../functions/backendFunctions";
 import { deleteImageFromStorage } from "../../functions/chatFunctions";
 import { isSameDay } from "../../functions/timeFunctions";
@@ -457,13 +456,11 @@ export default function Chat({ route, navigation }) {
         const clubMembers = await getDocs(clubMembersCollection);
         // loop through all members in the club
         for (const member of clubMembers.docs) {
-          /*if (!member.data().muted && member.id !== userData.id) {
-            // get the member's data
-            const memberData = await getDoc(doc(firestore, 'schools', schoolKey, 'chatData', 'clubs', clubId, 'members', member.id));
-            const memberDataVal = memberData.data();
+          if (!member.data().muted && member.id !== userData.id) {
+          
             // send the push notification
-            sendPushNotification(memberDataVal.expoPushToken, notificationText, userData.firstName, userData.lastName, clubName);
-          }*/
+            sendPushNotification(member.data().expoPushToken, notificationText, userData.firstName, userData.lastName, clubName);
+          }
 
           // increment unread messages in club member's data
           const memberRef = doc(
@@ -592,7 +589,7 @@ export default function Chat({ route, navigation }) {
         <View style={{ height: 39 }} />
 
         {/* Admin Chat */}
-        {chatName === "admin" && (  
+        {chatName === "admin" && (
           <View
             style={[styles.adminChatBanner, { backgroundColor: colors.red }]}
           >
@@ -693,7 +690,7 @@ export default function Chat({ route, navigation }) {
             style={[
               styles.toolbar,
               {
-                shadowColor: 'black',
+                shadowColor: "black",
                 shadowOffset: { width: 0, height: -3 },
                 shadowOpacity: 0.1,
                 borderTopWidth: 0,
@@ -724,7 +721,7 @@ export default function Chat({ route, navigation }) {
                 onClose={closeModal}
                 onUploadImage={() =>
                   handleImageUploadAndSend(
-                    chatName,
+                    "chat",
                     setImageUrl,
                     closeModal,
                     setTempImageUrl
@@ -733,14 +730,18 @@ export default function Chat({ route, navigation }) {
                 onUploadGif={() => handleGifSend(setGifUrl)}
                 onOpenCamera={() =>
                   handleCameraPress(
-                    chatName,
+                    "chat",
                     setImageUrl,
                     closeModal,
                     setTempImageUrl
                   )
                 }
                 onOpenDocument={() =>
-                  handleDocumentPress(setMessageText, closeModal)
+                  handleDocumentUploadAndSend(
+                    "chat",
+                    setMessageText,
+                    closeModal
+                  )
                 }
                 setImage={setImageUrl}
                 setTempImageUrl={setTempImageUrl}
@@ -756,15 +757,6 @@ export default function Chat({ route, navigation }) {
                 )}
                 userData={userData}
               />
-
-              {/* Modal for toolbar buttons*/}
-              {/*<CreatePollModal
-                isVisible={isModalVisible}
-                onClose={closeModal}
-                schoolKey={schoolKey}
-                clubId={clubId}
-                chatName={chatName}
-              />*/}
 
               {/* Container for TextInput and Image Preview */}
               <View

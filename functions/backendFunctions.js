@@ -25,7 +25,7 @@ import * as ImagePicker from "expo-image-picker";
 // document picker
 import * as DocumentPicker from "expo-document-picker";
 // functions
-import handleImageUpload from "./uploadImage";
+import { handleImageUpload, handleDocumentUpload } from "./uploadImage";
 // google calendar
 import { apiCalendar } from "../backend/CalendarApiConfig";
 
@@ -767,8 +767,6 @@ const handleImageUploadAndSend = async (
   let pickerResult = await ImagePicker.launchImageLibraryAsync({
     mediaTypes: ImagePicker.MediaTypeOptions.Images,
     allowsEditing: true,
-    aspect: [4, 3],
-    quality: 1,
   });
 
   if (closeModal) {
@@ -818,8 +816,6 @@ const handleCameraPress = async (
     quality: 1,
   });
 
-  console.log(result);
-
   closeModal();
 
   if (!result.canceled) {
@@ -843,15 +839,23 @@ const handleCameraPress = async (
 };
 
 // Define the function to handle document press
-const handleDocumentPress = async (setDocumentUrl, closeModal) => {
-  const { status } = await DocumentPicker.getDocumentAsync();
+const handleDocumentUploadAndSend = async (
+  chatType,
+  setDocumentUrl,
+  closeModal
+) => {
+  let pickerResult = await DocumentPicker.getDocumentAsync();
 
-  if (!status.canceled) {
-    console.log(status.assets[0].uri);
-    setDocumentUrl(status.assets[0].uri);
+  if (closeModal) {
+    closeModal();
   }
 
-  closeModal();
+  console.log("document: ", pickerResult);
+  console.log("document uri: ",pickerResult.assets[0].uri);
+
+  if (!pickerResult.canceled) {
+    handleDocumentUpload(chatType, setDocumentUrl, pickerResult.assets[0].uri);
+  }
 };
 
 const handlePressMessage = (
@@ -902,8 +906,8 @@ const handlePressMessage = (
 };
 
 // Function to delete a message
-const deleteMessage = async (messageId, chatType) => {
-  await deleteDoc(doc(firestore, chatType, messageId));
+const deleteMessage = async (messageRef) => {
+  await deleteDoc(messageRef);
   console.log("Message deleted successfully");
 };
 
@@ -953,7 +957,7 @@ const handleLongPress = async (
         style: "destructive",
         onPress: () => {
           // Assuming the delete operation targets Firestore
-          deleteMessage(message._id, chatType);
+          deleteMessage(messageRef);
         },
       });
     }
@@ -1319,7 +1323,7 @@ export {
   pinMessage,
   handlePressMessage,
   handleImageUploadAndSend,
-  handleDocumentPress,
+  handleDocumentUploadAndSend,
   voteInPoll,
   syncEventsToGoogleCalendar,
   unsyncEventsFromGoogleCalendar,

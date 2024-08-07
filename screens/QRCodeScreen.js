@@ -21,7 +21,7 @@ const QRCodeScreen = ({ route, navigation }) => {
   const { colors } = useTheme();
 
   // generate link by adding qr code data to the base url
-  const link = "exp://10.0.0.25:8081" + qrCodeData;
+  const link = "myapp://" + qrCodeData;
 
   // copy qr code data to clipboard
   // clipboard

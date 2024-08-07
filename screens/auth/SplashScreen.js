@@ -1,6 +1,9 @@
 // get auth and deep linking params and navigate to the appropriate screen
 import React, { useEffect, useRef } from "react";
 import { View, Image, StyleSheet, Animated, Easing } from "react-native";
+// auth
+import { auth } from "../../backend/FirebaseConfig";
+import { signInWithEmailAndPassword } from "firebase/auth";
 // storage
 import AsyncStorage from "@react-native-async-storage/async-storage";
 // logo
@@ -57,66 +60,81 @@ const SplashScreen = ({ navigation }) => {
           .catch((err) => console.error("An error occurred", err));
 
         // see if user is logged in
-        const user = await AsyncStorage.getItem("user");
-
+        const user = await AsyncStorage.getItem("user").then((data) => {
+          return data ? JSON.parse(data) : null;
+        });
+        
         // if user is signed in, navigate to the home screen, otherwise navigate to the onboarding screens
         if (user) {
           // does not need auth right now but eventually will save email and password in async storage (update permissions in firebase)
-          // const response = await signInWithEmailAndPassword(auth, email, password);
+          try {
+            const response = await signInWithEmailAndPassword(
+              auth,
+              user.email,
+              '123456' // fix this
+            );
 
-          // different cases for different screens
-          if (screenName == "club") {
-            const { queryParams } = Linking.parse(URL);
-            const clubId = queryParams.clubId;
+            // different cases for different screens
+            if (screenName == "club") {
+              const { queryParams } = Linking.parse(URL);
+              const clubId = queryParams.clubId;
 
-            // navigate to the club screen
-            navigation.navigate("Main", { screen: "HomeScreen" });
-            navigation.navigate("Main", {
-              screen: "ClubScreen",
-              params: { clubId: clubId, goToHomeScreen: true },
-            });
-          } else if (screenName == "event") {
-            const { queryParams } = Linking.parse(URL);
-            const eventId = queryParams.eventId;
+              // navigate to the club screen
+              navigation.navigate("Main", { screen: "HomeScreen" });
+              navigation.navigate("Main", {
+                screen: "ClubScreen",
+                params: { clubId: clubId, goToHomeScreen: true },
+              });
+            } else if (screenName == "event") {
+              const { queryParams } = Linking.parse(URL);
+              const eventId = queryParams.eventId;
 
-            // navigate to the event screen
-            navigation.navigate("Main", { screen: "HomeScreen" });
-            navigation.navigate("Main", {
-              screen: "EventScreen",
-              params: { eventId: eventId, goToHomeScreen: true },
-            });
-          } else if (screenName == "chat") {
-            const { queryParams } = Linking.parse(URL);
-            const chatId = queryParams.chatId;
+              // navigate to the event screen
+              navigation.navigate("Main", { screen: "HomeScreen" });
+              navigation.navigate("Main", {
+                screen: "EventScreen",
+                params: { eventId: eventId, goToHomeScreen: true },
+              });
+            } else if (screenName == "chat") {
+              const { queryParams } = Linking.parse(URL);
+              const chatId = queryParams.chatId;
 
-            // navigate to the chat screen
-            navigation.navigate("Main", { screen: "HomeScreen" });
-            navigation.navigate("Main", {
-              screen: "Chat",
-              params: { chatId: chatId },
-            });
-          } else if (screenName == "chat") {
-            const { queryParams } = Linking.parse(URL);
-            const chatId = queryParams.chatId;
+              // navigate to the chat screen
+              navigation.navigate("Main", { screen: "HomeScreen" });
+              navigation.navigate("Main", {
+                screen: "Chat",
+                params: { chatId: chatId },
+              });
+            } else if (screenName == "chat") {
+              const { queryParams } = Linking.parse(URL);
+              const chatId = queryParams.chatId;
 
-            // navigate to the chat screen
-            navigation.navigate("Main", { screen: "HomeScreen" });
-            navigation.navigate("Main", {
-              screen: "Chat",
-              params: { chatId: chatId },
-            });
-          } else if (screenName == "attendance") {
-            const { queryParams } = Linking.parse(URL);
-            const eventId = queryParams.eventId;
+              // navigate to the chat screen
+              navigation.navigate("Main", { screen: "HomeScreen" });
+              navigation.navigate("Main", {
+                screen: "Chat",
+                params: { chatId: chatId },
+              });
+            } else if (screenName == "attendance") {
+              const { queryParams } = Linking.parse(URL);
+              const eventId = queryParams.eventId;
 
-            // navigate to the chat screen
-            navigation.navigate("Main", { screen: "HomeScreen" });
-            navigation.navigate("Main", {
-              screen: "EventAttendance",
-              params: { eventId: eventId },
-            });
-          } else {
-            navigation.navigate("Main"); // put back
+              // navigate to the chat screen
+              navigation.navigate("Main", { screen: "HomeScreen" });
+              navigation.navigate("Main", {
+                screen: "EventAttendance",
+                params: { eventId: eventId },
+              });
+            } else {
+              navigation.navigate("Main"); // put back
+            }
+
+            if (!response.user.emailVerified) {
+              alert("Please verify your email before signing in.");
+            }
+          } catch (error) {
+            console.log(error);
+            navigation.navigate("Onboarding");
           }
         } else {
           navigation.navigate("Onboarding");

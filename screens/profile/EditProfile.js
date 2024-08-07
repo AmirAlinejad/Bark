@@ -22,6 +22,7 @@ import { MAJORS } from "../../macros/macros";
 // backend
 import { doc, setDoc } from "firebase/firestore";
 import { firestore } from "../../backend/FirebaseConfig";
+import parseErrorStack from "react-native/Libraries/Core/Devtools/parseErrorStack";
 
 const EditProfile = ({ route, navigation }) => {
   // get user data from previous screen
@@ -104,23 +105,24 @@ const EditProfile = ({ route, navigation }) => {
       setLoading(false);
       return;
     }
-
+  
     // try to submit the edit profile request
     try {
       let updatedUserData = {
         userName: userData.userName,
+        password: userData.password,
         firstName: form.firstName,
         lastName: form.lastName,
         id: userData.id,
         email: userData.email,
-        expoPushToken: userData.expoPushToken,
       };
       if (form.phone) updatedUserData.phone = form.phone;
       if (form.graduationYear)
         updatedUserData.graduationYear = form.graduationYear;
       if (form.major) updatedUserData.major = form.major;
       if (profileImg) updatedUserData.profileImg = profileImg;
-
+      if (userData.expoPushToken) updatedUserData.expoPushToken = userData.expoPushToken;
+ 
       // update firestore
       const schoolKey = await emailSplit();
       await setDoc(

@@ -167,7 +167,7 @@ const Main = () => {
       <Stack.Screen
         name="ImageViewerScreen"
         component={ImageViewerScreen}
-        options={headerProps}
+        options={noTitleProps}
       />
       <Stack.Screen
         name="InClubView"

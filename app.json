@@ -2,7 +2,7 @@
   "expo": {
     "name": "Bark",
     "slug": "Bark",
-    "version": "1.0.8",
+    "version": "1.0.9",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -17,7 +17,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.sbpete.Bark",
-      "buildNumber": "1.0.8",
+      "buildNumber": "1.0.9",
       "infoPlist": {
         "NSPrivacyAccessedAPITypes": [
           {
@@ -56,7 +56,8 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "The app accesses your photos to let you share them with your friends."
+          "photosPermission": "The app accesses your photos to let you share them with your friends in chat messages and personalize your profile picture.",
+          "cameraPermission": "The app accesses your camera to let you take photos and share them with your friends in chat messages."
         }
       ]
     ],

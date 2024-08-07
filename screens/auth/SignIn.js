@@ -128,7 +128,11 @@ const SignIn = ({ route, navigation }) => {
         </View>
 
         <View style={styles.signInContainer}>
-          <CustomText style={styles.title} text="Welcome back!" font="bold" />
+          <CustomText
+            style={[styles.title, { color: colors.text }]}
+            text="Welcome back!"
+            font="bold"
+          />
 
           <CustomInput
             placeholder="Email"
@@ -167,12 +171,12 @@ const SignIn = ({ route, navigation }) => {
           <TouchableOpacity onPress={onForgotPasswordPressed}>
             <CustomText text="Forgot Password?" style={styles.signupLink} />
           </TouchableOpacity>
-          <CustomText style={styles.signupText} text="Don't have an account?" />
+          <CustomText
+            style={[styles.signupText, { color: colors.textLight }]}
+            text="Don't have an account?"
+          />
           <TouchableOpacity onPress={onSignUp}>
-            <CustomText
-              style={styles.signupLink}
-              text="Sign Up"
-            />
+            <CustomText style={styles.signupLink} text="Sign Up" />
           </TouchableOpacity>
         </View>
 

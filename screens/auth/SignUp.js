@@ -98,6 +98,7 @@ const SignUp = ({ route, navigation }) => {
       const user = {
         userName: userName,
         email: email,
+        password: password,
         firstName: firstName,
         lastName: lastName,
         id: response.user.uid,
@@ -116,7 +117,7 @@ const SignUp = ({ route, navigation }) => {
       await AsyncStorage.clear();
 
       // navigate to verify school
-      navigation.navigate("VerifySchool");      
+      navigation.navigate("VerifySchool");
     } catch (error) {
       console.log(error);
       setErrorMessage("Signup failed: " + error.message);
@@ -137,7 +138,7 @@ const SignUp = ({ route, navigation }) => {
 
         <View style={styles.signInContainer}>
           <CustomText
-            style={styles.title}
+            style={[styles.title, { color: colors.text }]}
             text="Nice to meet you."
             font="bold"
           />
@@ -193,7 +194,7 @@ const SignUp = ({ route, navigation }) => {
           )}
 
           <CustomText
-            style={styles.signupText}
+            style={[styles.signupText, { color: colors.textLight }]}
             text={"Have an account already?"}
           />
           <TouchableOpacity onPress={onLoginIn}>

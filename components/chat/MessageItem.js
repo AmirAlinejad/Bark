@@ -39,6 +39,7 @@ const MessageItem = ({
   messageRef,
   setReplyingToMessage,
   swipeable,
+  onLongPress,
 }) => {
   const { colors } = useTheme();
   const maxReplyToTextLength = 20; // Maximum length of the reply to text
@@ -77,7 +78,7 @@ const MessageItem = ({
   let replyToText = "";
   if (item.replyTo) {
     replyToText =
-      item.replyTo.text.length > maxReplyToTextLength
+      item.replyTo.text && item.replyTo.text.length > maxReplyToTextLength
         ? `${item.replyTo.text.substring(0, 20)}...`
         : item.replyTo.text;
   }
@@ -180,13 +181,11 @@ const MessageItem = ({
           <ProfileImg profileImg={item.user.avatar} width={40} />
         </TouchableOpacity>
         <View style={{ flex: 1 }}>
-          {item.user._id != userId && (
-            <CustomText
-              style={[styles.senderName, { color: colors.text }]}
-              text={item.user.first + " " + item.user.last}
-              font="light"
-            />
-          )}
+          <CustomText
+            style={[styles.senderName, { color: colors.text }]}
+            text={item.user.first + " " + item.user.last}
+            font="light"
+          />
           {/* Display text message */}
           {item.text && (
             <Hyperlink
@@ -200,7 +199,7 @@ const MessageItem = ({
           )}
           {/* Display image with option to view larger */}
           {item.image && (
-            <TouchableOpacity onPress={onImagePress}>
+            <TouchableOpacity onPress={onImagePress} onLongPress={onLongPress}>
               <Image source={{ uri: item.image }} style={styles.messageImage} />
             </TouchableOpacity>
           )}
@@ -275,7 +274,7 @@ const MessageItem = ({
                   />
                   <View style={styles.pollOption}>
                     <CustomText
-                      style={{fontSize: 12, color: colors.textLight }}
+                      style={{ fontSize: 12, color: colors.textLight }}
                       text={`(${votesArray()[option.id]})  `}
                     />
 
