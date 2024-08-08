@@ -85,6 +85,7 @@ const MapPicker = ({ route, navigation }) => {
             textAlignVertical: "center",
             backgroundColor: "transparent",
             borderRadius: 20,
+            color: colors.text,
           },
           textInputContainer: {
             margin: 20,
@@ -102,17 +103,21 @@ const MapPicker = ({ route, navigation }) => {
             marginHorizontal: 20,
             maxHeight: 268,
           },
-          predefinedPlacesDescription: {
-            color: colors.text,
-          },
           separator: {
             backgroundColor: colors.inputBorder,
+            height: 1,
           },
           description: {
             color: colors.text,
+            backgroundColor: colors.card,
           },
           poweredContainer: {
             display: "none",
+          },
+          row: {
+            padding: 10,
+            height: 40,
+            backgroundColor: colors.card,
           },
         }}
         onPress={(data, details = null) => {
@@ -148,14 +153,6 @@ const styles = StyleSheet.create({
       width: "100%",
       marginTop: "35%",
       zIndex: 1000,
-    },
-    predefinedPlacesDescription: {
-      color: "#1faadb",
-    },
-    separator: {
-      backgroundColor: "#e0e0e0",
-      height: 1,
-      marginHorizontal: 20,
     },
   },
   backButton: {

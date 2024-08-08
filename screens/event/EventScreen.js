@@ -324,7 +324,7 @@ const EventScreen = ({ route, navigation }) => {
           <CustomButton
             icon={RSVPList.includes(userData.id) ? "checkmark" : "people"}
             color={
-              RSVPList.includes(userData.id) ? colors.darkGray : colors.button
+              RSVPList.includes(userData.id) ? colors.gray : colors.button
             }
             text={`RSVP`}
             onPress={toggleRSVP}

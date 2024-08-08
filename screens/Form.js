@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 // react native components
 import { View, StyleSheet, TextInput, TouchableOpacity } from "react-native";
 // my components
@@ -12,10 +12,14 @@ import {
 } from "react-native-dropdown-select-list";
 // colors
 import { useTheme } from "@react-navigation/native";
-import DateTimePicker from "@react-native-community/datetimepicker";
+import RNDateTimePicker from "@react-native-community/datetimepicker";
+// global context
+import { GlobalContext } from "../App";
 
 const Form = ({ formPropertiesAndTypes, form, setForm, navigation, clubId, clubCategories }) => {
   const { colors } = useTheme();
+
+  const [state, setState] = useContext(GlobalContext);
 
   // update form state
   const updateForm = (key, value) => {
@@ -185,13 +189,14 @@ const Form = ({ formPropertiesAndTypes, form, setForm, navigation, clubId, clubC
       );
     } else if (type == "date") {
       return (
-        <DateTimePicker
+        <RNDateTimePicker
           value={new Date(form[propName])}
           mode="datetime"
           onChange={(event, date) => {
             updateForm(propName, date);
           }}
           style={styles.dateTimePicker}
+          themeVariant={state.theme}
         />
       );
     // } else if (type == "time") {

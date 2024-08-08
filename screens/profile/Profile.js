@@ -1,19 +1,11 @@
 import React, { useState, useEffect } from "react";
 // react native components
-import {
-  View,
-  StyleSheet,
-  TouchableOpacity,
-  FlatList,
-  Switch,
-  ScrollView,
-} from "react-native";
+import { View, StyleSheet, TouchableOpacity, ScrollView } from "react-native";
+import { useFocusEffect } from "@react-navigation/native";
 // my components
 import CustomText from "../../components/display/CustomText";
 import ProfileImg from "../../components/display/ProfileImg";
 import IconButton from "../../components/buttons/IconButton";
-import Header from "../../components/display/Header";
-import IconText from "../../components/display/IconText";
 import CustomButton from "../../components/buttons/CustomButton";
 // functions
 import {
@@ -117,20 +109,23 @@ const Profile = ({ navigation }) => {
     setSyncGoogleCalendar(false);
   };
 
-  useEffect(() => {
-    const asyncFunc = async () => {
-      setLoading(true);
-      await getSetUserData(setUserData);
+  const asyncFunc = async () => {
+    setLoading(true);
+    await getSetUserData(setUserData);
 
-      // check if user is signed in to google calendar
-      const isSignedIn = await checkToggleSyncGoogleCalendar();
-      setSyncGoogleCalendar(isSignedIn);
+    // check if user is signed in to google calendar
+    const isSignedIn = await checkToggleSyncGoogleCalendar();
+    setSyncGoogleCalendar(isSignedIn);
 
-      setLoading(false);
-    };
+    setLoading(false);
+  };
 
-    asyncFunc();
-  }, []);
+  // get data from firebase
+  useFocusEffect(
+    React.useCallback(() => {
+      asyncFunc();
+    }, [])
+  );
 
   // navigate to edit profile screen
   const goToEditProfile = () => {
@@ -221,7 +216,7 @@ const Profile = ({ navigation }) => {
             <Modal isVisible={deleteAccountModal}>
               <View style={styles.modalContainer}>
                 <CustomText
-                  style={[ styles.modalText, { color: colors.text }]}
+                  style={[styles.modalText, { color: colors.text }]}
                   text="Are you sure you want to delete your account?"
                 />
                 <View style={styles.modalButtons}>

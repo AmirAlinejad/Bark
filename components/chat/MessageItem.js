@@ -295,7 +295,7 @@ const MessageItem = ({
                       />
                     </View>
 
-                    {item.voters.includes(userId) && (
+                    {!item.voters.includes(userId) && (
                       <View style={styles.pollOptionButton}>
                         <CustomButton
                           text="Vote"
@@ -397,6 +397,7 @@ const styles = StyleSheet.create({
     borderRadius: 15,
     marginBottom: 5,
     marginRight: 16,
+    paddingBottom: 10,
   },
   pollQuestion: {
     marginBottom: 12,

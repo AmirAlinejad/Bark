@@ -7,6 +7,7 @@ import {
   Text,
   FlatList,
   ScrollView,
+  Alert,
 } from "react-native";
 // expo image
 import { Image } from "expo-image";
@@ -38,6 +39,7 @@ import CustomInput from "../input/CustomInput";
 import SearchBar from "../input/SearchBar";
 import CustomButton from "../buttons/CustomButton";
 import IconButton from "../buttons/IconButton";
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scrollview";
 
 const BottomSheetModal = ({
   isVisible,
@@ -123,7 +125,12 @@ const BottomSheetModal = ({
           color={modalMode === item.key ? colors.button : colors.textLight}
         />
         <CustomText
-          style={[styles.optionText, { color: modalMode === item.key ? colors.button : colors.textLight }]}
+          style={[
+            styles.optionText,
+            {
+              color: modalMode === item.key ? colors.button : colors.textLight,
+            },
+          ]}
           text={item.key}
         />
       </TouchableOpacity>
@@ -294,6 +301,8 @@ const BottomSheetModal = ({
       } catch (error) {
         console.error("Error sending message:", error);
       }
+    } else {
+      Alert.alert("Error", "Please enter a question and at least two options.");
     }
   }, [questionText, voteOptions]);
 
@@ -359,7 +368,7 @@ const BottomSheetModal = ({
               </View>
             )}
             {modalMode === "Poll" && (
-              <ScrollView
+              <KeyboardAwareScrollView
                 style={{
                   flex: 1,
                   padding: 16,
@@ -369,6 +378,7 @@ const BottomSheetModal = ({
                 contentContainerStyle={{ width: "100%" }}
               >
                 {/* Title */}
+
                 <View
                   style={{
                     flex: 1,
@@ -397,19 +407,20 @@ const BottomSheetModal = ({
                   style={{ fontSize: 24, color: colors.textLight }}
                   text="Answers"
                 />
+
                 <FlatList
                   scrollEnabled={false}
                   data={voteOptions}
                   renderItem={renderPollItem}
                   keyExtractor={(item) => item.id}
-                  ListFooterComponent={renderPollFooter}
+                  ListFooterComponent={renderPollFooter()}
                 />
 
                 {/* Post button */}
                 <View style={{ alignItems: "center" }}>
                   <CustomButton onPress={sendPoll} text="Post" />
                 </View>
-              </ScrollView>
+              </KeyboardAwareScrollView>
             )}
           </View>
         </TouchableWithoutFeedback>
