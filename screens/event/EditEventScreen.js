@@ -9,7 +9,7 @@ import Form from "../Form";
 // modal
 import Modal from "react-native-modal";
 // backend
-import { doc, setDoc, updateDoc } from "firebase/firestore";
+import { doc, setDoc } from "firebase/firestore";
 import { firestore } from "../../backend/FirebaseConfig";
 // functions
 import {
@@ -27,7 +27,6 @@ const EditEventScreen = ({ route, navigation }) => {
   // get user data from previous screen
   const event = route.params.event;
   const fromMap = route.params.fromMap;
-  console.log("editing event", event);
 
   // state variables
   const [form, setForm] = useState({
@@ -116,6 +115,7 @@ const EditEventScreen = ({ route, navigation }) => {
     setLoading(true);
     e.preventDefault();
 
+    console.log("editing event", event);
     console.log("form: ", form);
 
     // check if any fields are empty
@@ -136,16 +136,12 @@ const EditEventScreen = ({ route, navigation }) => {
         name: form.eventName,
         description: form.eventDescription,
         date: form.date.toString(),
-        // time: form.eventTime.toTimeString(),
         publicEvent: form.publicEvent,
       };
-
       if (form.duration) updatedEvent.duration = form.duration;
-      if (form.location) updatedEvent.location = form.location;
       if (form.address) updatedEvent.address = form.address;
       if (form.roomNumber) updatedEvent.roomNumber = form.roomNumber;
       if (form.instructions) updatedEvent.instructions = form.instructions;
-      console.log("updatedEvent: ", updatedEvent);
 
       // update event in firestore
       const eventDoc = doc(
@@ -165,16 +161,17 @@ const EditEventScreen = ({ route, navigation }) => {
         "calendarData",
         event.id
       ); // 'schools/{schoolId}/calendarData/{eventId}
-      await setDoc(calendarDataDoc, {
+
+      const updatedCalendarData = {
         clubId: event.clubId,
         id: event.id,
         name: form.eventName,
         date: form.date.toString(),
-        // time: form.eventTime.toTimeString(),
         categories: event.categories,
         publicEvent: form.publicEvent,
-        address: form.address,
-      });
+      };
+
+      await setDoc(calendarDataDoc, updatedCalendarData);
 
       updateEventInGoogleCalendar(updatedEvent);
 
@@ -229,6 +226,7 @@ const EditEventScreen = ({ route, navigation }) => {
             form={form}
             setForm={setForm}
             navigation={navigation}
+            eventId={event.id}
             clubId={event.clubId}
             clubCategories={event.categories}
           />
@@ -297,8 +295,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   buttonContainer: {
-    width: 400,
-    height: 100,
+    marginTop: 10,
   },
   largeInputContainer: {
     borderWidth: 1,

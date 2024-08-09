@@ -38,7 +38,7 @@ const MapPicker = ({ route, navigation }) => {
         event: newEvent,
         clubId: event.clubId,
         clubName: event.clubName,
-        clubCategories: event.categories,
+        categories: event.categories,
         fromMap: true,
       });
     }

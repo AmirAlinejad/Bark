@@ -115,6 +115,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "flex-start",
     width: "100%",
+    backgroundColor: "transparent",
   },
   dateTitle: {
     fontSize: 20,

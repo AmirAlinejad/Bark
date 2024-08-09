@@ -11,13 +11,22 @@ import {
   SelectList,
 } from "react-native-dropdown-select-list";
 // colors
-import { useTheme } from "@react-navigation/native";
+import { useTheme, useRoute } from "@react-navigation/native";
 import RNDateTimePicker from "@react-native-community/datetimepicker";
 // global context
 import { GlobalContext } from "../App";
 
-const Form = ({ formPropertiesAndTypes, form, setForm, navigation, clubId, clubCategories }) => {
+const Form = ({
+  formPropertiesAndTypes,
+  form,
+  setForm,
+  navigation,
+  eventId,
+  clubId,
+  clubCategories,
+}) => {
   const { colors } = useTheme();
+  const route = useRoute();
 
   const [state, setState] = useContext(GlobalContext);
 
@@ -29,7 +38,6 @@ const Form = ({ formPropertiesAndTypes, form, setForm, navigation, clubId, clubC
   const [array, setArray] = useState([]);
 
   useEffect(() => {
-    console.log(array);
     setForm({ ...form, categoriesSelected: array });
   }, [array]);
 
@@ -76,10 +84,8 @@ const Form = ({ formPropertiesAndTypes, form, setForm, navigation, clubId, clubC
         <MultipleSelectList
           data={options}
           setSelected={(val) => {
-            console.log(val);
             setArray(val);
           }}
-          onSelect={() => console.log(array)}
           save="value"
           boxStyles={{
             borderWidth: 1,
@@ -99,7 +105,7 @@ const Form = ({ formPropertiesAndTypes, form, setForm, navigation, clubId, clubC
           checkBoxStyles={{
             borderRadius: 12,
             borderWidth: 1,
-            backgroundColor: colors.white,
+            backgroundColor: colors.inputBorder,
             borderColor: colors.inputBorder,
           }}
           labelStyles={{
@@ -199,17 +205,17 @@ const Form = ({ formPropertiesAndTypes, form, setForm, navigation, clubId, clubC
           themeVariant={state.theme}
         />
       );
-    // } else if (type == "time") {
-    //   return (
-    //     <DateTimePicker
-    //       value={new Date(form[propName])}
-    //       mode="time"
-    //       onChange={(event, date) => {
-    //         updateForm(propName, date);
-    //       }}
-    //       style={styles.dateTimePicker}
-    //     />
-    //   );
+      // } else if (type == "time") {
+      //   return (
+      //     <DateTimePicker
+      //       value={new Date(form[propName])}
+      //       mode="time"
+      //       onChange={(event, date) => {
+      //         updateForm(propName, date);
+      //       }}
+      //       style={styles.dateTimePicker}
+      //     />
+      //   );
     } else if (type == "location") {
       const splitAddress = (address) => {
         const split = address.split(",");
@@ -217,24 +223,25 @@ const Form = ({ formPropertiesAndTypes, form, setForm, navigation, clubId, clubC
       };
       // navigate to map screen
       const onMapPressed = () => {
+        const updatedEvent = {
+          id: eventId,
+          clubId: clubId,
+          categories: clubCategories,
+          eventName: form.eventName,
+          description: form.eventDescription,
+          date: form.date.toString(),
+          publicEvent: form.publicEvent,
+        };
+        if (form.duration) updatedEvent.duration = form.duration;
+        if (form.address) updatedEvent.address = form.address;
+        if (form.roomNumber) updatedEvent.roomNumber = form.roomNumber;
+        if (form.instructions) updatedEvent.instructions = form.instructions;
+
         navigation.navigate("Map Picker", {
-          event: {
-            eventName: form.eventName,
-            description: form.eventDescription,
-            //location: location,
-            address: form.address,
-            date: form.date.toDateString(),
-            // time: form.time.toTimeString(),
-            duration: form.duration,
-            roomNumber: form.roomNumber,
-            instructions: form.instructions,
-            publicEvent: form.publicEvent,
-            clubId: clubId,
-            categories: clubCategories,
-          },
+          event: updatedEvent,
+          fromEdit: route.name === "Edit Event",
         });
       };
-      console.log("form: ", form);
       return (
         <TouchableOpacity onPress={onMapPressed}>
           <CustomText
@@ -244,7 +251,9 @@ const Form = ({ formPropertiesAndTypes, form, setForm, navigation, clubId, clubC
             ]}
             text={
               form[propName]
-                ? splitAddress(form[propName])[0] + "\n" + splitAddress(form[propName])[1]
+                ? splitAddress(form[propName])[0] +
+                  "\n" +
+                  splitAddress(form[propName])[1]
                 : "Select Location"
             }
           />

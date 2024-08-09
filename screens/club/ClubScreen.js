@@ -301,7 +301,7 @@ const ClubScreen = ({ route, navigation }) => {
               >
                 <CustomText
                   font="bold"
-                  style={{ fontSize: 24, color: colors.text }}
+                  style={{ fontSize: 24, marginBottom: 20, color: colors.text }}
                   text="Upcoming Events"
                 />
               </View>

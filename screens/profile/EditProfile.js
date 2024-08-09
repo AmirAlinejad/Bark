@@ -115,6 +115,7 @@ const EditProfile = ({ route, navigation }) => {
         lastName: form.lastName,
         id: userData.id,
         email: userData.email,
+        clubs: userData.clubs,
       };
       if (form.phone) updatedUserData.phone = form.phone;
       if (form.graduationYear)

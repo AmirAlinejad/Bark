@@ -631,7 +631,6 @@ const styles = StyleSheet.create({
   eventsContainer: {
     flex: 1,
     width: "100%",
-    marginTop: 20,
     paddingTop: 20,
     paddingHorizontal: 20,
     borderTopLeftRadius: 30,
