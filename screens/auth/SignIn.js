@@ -21,6 +21,8 @@ import { signInWithEmailAndPassword } from "firebase/auth";
 // styling
 import { useTheme } from "@react-navigation/native";
 import Animated, { FadeInUp } from "react-native-reanimated";
+// toast
+import Toast from "react-native-toast-message";
 
 const SignIn = ({ route, navigation }) => {
   // state variables
@@ -94,6 +96,15 @@ const SignIn = ({ route, navigation }) => {
 
       // set school key in async storage
       await AsyncStorage.setItem("schoolKey", schoolKey);
+
+      // show welcome toast
+      if (userData.data().clubs.length == 0) {
+        Toast.show({
+          type: "info",
+          text1: "Welcome to Bark! 🎉",
+          text2: "Join a club to start chatting with clubs and classmates!",
+        });
+      }
     } catch (error) {
       console.log(error);
       setErrorMessage(handleFirebaseError(error));
@@ -221,7 +232,7 @@ const styles = StyleSheet.create({
     paddingTop: 30,
   },
   logo: {
-    width: 120,
+    width: 160,
     height: 120,
     marginBottom: 20,
     marginTop: 100,

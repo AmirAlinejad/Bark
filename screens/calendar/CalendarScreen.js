@@ -34,6 +34,8 @@ import { useTheme } from "@react-navigation/native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 // stack navigator
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
+// toast
+import Toast from "react-native-toast-message";
 
 // calendar config
 LocaleConfig.locales["eng"] = {
@@ -123,6 +125,15 @@ const CalendarScreen = ({ navigation }) => {
     await getSetCalendarData(setEventData);
     await getSetMyClubsData(setMyClubsData);
 
+    // show toast message if no clubs
+    if (userData && userData.clubs.length == 0) {
+      Toast.show({
+        type: "info",
+        text1: "Manage your calendar! 📅",
+        text2: "Use the filter to find new events that interest you.",
+      });
+    }
+
     setLoading(false);
   };
 
@@ -161,7 +172,7 @@ const CalendarScreen = ({ navigation }) => {
   // filter for events
   const filterFunct = (event) => {
     // if not same month as calendar
-   
+
     if (new Date(event.date).getMonth() != currenMonth) {
       return false;
     }

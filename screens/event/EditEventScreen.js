@@ -173,7 +173,7 @@ const EditEventScreen = ({ route, navigation }) => {
 
       await setDoc(calendarDataDoc, updatedCalendarData);
 
-      updateEventInGoogleCalendar(updatedEvent);
+      // updateEventInGoogleCalendar(updatedEvent);
 
       navigation.navigate("Home Screen"); // make go back to event screen eventually
     } catch (error) {

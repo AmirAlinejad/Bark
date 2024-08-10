@@ -6,7 +6,7 @@ import { getDatabase } from 'firebase/database';
 // Your web app's Firebase configuration
 const firebaseConfig = {
    apiKey: "AIzaSyBQ-PmZzg0lKOtRTJ4iwNHyevsjq8wmAQI",
-   authDomain: "bark-mobile.com",
+   authDomain: "kaddie-61311.firebaseapp.com",
    projectId: "kaddie-61311",
    storageBucket: "kaddie-61311.appspot.com",
    messagingSenderId: "931727636427",

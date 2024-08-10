@@ -30,6 +30,8 @@ import {
 } from "../../functions/backendFunctions";
 // styles
 import { useTheme } from "@react-navigation/native";
+// toast
+import Toast from "react-native-toast-message";
 
 const Stack = createNativeStackNavigator();
 

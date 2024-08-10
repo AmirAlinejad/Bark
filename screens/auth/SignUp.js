@@ -219,7 +219,6 @@ const styles = StyleSheet.create({
   topElements: {
     justifyContent: "center",
     marginTop: 40,
-    marginLeft: 40,
   },
   signInContainer: {
     flex: 1,
@@ -229,7 +228,7 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 30,
   },
   logo: {
-    width: 100,
+    width: 160,
     height: 100,
     marginTop: 40,
   },

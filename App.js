@@ -15,6 +15,8 @@ import { NavigationContainer } from "@react-navigation/native";
 import * as Linking from "expo-linking";
 // backend
 import { getDarkMode } from "./functions/backendFunctions";
+// toast
+import Toast from 'react-native-toast-message';
 
 export const GlobalContext = createContext();
 
@@ -211,6 +213,8 @@ export default App = () => {
             />
           </Stack.Navigator>
         </NavigationContainer>
+
+        <Toast />
       </View>
     </GlobalContext.Provider>
   );

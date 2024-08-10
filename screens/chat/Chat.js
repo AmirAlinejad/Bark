@@ -155,7 +155,7 @@ export default function Chat({ route, navigation }) {
               <ClubImg clubImg={clubImg} width={40} />
             </View>
             <CustomText
-              text={clubName}
+              text={clubName.length > 20 ? clubName.substring(0, 20) + "..." : clubName}
               style={[styles.clubNameText, { color: colors.text }]}
               font="bold"
             />

@@ -8,6 +8,7 @@ import { signInWithEmailAndPassword } from "firebase/auth";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 // logo
 import SplashScreenImg from "../../assets/whiteLogo.png";
+import SplashScreenFx from "../../assets/splash.png";
 // gradient
 import { LinearGradient } from "expo-linear-gradient";
 // linking
@@ -19,20 +20,30 @@ import { useTheme } from "@react-navigation/native";
 const SplashScreen = ({ navigation }) => {
   const { colors } = useTheme();
 
-  state = { opacity: new Animated.Value(1), height: new Animated.Value(380) };
+  state = {
+    opacity: new Animated.Value(1),
+    height: new Animated.Value(200),
+    scale: new Animated.Value(1),
+  };
 
   showContent = () => {
-    const { opacity, height } = this.state;
+    const { opacity, height, scale } = this.state;
 
     Animated.timing(height, {
-      toValue: 0,
-      duration: 500,
+      toValue: 20,
+      duration: 1000,
       easing: Easing.linear,
       useNativeDriver: false, // <-- neccessary
     }).start();
     Animated.timing(opacity, {
       toValue: 0,
-      duration: 500,
+      duration: 1000,
+      easing: Easing.linear,
+      useNativeDriver: false, // <-- neccessary
+    }).start();
+    Animated.timing(scale, {
+      toValue: 1.2,
+      duration: 1000,
       easing: Easing.linear,
       useNativeDriver: false, // <-- neccessary
     }).start();
@@ -63,7 +74,7 @@ const SplashScreen = ({ navigation }) => {
         const user = await AsyncStorage.getItem("user").then((data) => {
           return data ? JSON.parse(data) : null;
         });
-        
+
         // if user is signed in, navigate to the home screen, otherwise navigate to the onboarding screens
         if (user) {
           // does not need auth right now but eventually will save email and password in async storage (update permissions in firebase)
@@ -71,7 +82,7 @@ const SplashScreen = ({ navigation }) => {
             const response = await signInWithEmailAndPassword(
               auth,
               user.email,
-              '123456' // fix this
+              "123456" // fix this
             );
 
             // different cases for different screens
@@ -171,13 +182,34 @@ const SplashScreen = ({ navigation }) => {
         }}
       />
       <Animated.Image
-        source={SplashScreenImg}
+        source={SplashScreenFx}
         style={{
-          opacity: this.state.opacity,
-          width: this.state.height,
-          height: this.state.height,
+          width: "100%",
+          height: "100%",
+          transform: [{ scale: this.state.scale }],
         }}
       />
+
+      <View
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          width: "100%",
+          height: "100%",
+          justifyContent: "center",
+          alignItems: "center",
+        }}
+      >
+        <Animated.Image
+          source={SplashScreenImg}
+          style={{
+            opacity: this.state.opacity,
+            width: this.state.height,
+            height: this.state.height,
+          }}
+        />
+      </View>
     </View>
   );
 };

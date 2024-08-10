@@ -15,9 +15,6 @@ import {
 import { firestore } from "../../backend/FirebaseConfig";
 // date time picker
 import { doc, setDoc } from "firebase/firestore"; // firestore
-// maps
-import MapView, { Marker } from "react-native-maps";
-import Geocoder from "react-native-geocoding";
 // styles
 import { useTheme } from "@react-navigation/native";
 // scroll view

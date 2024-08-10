@@ -851,7 +851,7 @@ const handleDocumentUploadAndSend = async (
   }
 
   console.log("document: ", pickerResult);
-  console.log("document uri: ",pickerResult.assets[0].uri);
+  console.log("document uri: ", pickerResult.assets[0].uri);
 
   if (!pickerResult.canceled) {
     handleDocumentUpload(chatType, setDocumentUrl, pickerResult.assets[0].uri);
@@ -1000,8 +1000,8 @@ const deleteAccount = async () => {
       Alert.alert("Error deleting user:", error);
     });
 
-  // clear async storage
-  await AsyncStorage.clear();
+  // clear user data from async storage
+  AsyncStorage.clear();
 };
 
 // add user to attendance for an event
@@ -1091,6 +1091,26 @@ const getClubCalendarData = async (clubId, setter) => {
   return setter(eventsSnapshot.docs.map((doc) => doc.data()));
 };
 
+const getClubCalendarDataForGoogle = async (clubId, setter) => {
+  const schoolKey = await emailSplit();
+
+  const eventsDocRef = collection(
+    firestore,
+    "schools",
+    schoolKey,
+    "calendarData"
+  );
+  const eventsQuery = query(eventsDocRef, where("clubId", "==", clubId));
+  const eventsSnapshot = await getDocs(eventsQuery);
+
+  if (eventsSnapshot.empty) {
+    console.log("No events found.");
+    return;
+  }
+
+  return eventsSnapshot.docs.map((doc) => doc.data());
+};
+
 // sync events to google calendar
 const syncEventsToGoogleCalendar = async () => {
   // get events for clubs user is in
@@ -1100,14 +1120,16 @@ const syncEventsToGoogleCalendar = async () => {
     const user = JSON.parse(userData);
     const clubs = user.clubs;
 
-    // get user's events
     let events = [];
-    for (let i = 0; i < clubs.length; i++) {
-      const clubId = clubs[i];
-      const clubEvents = await getClubCalendarData(clubId);
+    if (user.clubs) {
+      // get user's events
+      for (let i = 0; i < clubs.length; i++) {
+        const clubId = clubs[i];
+        const clubEvents = await getClubCalendarDataForGoogle(clubId);
 
-      if (clubEvents) {
-        events = [...events, ...clubEvents];
+        if (clubEvents) {
+          events = [...events, ...clubEvents];
+        }
       }
     }
 
@@ -1116,6 +1138,7 @@ const syncEventsToGoogleCalendar = async () => {
       const event = events[i];
       console.log("Event:", event);
       const eventDate = event.date;
+      const minutes = event.duration ? event.duration : 30;
 
       // create event object
       const newEvent = {
@@ -1125,7 +1148,7 @@ const syncEventsToGoogleCalendar = async () => {
           timeZone: getTimeZoneOffset(), // change to user's timezone
         },
         end: {
-          dateTime: new Date(eventDate + 30).toLocaleDateString(),
+          dateTime: new Date(eventDate + minutes*60000).toLocaleDateString(),
           timeZone: getTimeZoneOffset(),
         },
       };
@@ -1162,18 +1185,27 @@ const unsyncEventsFromGoogleCalendar = async () => {
 
 // sign in to google calendar
 const signInToGoogleCalendar = async () => {
-  apiCalendar.handleAuthClick();
+  try {
+    apiCalendar.handleAuthClick();
 
-  // set signed in to true in async storage
-  await AsyncStorage.setItem("googleCalendarSignedIn", "true");
+    // set signed in to true in async storage
+    await AsyncStorage.setItem("googleCalendarSignedIn", "true");
+  } catch (error) {
+    await AsyncStorage.setItem("googleCalendarSignedIn", "false");
+    console.error("Error signing in to Google Calendar", error);
+  }
 };
 
 // sign out of google calendar
 const signOutFromGoogleCalendar = async () => {
-  apiCalendar.handleSignoutClick();
+  try {
+    apiCalendar.handleSignoutClick();
 
-  // set signed in to false in async storage
-  await AsyncStorage.setItem("googleCalendarSignedIn", "false");
+    // set signed in to false in async storage
+    await AsyncStorage.setItem("googleCalendarSignedIn", "false");
+  } catch (error) {
+    console.error("Error signing out from Google Calendar", error);
+  }
 };
 
 // check if user is signed in to google calendar

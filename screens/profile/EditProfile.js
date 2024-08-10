@@ -1,6 +1,11 @@
 import React, { useState } from "react";
 // react native components
-import { View, StyleSheet, TouchableOpacity, ActivityIndicator } from "react-native";
+import {
+  View,
+  StyleSheet,
+  TouchableOpacity,
+  ActivityIndicator,
+} from "react-native";
 // storage
 import AsyncStorage from "@react-native-async-storage/async-storage";
 // keyboard avoiding view
@@ -22,7 +27,6 @@ import { MAJORS } from "../../macros/macros";
 // backend
 import { doc, setDoc } from "firebase/firestore";
 import { firestore } from "../../backend/FirebaseConfig";
-import parseErrorStack from "react-native/Libraries/Core/Devtools/parseErrorStack";
 
 const EditProfile = ({ route, navigation }) => {
   // get user data from previous screen
@@ -59,13 +63,13 @@ const EditProfile = ({ route, navigation }) => {
     },
     {
       propName: "phone",
-      type: "text",
+      type: "phone",
       title: "Phone Number",
       placeholder: "Phone Number",
     },
     {
       propName: "graduationYear",
-      type: "text",
+      type: "year",
       title: "Graduation Year",
       placeholder: "Graduation Year",
     },
@@ -105,7 +109,24 @@ const EditProfile = ({ route, navigation }) => {
       setLoading(false);
       return;
     }
-  
+
+    // check phone number
+    let phoneNum = null;
+    if (form.phone) {
+      phoneNum = form.phone
+        .replace("-", "")
+        .replace("(", "")
+        .replace(")", "")
+        .replace(" ", "");
+    }
+    if (form.phone && phoneNum) {
+      if (phoneNum.length !== 10) {
+        alert("Please enter a valid phone number");
+        setLoading(false);
+        return;
+      }
+    }
+
     // try to submit the edit profile request
     try {
       let updatedUserData = {
@@ -117,13 +138,14 @@ const EditProfile = ({ route, navigation }) => {
         email: userData.email,
         clubs: userData.clubs,
       };
-      if (form.phone) updatedUserData.phone = form.phone;
+      if (phoneNum) updatedUserData.phone = phoneNum;
       if (form.graduationYear)
         updatedUserData.graduationYear = form.graduationYear;
       if (form.major) updatedUserData.major = form.major;
       if (profileImg) updatedUserData.profileImg = profileImg;
-      if (userData.expoPushToken) updatedUserData.expoPushToken = userData.expoPushToken;
- 
+      if (userData.expoPushToken)
+        updatedUserData.expoPushToken = userData.expoPushToken;
+
       // update firestore
       const schoolKey = await emailSplit();
       await setDoc(

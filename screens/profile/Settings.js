@@ -17,6 +17,7 @@ import {
   syncEventsToGoogleCalendar,
   unsyncEventsFromGoogleCalendar,
   checkToggleSyncGoogleCalendar,
+  checkGoogleCalendarSignIn,
   toggleSyncGoogleCalendar,
   signInToGoogleCalendar,
   setDarkMode,
@@ -77,22 +78,22 @@ const Settings = ({ navigation }) => {
     {
       title: "App Settings",
       data: [
-        // {
-        //   id: "7",
-        //   switch: true,
-        //   icon: "calendar-outline",
-        //   text: "Sync to Google Calendar",
-        //   onPress: () => {
-        //     if (syncGoogleCalendar) {
-        //       unSyncFromGoogleCalendar();
-        //       setSyncGoogleCalendar(false);
-        //     } else {
-        //       syncToGoogleCalendar();
-        //       setSyncGoogleCalendar(true);
-        //     }
-        //   },
-        //   value: syncGoogleCalendar,
-        // },
+        {
+          id: "7",
+          switch: true,
+          icon: "calendar-outline",
+          text: "Sync to Google Calendar",
+          onPress: () => {
+            if (syncGoogleCalendar) {
+              unSyncFromGoogleCalendar();
+              setSyncGoogleCalendar(false);
+            } else {
+              syncToGoogleCalendar();
+              setSyncGoogleCalendar(true);
+            }
+          },
+          value: syncGoogleCalendar,
+        },
         {
           id: "8",
           switch: true,
@@ -154,30 +155,28 @@ const Settings = ({ navigation }) => {
   ];
 
   const syncToGoogleCalendar = async () => {
-    // // see if user is logged in to google calendar
-    // const isSignedIn = await checkGoogleCalendarSignIn();
+    // see if user is logged in to google calendar
+    const isSignedIn = await checkGoogleCalendarSignIn();
 
-    // // if not signed in, then sign in
-    // if (!isSignedIn) {
-    //   await signInToGoogleCalendar();
-    // }
-    signInToGoogleCalendar();
+    // if not signed in, then sign in
+    if (!isSignedIn) {
+      await signInToGoogleCalendar();
+    }
 
     // sync to google calendar
     syncEventsToGoogleCalendar();
 
     toggleSyncGoogleCalendar("true");
-    setSyncGoogleCalendar(true);
   };
 
   // unsync
   const unSyncFromGoogleCalendar = async () => {
     // maybe eventually sign out from google calendar
     //await signOutFromGoogleCalendar();
+    console.log('sign out from google calendar')
     unsyncEventsFromGoogleCalendar();
 
     toggleSyncGoogleCalendar("false");
-    setSyncGoogleCalendar(false);
   };
 
   useEffect(() => {

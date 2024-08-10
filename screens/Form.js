@@ -15,6 +15,8 @@ import { useTheme, useRoute } from "@react-navigation/native";
 import RNDateTimePicker from "@react-native-community/datetimepicker";
 // global context
 import { GlobalContext } from "../App";
+// phone input
+import PhoneInput from "react-native-phone-number-input";
 
 const Form = ({
   formPropertiesAndTypes,
@@ -49,6 +51,26 @@ const Form = ({
           value={form[propName]}
           setValue={(val) => updateForm(propName, val)}
           maxLength={50}
+        />
+      );
+    } else if (type == "year") {
+      return (
+        <CustomInput
+          placeholder={placeholder}
+          value={form[propName]}
+          setValue={(val) => updateForm(propName, val)}
+          maxLength={4}
+          keyboardType="numeric"
+        />
+      );
+    } else if (type === "phone") {
+      return (
+        <CustomInput
+          placeholder={placeholder}
+          value={form[propName]}
+          setValue={(val) => updateForm(propName, val)}
+          maxLength={14}
+          keyboardType="numeric"
         />
       );
     } else if (type === "textLong") {
