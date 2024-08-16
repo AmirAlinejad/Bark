@@ -26,8 +26,10 @@ import * as ImagePicker from "expo-image-picker";
 import * as DocumentPicker from "expo-document-picker";
 // functions
 import { handleImageUpload, handleDocumentUpload } from "./uploadImage";
-// google calendar
+//  calendar
 import { apiCalendar } from "../backend/CalendarApiConfig";
+import RNCalendarEvents from "react-native-calendar-events";
+import * as Calendar from "expo-calendar";
 
 const emailSplit = async () => {
   // try async storage first
@@ -698,13 +700,13 @@ const fetchMessages = async (
     // if poll, get poll data
     if (doc.data().voteOptions) {
       const voteOptions = doc.data().voteOptions;
-      const pollQuestion = doc.data().pollQuestion;
+      const question = doc.data().question;
       const votes = doc.data().votes;
       const voters = doc.data().voters;
 
       const pollData = {
         voteOptions: voteOptions,
-        pollQuestion: pollQuestion,
+        question: question,
         votes: votes,
         voters: voters,
       };
@@ -714,7 +716,7 @@ const fetchMessages = async (
         createdAt: doc.data().createdAt.toDate(),
         user: doc.data().user,
         voteOptions: voteOptions,
-        pollQuestion: pollQuestion,
+        question: question,
         votes: votes,
         voters: voters,
         pinned: doc.data().pinned || false,
@@ -1091,15 +1093,10 @@ const getClubCalendarData = async (clubId, setter) => {
   return setter(eventsSnapshot.docs.map((doc) => doc.data()));
 };
 
-const getClubCalendarDataForGoogle = async (clubId, setter) => {
+const getEventDataForClub = async (clubId) => {
   const schoolKey = await emailSplit();
 
-  const eventsDocRef = collection(
-    firestore,
-    "schools",
-    schoolKey,
-    "calendarData"
-  );
+  const eventsDocRef = collection(firestore, "schools", schoolKey, "eventData");
   const eventsQuery = query(eventsDocRef, where("clubId", "==", clubId));
   const eventsSnapshot = await getDocs(eventsQuery);
 
@@ -1111,8 +1108,56 @@ const getClubCalendarDataForGoogle = async (clubId, setter) => {
   return eventsSnapshot.docs.map((doc) => doc.data());
 };
 
-// sync events to google calendar
-const syncEventsToGoogleCalendar = async () => {
+////////////////////////// calendar functions  //////////////////////////
+// get default calendar source (helper)
+async function getDefaultCalendarSource() {
+  const defaultCalendar = await Calendar.getDefaultCalendarAsync();
+  return defaultCalendar.source;
+}
+
+// create calendar
+async function getCalendar() {
+  // see if calendar id is already saved
+  // const calendarID = await AsyncStorage.getItem("calendarID");
+
+  // if (calendarID) {
+  //   console.log("Calendar ID found:", calendarID);
+  //   return calendarID;
+  // }
+
+  const defaultCalendarSource = await getDefaultCalendarSource();
+  const newCalendarID = await Calendar.createCalendarAsync({
+    title: "Bark Calendar",
+    color: "red",
+    entityType: Calendar.EntityTypes.EVENT,
+    sourceId: defaultCalendarSource.id,
+    source: defaultCalendarSource,
+    name: "internalCalendarName",
+    ownerAccount: "personal",
+    accessLevel: Calendar.CalendarAccessLevel.OWNER,
+  });
+
+  // save calendar ID to async storage
+  await AsyncStorage.setItem("calendarID", newCalendarID);
+  return newCalendarID;
+}
+
+// sync events to calendar
+const syncEventsToCalendar = async () => {
+  // delete old calendar
+  await unsyncEventsFromCalendar();
+
+  // get calendar ID
+  const calendarID = await getCalendar();
+  console.log("Calendar ID:", calendarID);
+
+  // get calendar events (eventually cross-reference to make sure no duplicates)
+  // const events = await Calendar.getEventsAsync(
+  //   [calendarID],
+  //   new Date(),
+  //   new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days from now
+  // );
+
   // get events for clubs user is in
   const userData = await AsyncStorage.getItem("user");
 
@@ -1125,7 +1170,7 @@ const syncEventsToGoogleCalendar = async () => {
       // get user's events
       for (let i = 0; i < clubs.length; i++) {
         const clubId = clubs[i];
-        const clubEvents = await getClubCalendarDataForGoogle(clubId);
+        const clubEvents = await getEventDataForClub(clubId);
 
         if (clubEvents) {
           events = [...events, ...clubEvents];
@@ -1133,142 +1178,102 @@ const syncEventsToGoogleCalendar = async () => {
       }
     }
 
-    // for each event, add to google calendar
+    // for each event, add to calendar
     for (let i = 0; i < events.length; i++) {
       const event = events[i];
-      console.log("Event:", event);
-      const eventDate = event.date;
-      const minutes = event.duration ? event.duration : 30;
-
-      // create event object
-      const newEvent = {
-        summary: event.name,
-        start: {
-          dateTime: new Date(eventDate).toLocaleDateString(),
-          timeZone: getTimeZoneOffset(), // change to user's timezone
-        },
-        end: {
-          dateTime: new Date(eventDate + minutes*60000).toLocaleDateString(),
-          timeZone: getTimeZoneOffset(),
-        },
-      };
-
-      // add event to google calendar
-      try {
-        await apiCalendar.createEvent({
-          calendarId: "primary",
-          resource: newEvent,
-        });
-      } catch (error) {
-        console.error("Error adding event to Google Calendar:", error);
-      }
+      addEventToCalendar(event, calendarID);
     }
   }
 };
 
-// unsync events from google calendar
-const unsyncEventsFromGoogleCalendar = async () => {
-  // get all events from google calendar
-  const events = await apiCalendar.listEvents({
-    calendarId: "primary",
-  });
-
-  // delete all events
-  for (let i = 0; i < events.length; i++) {
-    const event = events[i];
-    await apiCalendar.deleteEvent({
-      calendarId: "primary",
-      eventId: event.id,
-    });
+// unsync events from  calendar
+const unsyncEventsFromCalendar = async () => {
+  // delete calendar
+  const calendarID = await AsyncStorage.getItem("calendarID");
+  if (calendarID) {
+    console.log("Calendar ID found:", calendarID);
+    await Calendar.deleteCalendarAsync(calendarID);
+    console.log("Calendar deleted");
   }
-};
 
-// sign in to google calendar
-const signInToGoogleCalendar = async () => {
-  try {
-    apiCalendar.handleAuthClick();
-
-    // set signed in to true in async storage
-    await AsyncStorage.setItem("googleCalendarSignedIn", "true");
-  } catch (error) {
-    await AsyncStorage.setItem("googleCalendarSignedIn", "false");
-    console.error("Error signing in to Google Calendar", error);
-  }
-};
-
-// sign out of google calendar
-const signOutFromGoogleCalendar = async () => {
-  try {
-    apiCalendar.handleSignoutClick();
-
-    // set signed in to false in async storage
-    await AsyncStorage.setItem("googleCalendarSignedIn", "false");
-  } catch (error) {
-    console.error("Error signing out from Google Calendar", error);
-  }
-};
-
-// check if user is signed in to google calendar
-const checkGoogleCalendarSignIn = async () => {
-  const signedIn = await AsyncStorage.getItem("googleCalendarSignedIn");
-  return signedIn === "true";
+  // delete calendar ID from async storage
+  await AsyncStorage.removeItem("calendarID");
 };
 
 // check if sync is toggled on
-const checkToggleSyncGoogleCalendar = async () => {
-  const signedIn = await AsyncStorage.getItem("syncGoogleCalendar");
+const checkToggleSyncCalendar = async () => {
+  const signedIn = await AsyncStorage.getItem("syncCalendar");
   return signedIn === "true";
 };
 
-// toggle sync google calendar async
-const toggleSyncGoogleCalendar = async (bool) => {
-  const signedIn = await AsyncStorage.getItem("syncGoogleCalendar");
+// toggle sync  calendar async
+const toggleSyncCalendar = async (bool) => {
+  const signedIn = await AsyncStorage.getItem("syncCalendar");
   if (signedIn === "true") {
-    AsyncStorage.setItem("syncGoogleCalendar", bool);
+    AsyncStorage.setItem("syncCalendar", bool);
   } else {
-    AsyncStorage.setItem("syncGoogleCalendar", bool);
+    AsyncStorage.setItem("syncCalendar", bool);
   }
 };
 
-// add new event to google calendar
-const addEventToGoogleCalendar = async (event) => {
+// add new event to  calendar
+const addEventToCalendar = async (event, calendarID) => {
+  console.log("Event:", event);
+  const eventDate = event.date;
+  const minutes = event.duration ? event.duration : 30;
+  const endDate = new Date(eventDate) + minutes * 60000;
+
   // create event object
   const newEvent = {
-    summary: event.name,
-    start: {
-      dateTime: new Date(event.date).toISOString(),
-      timeZone: getTimeZoneOffset(), // change to user's timezone
-    },
-    end: {
-      dateTime: event.duration
-        ? (new Date(event.date) + event.time + event.duration).toISOString()
-        : (new Date(event.date) + event.time + 30).toISOString(),
-      timeZone: getTimeZoneOffset(),
-    },
+    title: event.name,
+    startDate: new Date(eventDate),
+    endDate: endDate,
+    location: event.address,
+    notes: event.description,
   };
 
-  // add event to google calendar
+  // add event to  calendar
   try {
-    await apiCalendar.createEvent({
-      calendarId: "primary",
-      resource: newEvent,
-    });
+    await Calendar.createEventAsync(calendarID, newEvent);
+    console.log("Event added to Calendar");
   } catch (error) {
-    console.error("Error adding event to Google Calendar:", error);
+    console.error("Error adding event to Calendar:", error);
   }
 };
 
-// delete event from google calendar
-const deleteEventFromGoogleCalendar = async (event) => {
+const addEventToDefaultCalendar = async (event) => {
+  const defaultCalendar = await Calendar.getCalendarsAsync(
+    Calendar.EntityTypes.EVENT
+  );
+  console.log("calendars:", defaultCalendar);
+
+  const minutes = event.duration ? event.duration : 30;
+  console.log("minutes:", minutes);
+  const endDate = new Date(event.date);
+  endDate.setMinutes(endDate.getMinutes() + minutes);
+
+  const newEvent = {
+    title: event.name,
+    startDate: new Date(event.date),
+    endDate: endDate,
+    location: event.address,
+    notes: event.description,
+  };
+
+  await Calendar.createEventAsync(defaultCalendar[0].id, newEvent);
+};
+
+// delete event from calendar
+const deleteEventFromCalendar = async (event) => {
   try {
     await apiCalendar.deleteEvent(event.id);
   } catch (error) {
-    console.error("Error deleting event from Google Calendar", error);
+    console.error("Error deleting event from  Calendar", error);
   }
 };
 
-// update event in google calendar
-const updateEventInGoogleCalendar = async (event) => {
+// update event in  calendar
+const updateEventInCalendar = async (event) => {
   // create event object
   const newEvent = {
     summary: event.name,
@@ -1284,7 +1289,7 @@ const updateEventInGoogleCalendar = async (event) => {
     },
   };
 
-  // update event in google calendar
+  // update event in  calendar
   try {
     await apiCalendar.updateEvent({
       calendarId: "primary",
@@ -1292,7 +1297,7 @@ const updateEventInGoogleCalendar = async (event) => {
       resource: newEvent,
     });
   } catch (error) {
-    console.error("Error updating event in Google Calendar:", error);
+    console.error("Error updating event in  Calendar:", error);
   }
 };
 
@@ -1357,16 +1362,14 @@ export {
   handleImageUploadAndSend,
   handleDocumentUploadAndSend,
   voteInPoll,
-  syncEventsToGoogleCalendar,
-  unsyncEventsFromGoogleCalendar,
-  signInToGoogleCalendar,
-  signOutFromGoogleCalendar,
-  toggleSyncGoogleCalendar,
-  checkToggleSyncGoogleCalendar,
-  checkGoogleCalendarSignIn,
-  addEventToGoogleCalendar,
-  deleteEventFromGoogleCalendar,
-  updateEventInGoogleCalendar,
+  syncEventsToCalendar,
+  unsyncEventsFromCalendar,
+  toggleSyncCalendar,
+  checkToggleSyncCalendar,
+  // addEventToCalendar,
+  // deleteEventFromCalendar,
+  // updateEventInCalendar,
+  addEventToDefaultCalendar,
   deleteAccount,
   setDarkMode,
   getDarkMode,

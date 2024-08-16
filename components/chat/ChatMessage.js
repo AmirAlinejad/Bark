@@ -130,7 +130,7 @@ const ChatMessage = ({
           userId={userId}
           messageRef={messageRef}
           setReplyingToMessage={setReplyingToMessage}
-          swipeable={true}
+          swipeable={message.voteOptions ? false : true}
           onLongPress={() => {
             handleLongPress(
               message,

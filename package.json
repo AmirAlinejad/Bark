@@ -34,9 +34,11 @@
     "expo-notifications": "~0.28.1",
     "expo-status-bar": "~1.12.1",
     "firebase": "^10.12.4",
+    "ics": "^3.7.6",
     "react": "18.2.0",
     "react-google-calendar-api": "^2.3.0",
     "react-native": "0.74.1",
+    "react-native-calendar-events": "^2.2.0",
     "react-native-calendars": "^1.1304.1",
     "react-native-date-picker": "^5.0.0",
     "react-native-dropdown-select-list": "^2.0.5",
@@ -60,7 +62,8 @@
     "react-native-screens": "3.31.1",
     "react-native-svg": "^15.3.0",
     "react-native-swipe-modal-up-down": "^1.1.0",
-    "react-native-toast-message": "^2.2.0"
+    "react-native-toast-message": "^2.2.0",
+    "expo-calendar": "~13.0.5"
   },
   "devDependencies": {
     "@babel/core": "^7.24.0"

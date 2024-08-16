@@ -2,7 +2,7 @@
   "expo": {
     "name": "Bark",
     "slug": "Bark",
-    "version": "1.1.2",
+    "version": "1.1.4",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -17,7 +17,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.sbpete.Bark",
-      "buildNumber": "1.1.2",
+      "buildNumber": "1.1.4",
       "infoPlist": {
         "NSPrivacyAccessedAPITypes": [
           {
@@ -58,6 +58,12 @@
         {
           "photosPermission": "The app accesses your photos to let you share them with your friends in chat messages and personalize your profile picture.",
           "cameraPermission": "The app accesses your camera to let you take photos and share them with your friends in chat messages."
+        }
+      ],
+      [
+        "expo-calendar",
+        {
+          "calendarPermission": "The app accesses your calendar to let you sync your Bark events to other calendars."
         }
       ]
     ],

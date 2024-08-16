@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useContext } from "react";
 // react native components
 import {
   View,
@@ -27,10 +27,13 @@ import { doc, setDoc } from "firebase/firestore";
 import { FIREBASE_AUTH, firestore } from "../../backend/FirebaseConfig";
 // theme
 import { useTheme } from "@react-navigation/native";
+// global context
+import { GlobalContext } from "../../App";
 
-const SignUp = ({ route, navigation }) => {
-  const expoPushToken = route.params?.expoPushToken;
-  console.log(expoPushToken);
+const SignUp = ({ navigation }) => {
+
+  // global context
+  const [state, setState] = useContext(GlobalContext);
 
   // state variables
   const [userName, setUserName] = useState("");
@@ -58,6 +61,8 @@ const SignUp = ({ route, navigation }) => {
     navigation.navigate("SignIn");
   };
 
+  console.log(state);
+
   // sign up
   const onSignUpPressed = async (e) => {
     setLoading(true);
@@ -78,6 +83,15 @@ const SignUp = ({ route, navigation }) => {
 
     if (!email.endsWith(".edu")) {
       setErrorMessage("Email must end with .edu");
+      setLoading(false);
+      return;
+    }
+
+    const expoPushToken = state.expoPushToken;
+    console.log(state);
+
+    if (expoPushToken === undefined) {
+      setErrorMessage("Failed to get push token for push notification!");
       setLoading(false);
       return;
     }

@@ -1,9 +1,15 @@
 import React, { useState, useEffect, useLayoutEffect } from "react";
-import { View, StyleSheet, TouchableOpacity, ScrollView } from "react-native";
+import {
+  View,
+  StyleSheet,
+  TouchableOpacity,
+  ScrollView,
+  Alert,
+} from "react-native";
 // fade
 import Fade from "react-native-fade";
 // backend
-import { doc, updateDoc } from "firebase/firestore";
+import { doc, refEqual, updateDoc } from "firebase/firestore";
 import { firestore } from "../../backend/FirebaseConfig";
 // my components
 import CustomText from "../../components/display/CustomText";
@@ -18,6 +24,7 @@ import {
   checkMembership,
   getSetEventData,
   getSetUserData,
+  addEventToDefaultCalendar,
 } from "../../functions/backendFunctions";
 import { timeToString, reformatDate } from "../../functions/timeFunctions";
 import { goToClubScreen } from "../../functions/navigationFunctions";
@@ -25,6 +32,9 @@ import { goToClubScreen } from "../../functions/navigationFunctions";
 import { useTheme } from "@react-navigation/native";
 // clipboard
 import * as Clipboard from "expo-clipboard";
+// calendar
+import * as Calendar from "expo-calendar";
+import { I } from "@expo/html-elements";
 
 const EventScreen = ({ route, navigation }) => {
   const { eventId, fromScreen } = route.params;
@@ -72,6 +82,15 @@ const EventScreen = ({ route, navigation }) => {
 
       // get user id
       getSetUserData(setUserData);
+
+      const { status } = await Calendar.requestCalendarPermissionsAsync();
+      if (status === "granted") {
+        const calendars = await Calendar.getCalendarsAsync(
+          Calendar.EntityTypes.EVENT
+        );
+        console.log("Here are all your calendars:");
+        console.log({ calendars });
+      }
     };
 
     asyncFunc();
@@ -188,20 +207,62 @@ const EventScreen = ({ route, navigation }) => {
               font="black"
             />
 
+            <View style={{ height: gap }} />
             <CustomText
               style={{ ...styles.textNormal, color: colors.textLight }}
-              text={event.clubName}
+              text={reformatDate(event.date)}
             />
 
-            <View style={{ height: 32 }} />
-          </View>
+            <View style={{ height: 8 }} />
 
-          <CustomText
-            style={{ ...styles.textNormal, color: colors.textLight }}
-            text={`${RSVPList.length} ${
-              RSVPList.length === 1 ? "person is" : "people are"
-            } going`}
-          />
+            <View style={styles.eventButtons}>
+              <View style={{ paddingTop: 20, paddingLeft: 20 }}>
+                <IconButton
+                  icon="calendar"
+                  color={colors.button}
+                  onPress={() => {
+                    Alert.alert(
+                      "Add to Calendar",
+                      "Would you like to add this event to your phone's calendar?",
+                      [
+                        {
+                          text: "Cancel",
+                          onPress: () => console.log("Cancel Pressed"),
+                          style: "cancel",
+                        },
+                        {
+                          text: "OK",
+                          onPress: async () => {
+                            await addEventToDefaultCalendar(event);
+                            Alert.alert(
+                              "Event added to calendar",
+                              "The event has been added to your phone's calendar."
+                            );
+                          },
+                        },
+                      ]
+                    );
+                  }}
+                />
+                <Ionicons
+                  name="add"
+                  size={24}
+                  color={colors.button}
+                  style={{ position: "absolute", top: 5, left: 5 }}
+                />
+              </View>
+              <View style={{ flexDirection: "row", gap: 12, marginTop: 16 }}>
+                <Ionicons name="people" size={24} color={colors.textLight} />
+                <CustomText
+                  style={{ ...styles.textNormal, color: colors.textLight }}
+                  text={`${RSVPList.length} ${
+                    RSVPList.length === 1 ? "person is" : "people are"
+                  } going`}
+                />
+              </View>
+            </View>
+            <View style={{ height: 16 }} />
+          </View>
 
           <View style={{ height: gap }} />
 
@@ -209,20 +270,6 @@ const EventScreen = ({ route, navigation }) => {
             style={{ ...styles.textNormal, color: colors.text }}
             text={event?.description?.trim()}
           />
-
-          <View style={{ height: gap }} />
-
-          <View>
-            <CustomText
-              style={{ ...styles.textNormal, color: colors.text }}
-              text={reformatDate(event.date)}
-              font="bold"
-            />
-            {/* <CustomText
-              style={styles.textNormal}
-              text={timeToString(event.time)}
-            /> */}
-          </View>
 
           <View style={{ height: gap }} />
 
@@ -323,9 +370,7 @@ const EventScreen = ({ route, navigation }) => {
         <View style={{ position: "absolute", alignSelf: "center", bottom: 32 }}>
           <CustomButton
             icon={RSVPList.includes(userData.id) ? "checkmark" : "people"}
-            color={
-              RSVPList.includes(userData.id) ? colors.gray : colors.button
-            }
+            color={RSVPList.includes(userData.id) ? colors.gray : colors.button}
             text={`RSVP`}
             onPress={toggleRSVP}
           />

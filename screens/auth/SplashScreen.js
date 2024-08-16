@@ -22,17 +22,18 @@ const SplashScreen = ({ navigation }) => {
 
   state = {
     opacity: new Animated.Value(1),
-    height: new Animated.Value(200),
+    height: new Animated.Value(300),
     scale: new Animated.Value(1),
+    rotation: new Animated.Value(0),
   };
 
   showContent = () => {
-    const { opacity, height, scale } = this.state;
+    const { opacity, height, scale, rotation } = this.state;
 
     Animated.timing(height, {
       toValue: 20,
       duration: 1000,
-      easing: Easing.linear,
+      easing: Easing.inOut(Easing.ease),
       useNativeDriver: false, // <-- neccessary
     }).start();
     Animated.timing(opacity, {
@@ -42,13 +43,19 @@ const SplashScreen = ({ navigation }) => {
       useNativeDriver: false, // <-- neccessary
     }).start();
     Animated.timing(scale, {
-      toValue: 1.2,
+      toValue: 1,
+      duration: 1000,
+      easing: Easing.linear,
+      useNativeDriver: false, // <-- neccessary
+    }).start();
+    Animated.timing(rotation, {
+      toValue: 1,
       duration: 1000,
       easing: Easing.linear,
       useNativeDriver: false, // <-- neccessary
     }).start();
   };
-
+  
   // navigate to the appropriate screen after 3 seconds
   useEffect(() => {
     setTimeout(() => {
@@ -160,6 +167,12 @@ const SplashScreen = ({ navigation }) => {
     }, 500);
   }, []);
 
+  // interpolate the rotation value
+  const spin = this.state.rotation.interpolate({
+    inputRange: [0, 1],
+    outputRange: ["0deg", "10deg"],
+  });
+
   return (
     <View
       style={[
@@ -172,7 +185,7 @@ const SplashScreen = ({ navigation }) => {
       ]}
     >
       <LinearGradient
-        colors={["#ff3131", "#ff914d"]}
+        colors={["#FF5028", "#ff7a28",]}
         style={{
           position: "absolute",
           left: 0,
@@ -207,6 +220,7 @@ const SplashScreen = ({ navigation }) => {
             opacity: this.state.opacity,
             width: this.state.height,
             height: this.state.height,
+            transform: [{ rotate: spin }],
           }}
         />
       </View>

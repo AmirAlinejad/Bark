@@ -136,7 +136,6 @@ const EditProfile = ({ route, navigation }) => {
         lastName: form.lastName,
         id: userData.id,
         email: userData.email,
-        clubs: userData.clubs,
       };
       if (phoneNum) updatedUserData.phone = phoneNum;
       if (form.graduationYear)
@@ -145,6 +144,7 @@ const EditProfile = ({ route, navigation }) => {
       if (profileImg) updatedUserData.profileImg = profileImg;
       if (userData.expoPushToken)
         updatedUserData.expoPushToken = userData.expoPushToken;
+      if (userData.clubs) updatedUserData.clubs = userData.clubs;
 
       // update firestore
       const schoolKey = await emailSplit();

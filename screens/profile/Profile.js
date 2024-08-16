@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 // react native components
 import { View, StyleSheet, TouchableOpacity, ScrollView } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
@@ -6,24 +6,13 @@ import { useFocusEffect } from "@react-navigation/native";
 import CustomText from "../../components/display/CustomText";
 import ProfileImg from "../../components/display/ProfileImg";
 import IconButton from "../../components/buttons/IconButton";
-import CustomButton from "../../components/buttons/CustomButton";
 // functions
 import {
   getSetUserData,
   deleteAccount,
-  signInToGoogleCalendar,
-  signOutFromGoogleCalendar,
-  checkGoogleCalendarSignIn,
-  checkToggleGoogleCalendar,
-  syncEventsToGoogleCalendar,
-  toggleSyncGoogleCalendar,
-  unsyncEventsFromGoogleCalendar,
-  checkToggleSyncGoogleCalendar,
 } from "../../functions/backendFunctions";
 // firebase
 import { getAuth, signOut } from "firebase/auth";
-// modal
-import Modal from "react-native-modal";
 // colors
 import { useTheme } from "@react-navigation/native";
 // stack
@@ -35,12 +24,6 @@ const Stack = createStackNavigator();
 const Profile = ({ navigation }) => {
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
-  // delete account overlay
-  const [deleteAccountModal, setDeleteAccountModal] = useState(false);
-  const [logoutModal, setLogoutModal] = useState(false);
-
-  // toggle sync to google calendar
-  const [syncGoogleCalendar, setSyncGoogleCalendar] = useState(false);
 
   const { colors } = useTheme();
 
@@ -82,40 +65,9 @@ const Profile = ({ navigation }) => {
     },
   ];
 
-  const syncToGoogleCalendar = async () => {
-    // // see if user is logged in to google calendar
-    // const isSignedIn = await checkGoogleCalendarSignIn();
-
-    // // if not signed in, then sign in
-    // if (!isSignedIn) {
-    //   await signInToGoogleCalendar();
-    // }
-    signInToGoogleCalendar();
-
-    // sync to google calendar
-    syncEventsToGoogleCalendar();
-
-    toggleSyncGoogleCalendar("true");
-    setSyncGoogleCalendar(true);
-  };
-
-  // unsync
-  const unSyncFromGoogleCalendar = async () => {
-    // maybe eventually sign out from google calendar
-    //await signOutFromGoogleCalendar();
-    unsyncEventsFromGoogleCalendar();
-
-    toggleSyncGoogleCalendar("false");
-    setSyncGoogleCalendar(false);
-  };
-
   const asyncFunc = async () => {
     setLoading(true);
     await getSetUserData(setUserData);
-
-    // check if user is signed in to google calendar
-    const isSignedIn = await checkToggleSyncGoogleCalendar();
-    setSyncGoogleCalendar(isSignedIn);
 
     setLoading(false);
   };
@@ -212,48 +164,6 @@ const Profile = ({ navigation }) => {
               onPress={() => navigation.navigate("Settings")}
               color={colors.button}
             />
-
-            <Modal isVisible={deleteAccountModal}>
-              <View style={styles.modalContainer}>
-                <CustomText
-                  style={[styles.modalText, { color: colors.text }]}
-                  text="Are you sure you want to delete your account?"
-                />
-                <View style={styles.modalButtons}>
-                  <CustomButton
-                    text="Yes"
-                    onPress={deleteAccount}
-                    color={colors.red}
-                  />
-                  <CustomButton
-                    text="No"
-                    onPress={() => setDeleteAccountModal(false)}
-                    color={colors.green}
-                  />
-                </View>
-              </View>
-            </Modal>
-
-            <Modal isVisible={logoutModal}>
-              <View style={styles.modalContainer}>
-                <CustomText
-                  style={styles.modalText}
-                  text="Are you sure you want to log out of your account?"
-                />
-                <View style={styles.modalButtons}>
-                  <CustomButton
-                    text="Yes"
-                    onPress={logOut}
-                    color={colors.red}
-                  />
-                  <CustomButton
-                    text="No"
-                    onPress={() => setLogoutModal(false)}
-                    color={colors.green}
-                  />
-                </View>
-              </View>
-            </Modal>
           </View>
         )}
       </Stack.Screen>

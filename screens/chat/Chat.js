@@ -155,7 +155,11 @@ export default function Chat({ route, navigation }) {
               <ClubImg clubImg={clubImg} width={40} />
             </View>
             <CustomText
-              text={clubName.length > 20 ? clubName.substring(0, 20) + "..." : clubName}
+              text={
+                clubName.length > 20
+                  ? clubName.substring(0, 20) + "..."
+                  : clubName
+              }
               style={[styles.clubNameText, { color: colors.text }]}
               font="bold"
             />
@@ -457,9 +461,14 @@ export default function Chat({ route, navigation }) {
         // loop through all members in the club
         for (const member of clubMembers.docs) {
           if (!member.data().muted && member.id !== userData.id) {
-          
             // send the push notification
-            sendPushNotification(member.data().expoPushToken, notificationText, userData.firstName, userData.lastName, clubName);
+            sendPushNotification(
+              member.data().expoPushToken,
+              notificationText,
+              userData.firstName,
+              userData.lastName,
+              clubName
+            );
           }
 
           // increment unread messages in club member's data
@@ -670,6 +679,7 @@ export default function Chat({ route, navigation }) {
               const isAtBottom = isCloseToBottom(nativeEvent);
               setIsAtBottom(isAtBottom);
             }}
+            onTouchMove={Keyboard.dismiss}
             contentContainerStyle={{ justifyContent: "flex-end", flexGrow: 1 }}
           />
         </GestureHandlerRootView>

@@ -2,8 +2,9 @@ import React, { useState } from "react";
 import { View, StyleSheet, TextInput } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 // backend
-import { ref, get } from "firebase/database";
-import { db } from "../../backend/FirebaseConfig";
+import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
+import { firestore } from "../../backend/FirebaseConfig";
+import { emailSplit } from "../../functions/backendFunctions";
 // my components
 import Header from "../../components/display/Header";
 import CustomButton from "../../components/buttons/CustomButton";
@@ -20,19 +21,39 @@ const FeedbackScreen = ({ route, navigation }) => {
   const [feedback, setFeedback] = useState("");
 
   const submitFeedback = async () => {
-    const emailSplit = userData.email.split("@")[1].split(".")[0];
+    if (feedback === "") {
+      alert("Please enter feedback before submitting.");
+      return;
+    }
 
-    const feedbackRef = ref(db, `${emailSplit}feedback/${userData.userId}`);
-    const feedbackSnap = await get(feedbackRef);
-    const feedbackData = feedbackSnap.val();
-    set(feedbackRef, [
-      ...feedbackData,
-      {
-        feedback: feedback,
-        name: userData.name,
-        email: userData.email,
-      },
-    ]);
+    const schoolKey = await emailSplit();
+    // get feedback collection
+    const feedbackRef = doc(
+      firestore,
+      "schools",
+      schoolKey,
+      "feedback",
+      userData.id
+    );
+
+    // get feedback document
+    const feedbackDoc = await getDoc(feedbackRef);
+
+    // if feedback document exists, update it
+    if (feedbackDoc.exists()) {
+      await updateDoc(feedbackRef, {
+        feedback: [...feedbackDoc.data().feedback, feedback],
+      });
+    } else {
+      // if feedback document does not exist, create it
+      await setDoc(feedbackRef, {
+        feedback: [feedback],
+      });
+    }
+
+    setFeedback("");
+
+    // navigate back
     navigation.goBack();
   };
 
@@ -57,7 +78,7 @@ const FeedbackScreen = ({ route, navigation }) => {
             keyboardType="default"
             maxLength={200}
             numberOfLines={5}
-            style={styles.input}
+            style={[{ color: colors.text }]}
             multiline={true}
             textAlignVertical="top"
             placeholderTextColor={colors.textLight}

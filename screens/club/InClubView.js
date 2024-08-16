@@ -88,12 +88,6 @@ const InClubView = ({ navigation, route }) => {
       title: "",
       data: [
         {
-          id: 1,
-          icon: "create-outline",
-          text: "Edit Club",
-          onPress: onEditButtonPress,
-        },
-        {
           id: 2,
           icon: "person-add-outline",
           text: `Requests (${getNumRequests()})`,
@@ -110,6 +104,15 @@ const InClubView = ({ navigation, route }) => {
       ],
     },
   ];
+
+  if (currentUserPrivilege === "owner" || currentUserPrivilege === "admin") {
+    setttingsData[0].data.push({
+      id: 1,
+      icon: "create-outline",
+      text: "Edit Club",
+      onPress: onEditButtonPress,
+    });
+  }
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>

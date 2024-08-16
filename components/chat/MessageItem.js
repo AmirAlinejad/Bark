@@ -25,7 +25,6 @@ import CustomButton from "../buttons/CustomButton";
 // hyperlinks
 import Hyperlink from "react-native-hyperlink";
 // mask view
-import MaskedView from "@react-native-masked-view/masked-view";
 import { LinearGradient } from "expo-linear-gradient";
 // swipeable
 import { Swipeable } from "react-native-gesture-handler";
@@ -262,7 +261,7 @@ const MessageItem = ({
             >
               <CustomText
                 style={[styles.pollQuestion, { color: colors.text }]}
-                text="hi"
+                text={item.question}  
                 font="bold"
               />
               {item.voteOptions.map((option, index) => (

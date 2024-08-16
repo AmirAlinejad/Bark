@@ -65,7 +65,6 @@ const Stack = createNativeStackNavigator();
 
 export default App = () => {
 
-
   const [state, setState] = useState({
     theme: "light",
   });
@@ -138,7 +137,6 @@ export default App = () => {
   };
 
   // notifications
-  const [expoPushToken, setExpoPushToken] = useState("");
   const [appState, setAppState] = useState(AppState.currentState);
 
   // linking
@@ -158,7 +156,7 @@ export default App = () => {
   useEffect(() => {
     // notifications
     registerForPushNotificationsAsync().then((token) =>
-      setExpoPushToken(token)
+      setState({ ...state, expoPushToken: token })
     );
 
     const handleAppStateChange = (nextAppState) => {
@@ -202,7 +200,6 @@ export default App = () => {
               name="Onboarding"
               component={Onboarding}
               options={{ headerShown: false, gestureEnabled: false }}
-              initialParams={{ expoPushToken }}
             />
 
             {/* main */}

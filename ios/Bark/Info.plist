@@ -19,7 +19,7 @@
     <key>CFBundlePackageType</key>
     <string>$(PRODUCT_BUNDLE_PACKAGE_TYPE)</string>
     <key>CFBundleShortVersionString</key>
-    <string>1.1.1</string>
+    <string>1.1.4</string>
     <key>CFBundleSignature</key>
     <string>????</string>
     <key>CFBundleURLTypes</key>
@@ -33,7 +33,7 @@
       </dict>
     </array>
     <key>CFBundleVersion</key>
-    <string>1.1.1</string>
+    <string>1.1.4</string>
     <key>LSRequiresIPhoneOS</key>
     <true/>
     <key>NSAppTransportSecurity</key>
@@ -43,6 +43,10 @@
       <key>NSAllowsLocalNetworking</key>
       <true/>
     </dict>
+    <key>NSCalendarsFullAccessUsageDescription</key>
+    <string>The app accesses your calendar to let you sync your Bark events to other calendars.</string>
+    <key>NSCalendarsUsageDescription</key>
+    <string>The app accesses your calendar to let you sync your Bark events to other calendars.</string>
     <key>NSCameraUsageDescription</key>
     <string>The app accesses your camera to let you take photos and share them with your friends in chat messages.</string>
     <key>NSMicrophoneUsageDescription</key>
@@ -76,6 +80,10 @@
         <string>Our reason for the use of this API is to store user preferences or settings.</string>
       </dict>
     </array>
+    <key>NSRemindersFullAccessUsageDescription</key>
+    <string>Allow $(PRODUCT_NAME) to access your reminders</string>
+    <key>NSRemindersUsageDescription</key>
+    <string>Allow $(PRODUCT_NAME) to access your reminders</string>
     <key>UILaunchStoryboardName</key>
     <string>SplashScreen</string>
     <key>UIRequiredDeviceCapabilities</key>

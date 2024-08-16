@@ -118,7 +118,7 @@ const Main = () => {
         component={ClubCategoryScreen}
         options={headerProps}
       />
-       <Stack.Screen
+      <Stack.Screen
         name="Club Calendar"
         component={ClubCalendar}
         options={headerProps}
@@ -153,7 +153,11 @@ const Main = () => {
         component={MapPicker}
         options={headerProps}
       />
-      <Stack.Screen name="Chat" component={Chat} options={headerProps} />
+      <Stack.Screen
+        name="Chat"
+        component={Chat}
+        options={{...headerProps, gestureEnabled: true}}
+      />
       <Stack.Screen
         name="GifSelectionScreen"
         component={GifSelectionScreen}

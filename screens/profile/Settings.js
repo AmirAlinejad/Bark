@@ -1,10 +1,5 @@
 import React, { useState, useContext, useEffect } from "react";
-import {
-  View,
-  StyleSheet,
-  ScrollView,
-  Linking,
-} from "react-native";
+import { View, StyleSheet, ScrollView, Linking } from "react-native";
 import Modal from "react-native-modal";
 import { getAuth } from "firebase/auth";
 import { signOut } from "firebase/auth";
@@ -14,12 +9,10 @@ import {
   deleteAccount,
 } from "../../functions/backendFunctions";
 import {
-  syncEventsToGoogleCalendar,
-  unsyncEventsFromGoogleCalendar,
-  checkToggleSyncGoogleCalendar,
-  checkGoogleCalendarSignIn,
-  toggleSyncGoogleCalendar,
-  signInToGoogleCalendar,
+  syncEventsToCalendar,
+  unsyncEventsFromCalendar,
+  checkToggleSyncCalendar,
+  toggleSyncCalendar,
   setDarkMode,
 } from "../../functions/backendFunctions";
 
@@ -27,7 +20,7 @@ import CustomText from "../../components/display/CustomText";
 import CustomButton from "../../components/buttons/CustomButton";
 import SettingsSection from "../../components/display/SettingsSection";
 import { GlobalContext } from "../../App";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as Calendar from "expo-calendar";
 
 const Settings = ({ navigation }) => {
   const [userData, setUserData] = useState(null);
@@ -36,8 +29,8 @@ const Settings = ({ navigation }) => {
   const [deleteAccountModal, setDeleteAccountModal] = useState(false);
   const [logoutModal, setLogoutModal] = useState(false);
 
-  // toggle sync to google calendar
-  const [syncGoogleCalendar, setSyncGoogleCalendar] = useState(false);
+  // toggle sync to  calendar
+  const [syncCalendar, setSyncCalendar] = useState(false);
 
   const [state, setState] = useContext(GlobalContext);
 
@@ -78,22 +71,17 @@ const Settings = ({ navigation }) => {
     {
       title: "App Settings",
       data: [
-        {
-          id: "7",
-          switch: true,
-          icon: "calendar-outline",
-          text: "Sync to Google Calendar",
-          onPress: () => {
-            if (syncGoogleCalendar) {
-              unSyncFromGoogleCalendar();
-              setSyncGoogleCalendar(false);
-            } else {
-              syncToGoogleCalendar();
-              setSyncGoogleCalendar(true);
-            }
-          },
-          value: syncGoogleCalendar,
-        },
+        // {
+        //   id: "7",
+        //   icon: "calendar-outline",
+        //   text: "Sync to Calendar",
+        //   onPress: () => {
+        //     syncEventsToCalendar();
+        //     // toggleSyncCalendar("true");
+        //     // setSyncCalendar(true);
+        //   },
+        //   value: syncCalendar,
+        // },
         {
           id: "8",
           switch: true,
@@ -128,14 +116,14 @@ const Settings = ({ navigation }) => {
             });
           },
         },
-        {
-          id: "6",
-          icon: "information-circle-outline",
-          text: "About Us",
-          onPress: () => {
-            navigation.navigate("AboutUs");
-          },
-        },
+        // {
+        //   id: "6",
+        //   icon: "information-circle-outline",
+        //   text: "About Us",
+        //   onPress: () => {
+        //     navigation.navigate("AboutUs");
+        //   },
+        // },
       ],
     },
     {
@@ -154,54 +142,29 @@ const Settings = ({ navigation }) => {
     },
   ];
 
-  const syncToGoogleCalendar = async () => {
-    // see if user is logged in to google calendar
-    const isSignedIn = await checkGoogleCalendarSignIn();
+  const asyncFunc = async () => {
+    setLoading(true);
+    await getSetUserData(setUserData);
 
-    // if not signed in, then sign in
-    if (!isSignedIn) {
-      await signInToGoogleCalendar();
+    // check if user is signed in to calendar
+    // const isSignedIn = await checkToggleSyncCalendar();
+    // setSyncCalendar(isSignedIn);
+
+    const { status } = await Calendar.requestCalendarPermissionsAsync();
+    if (status === "granted") {
+      const calendars = await Calendar.getCalendarsAsync(
+        Calendar.EntityTypes.EVENT
+      );
+      console.log("Here are all your calendars:");
+      console.log({ calendars });
     }
 
-    // sync to google calendar
-    syncEventsToGoogleCalendar();
-
-    toggleSyncGoogleCalendar("true");
-  };
-
-  // unsync
-  const unSyncFromGoogleCalendar = async () => {
-    // maybe eventually sign out from google calendar
-    //await signOutFromGoogleCalendar();
-    console.log('sign out from google calendar')
-    unsyncEventsFromGoogleCalendar();
-
-    toggleSyncGoogleCalendar("false");
+    setLoading(false);
   };
 
   useEffect(() => {
-    const asyncFunc = async () => {
-      setLoading(true);
-      await getSetUserData(setUserData);
-
-      // check if user is signed in to google calendar
-      const isSignedIn = await checkToggleSyncGoogleCalendar();
-      setSyncGoogleCalendar(isSignedIn);
-
-      setLoading(false);
-    };
-
     asyncFunc();
   }, []);
-
-  // navigate to edit profile screen
-  const goToEditProfile = () => {
-    console.log(userData);
-    navigation.navigate("EditProfile", {
-      userData: userData,
-      navigation: navigation,
-    });
-  };
 
   // delete account
   const deleteAccountFunc = () => {
@@ -264,7 +227,7 @@ const Settings = ({ navigation }) => {
       <Modal isVisible={logoutModal}>
         <View style={[styles.modalContainer, { backgroundColor: colors.card }]}>
           <CustomText
-            style={[ styles.modalText, { color: colors.text }]}
+            style={[styles.modalText, { color: colors.text }]}
             text="Are you sure you want to log out of your account?"
           />
           <View style={styles.modalButtons}>
@@ -272,7 +235,7 @@ const Settings = ({ navigation }) => {
             <CustomButton
               text="No"
               onPress={() => setLogoutModal(false)}
-              color={colors.green}
+              color={colors.button}
             />
           </View>
         </View>
