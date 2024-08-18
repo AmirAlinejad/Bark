@@ -6,6 +6,7 @@ import { auth } from "../../backend/FirebaseConfig";
 import { signInWithEmailAndPassword } from "firebase/auth";
 // storage
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as SecureStore from "expo-secure-store";
 // logo
 import SplashScreenImg from "../../assets/whiteLogo.png";
 import SplashScreenFx from "../../assets/splash.png";
@@ -78,7 +79,7 @@ const SplashScreen = ({ navigation }) => {
           .catch((err) => console.error("An error occurred", err));
 
         // see if user is logged in
-        const user = await AsyncStorage.getItem("user").then((data) => {
+        const user = await SecureStore.getItemAsync("user").then((data) => {
           return data ? JSON.parse(data) : null;
         });
 
@@ -153,6 +154,8 @@ const SplashScreen = ({ navigation }) => {
           } catch (error) {
             console.log(error);
             navigation.navigate("Onboarding");
+            AsyncStorage.clear();
+            SecureStore.deleteItemAsync("user");
           }
         } else {
           navigation.navigate("Onboarding");

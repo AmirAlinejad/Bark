@@ -16,7 +16,6 @@ import { Swipeable, RectButton } from "react-native-gesture-handler";
 // club card displayed on the club list screen
 const ChatClubCard = ({
   name,
-  description,
   img,
   clubId,
   muted,

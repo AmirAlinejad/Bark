@@ -112,7 +112,6 @@ const UserList = ({ route, navigation }) => {
 
   // sets buttons for editing members
   const actionButtonPressed = (member) => {
-    console.log(member);
     const buttons = [];
     // Ensure actions cannot be performed on the owner or the current user
     if (member.privilege !== "owner" && member.id !== currentUserId) {
@@ -246,7 +245,6 @@ const UserList = ({ route, navigation }) => {
   };
 
   const renderMember = ({ item }) => {
-    console.log(item);
     return (
       <View style={styles.memberContainer}>
         <View style={styles.memberInfo}>

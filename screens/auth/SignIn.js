@@ -1,6 +1,9 @@
 import React, { useState } from "react";
 // storage
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as SecureStore from "expo-secure-store";
+// navigation
+import { useFocusEffect } from "@react-navigation/native";
 // auth
 import { auth } from "../../backend/FirebaseConfig";
 // react native components
@@ -29,6 +32,7 @@ const SignIn = ({ route, navigation }) => {
   const [email, setEmail] = useState(route.params?.email || "");
   const [password, setPassword] = useState("");
   const [passwordVisible, setPasswordVisible] = useState(true);
+  const [signInSaying, setSignInSaying] = useState("");
   // loading and error handling
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
@@ -89,10 +93,9 @@ const SignIn = ({ route, navigation }) => {
       const userData = await getDoc(
         doc(firestore, "schools", schoolKey, "userData", response.user.uid)
       );
-      console.log("user data from firestore: ", userData.data());
 
       // set user data in async storage
-      await AsyncStorage.setItem("user", JSON.stringify(userData.data()));
+      await SecureStore.setItemAsync("user", JSON.stringify(userData.data()));
 
       // set school key in async storage
       await AsyncStorage.setItem("schoolKey", schoolKey);
@@ -123,6 +126,21 @@ const SignIn = ({ route, navigation }) => {
     navigation.navigate("SignUp");
   };
 
+  const signInSayings = [
+    "Welcome back!",
+    "Nice to see you again!",
+    "We missed you!",
+    "Glad you're back!",
+  ];
+
+  useFocusEffect(
+    React.useCallback(() => {
+      setSignInSaying(
+        signInSayings[Math.floor(Math.random() * signInSayings.length)]
+      );
+    }, [])
+  );
+
   return (
     <View style={[styles.container, { color: colors.background }]}>
       <KeyboardAwareScrollView
@@ -141,7 +159,7 @@ const SignIn = ({ route, navigation }) => {
         <View style={styles.signInContainer}>
           <CustomText
             style={[styles.title, { color: colors.text }]}
-            text="Welcome back!"
+            text={signInSaying}
             font="bold"
           />
 

@@ -7,10 +7,10 @@ import {
   TouchableOpacity,
 } from "react-native";
 import { Image } from "expo-image";
+// navigation
+import { useFocusEffect } from "@react-navigation/native";
 // assets
 import Logo from "../../assets/logo.png";
-// async storage
-import AsyncStorage from "@react-native-async-storage/async-storage";
 // my components
 import CustomText from "../../components/display/CustomText";
 import CustomInput from "../../components//input/CustomInput";
@@ -31,7 +31,6 @@ import { useTheme } from "@react-navigation/native";
 import { GlobalContext } from "../../App";
 
 const SignUp = ({ navigation }) => {
-
   // global context
   const [state, setState] = useContext(GlobalContext);
 
@@ -43,6 +42,7 @@ const SignUp = ({ navigation }) => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
+  const [signUpSaying, setSignUpSaying] = useState("");
   // loading and error handling
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
@@ -60,8 +60,6 @@ const SignUp = ({ navigation }) => {
   const onLoginIn = () => {
     navigation.navigate("SignIn");
   };
-
-  console.log(state);
 
   // sign up
   const onSignUpPressed = async (e) => {
@@ -88,12 +86,10 @@ const SignUp = ({ navigation }) => {
     }
 
     const expoPushToken = state.expoPushToken;
-    console.log(state);
 
     if (expoPushToken === undefined) {
       setErrorMessage("Failed to get push token for push notification!");
       setLoading(false);
-      return;
     }
 
     try {
@@ -103,8 +99,7 @@ const SignUp = ({ navigation }) => {
         email,
         password
       );
-      // send email verification
-      await sendEmailVerification(response.user);
+
       // update user profile in auth
       const emailSplit = email.split("@")[1].split(".")[0];
 
@@ -127,11 +122,11 @@ const SignUp = ({ navigation }) => {
         }
       );
 
-      // clear async storage
-      await AsyncStorage.clear();
-
       // navigate to verify school
       navigation.navigate("VerifySchool");
+
+      // send email verification
+      await sendEmailVerification(response.user);
     } catch (error) {
       console.log(error);
       setErrorMessage("Signup failed: " + error.message);
@@ -139,6 +134,21 @@ const SignUp = ({ navigation }) => {
       setLoading(false);
     }
   };
+
+  const signUpSayings = [
+    "Nice to meet you.",
+    "Welcome to Bark!",
+    "Let's get started!",
+    "We're excited to have you!",
+  ];
+
+  useFocusEffect(
+    React.useCallback(() => {
+      setSignUpSaying(
+        signUpSayings[Math.floor(Math.random() * signUpSayings.length)]
+      );
+    }, [])
+  );
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -153,12 +163,12 @@ const SignUp = ({ navigation }) => {
         <View style={styles.signInContainer}>
           <CustomText
             style={[styles.title, { color: colors.text }]}
-            text="Nice to meet you."
+            text={signUpSaying}
             font="bold"
           />
 
           <CustomInput
-            placeholder="School Email"
+            placeholder="School Email (.edu)"
             value={email}
             setValue={setEmail}
           />
@@ -168,6 +178,10 @@ const SignUp = ({ navigation }) => {
             setValue={setPassword}
             secureTextEntry={passwordVisible}
             onEyeIconPress={togglePasswordVisibility}
+          />
+          <CustomText
+            style={{ color: colors.textLight, marginBottom: 8, marginTop: -8, marginLeft: 8 }}  
+            text="Password must be at least 6 characters"
           />
           <CustomInput
             placeholder="Confirm Password"

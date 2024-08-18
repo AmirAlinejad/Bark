@@ -49,7 +49,6 @@ const ChatMessage = ({
     try {
       const messageDoc = await getDoc(messageRef);
       if (!messageDoc.exists()) {
-        console.error("Document does not exist!");
         throw new Error("Document does not exist!");
       }
 

@@ -18,6 +18,7 @@ import { getAuth, deleteUser } from "firebase/auth";
 import { getTimeZoneOffset } from "./timeFunctions";
 // storage
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as SecureStore from "expo-secure-store";
 // macros
 import { SCHOOLS } from "../macros/macros";
 // image
@@ -28,8 +29,9 @@ import * as DocumentPicker from "expo-document-picker";
 import { handleImageUpload, handleDocumentUpload } from "./uploadImage";
 //  calendar
 import { apiCalendar } from "../backend/CalendarApiConfig";
-import RNCalendarEvents from "react-native-calendar-events";
 import * as Calendar from "expo-calendar";
+// toast
+import Toast from "react-native-toast-message";
 
 const emailSplit = async () => {
   // try async storage first
@@ -51,10 +53,8 @@ const emailSplit = async () => {
 const getSetUserData = async (setter) => {
   // get data from async storage
   try {
-    const userData = await AsyncStorage.getItem("user");
+    const userData = await SecureStore.getItemAsync("user");
     if (userData) {
-      console.log("User data:", JSON.parse(userData));
-
       setter(JSON.parse(userData));
     }
   } catch (error) {
@@ -88,9 +88,7 @@ const updateProfileData = async (userId, setter) => {
 
     // set user data
     setter(userData);
-    console.log(userData);
   } catch (error) {
-    console.log(emailSplit());
     console.error("Error updating user data:", error);
   }
 };
@@ -108,10 +106,7 @@ const fetchClubMembers = async (clubId, setClubMembers) => {
   );
   const clubMembersSnapshot = await getDocs(clubMembersRef);
 
-  if (clubMembersSnapshot.empty) {
-    console.log("No club members found.");
-    return;
-  }
+  if (clubMembersSnapshot.empty) return;
 
   const clubMembers = clubMembersSnapshot.docs.map((doc) => doc.data());
   setClubMembers(clubMembers);
@@ -119,8 +114,6 @@ const fetchClubMembers = async (clubId, setClubMembers) => {
 
 const getClubCategoryData = async (category) => {
   const schoolKey = await emailSplit();
-
-  console.log("Getting clubs for category:", category);
 
   const clubsDocRef = collection(
     firestore,
@@ -131,20 +124,12 @@ const getClubCategoryData = async (category) => {
     "clubs"
   );
   // get clubs based on category
-  const clubsQuery = query(
-    clubsDocRef,
-    orderBy("clubMembers", "desc"),
-    limit(10)
-  ); // order by club members
+  const clubsQuery = query(clubsDocRef, limit(10)); // order by club members
   const clubsSnapshot = await getDocs(clubsQuery);
 
-  if (clubsSnapshot.empty) {
-    console.log("No clubs found.");
-    return;
-  }
+  if (clubsSnapshot.empty) return;
 
   const clubs = clubsSnapshot.docs.map((doc) => doc.data());
-  console.log(clubs);
   return clubs;
 };
 
@@ -177,7 +162,7 @@ const getSetMyClubsData = async (setter, setMutedClubs) => {
   const schoolKey = await emailSplit();
 
   // get clubs from async storage
-  const userData = await AsyncStorage.getItem("user");
+  const userData = await SecureStore.getItemAsync("user");
   const user = JSON.parse(userData);
   const clubs = user.clubs;
 
@@ -241,15 +226,22 @@ const getSetMyClubsData = async (setter, setMutedClubs) => {
 
         if (!clubMessagesSnapshot.empty) {
           const messageData = clubMessagesSnapshot.docs[0].data();
-          if (messageData.text == "") {
-            if (messageData.image) {
-              clubData[i].lastMessage = "An image was sent";
-            } else if (messageData.gif) {
-              clubData[i].lastMessage = "A gif was sent";
-            }
-          } else {
-            clubData[i].lastMessage = messageData.text;
+
+          // most recent message
+          let message =
+            messageData.user.first + " " + messageData.user.last[0] + ": ";
+          if (messageData.replyTo) {
+            message += "replied to a message";
+          } else if (messageData.text) {
+            message += messageData.text;
+          } else if (messageData.image) {
+            message += "sent an Image";
+          } else if (messageData.gifUrl) {
+            message += "sent a GIF";
+          } else if (messageData.voteOptions) {
+            message += "sent a Poll";
           }
+          clubData[i].lastMessage = message;
 
           // most recent message time
           if (messageData.createdAt) {
@@ -274,8 +266,6 @@ const getSetMyClubsData = async (setter, setMutedClubs) => {
     }
   }
 
-  console.log("MY CLUBS:", clubData);
-
   // update async storage
   await AsyncStorage.setItem("myClubs", JSON.stringify(clubData));
 
@@ -284,25 +274,6 @@ const getSetMyClubsData = async (setter, setMutedClubs) => {
   }
   setter(clubData);
 };
-
-/*const getSetAllEventsData = async (setter) => {
-  // get event data
-  const starCountRef = ref(db, `${emailSplit()}/events`);
-  onValue(starCountRef, (snapshot) => {
-    if (!snapshot.exists()) {
-      console.log('No events found.');
-      return;
-    }
-    
-    const data = snapshot.val();
-    const newEvents = Object.keys(data).map(key => ({
-      id:key, 
-      ...data[key]
-    }));
-    console.log(newEvents);
-    setter(newEvents);
-  })
-}*/
 
 const getSetCalendarData = async (setter) => {
   // maybe change to query based on date or club
@@ -321,7 +292,6 @@ const getSetCalendarData = async (setter) => {
   }
 
   const events = eventsSnapshot.docs.map((doc) => doc.data());
-  console.log("EVENTS: ", events);
   setter(events);
 };
 
@@ -342,7 +312,6 @@ const getSetClubCalendarData = async (clubId, setter) => {
   }
 
   const events = eventsSnapshot.docs.map((doc) => doc.data());
-  console.log("EVENTS: ", events);
   setter(events);
 };
 
@@ -363,8 +332,6 @@ const getSetEventData = async (eventId, setter, setRSVPList) => {
   }
 
   const event = eventDocSnapshot.data();
-
-  console.log("Event data:", event);
 
   // get RSVP list
   setRSVPList(event.rsvps ? event.rsvps : []);
@@ -389,7 +356,7 @@ const joinClub = async (id, privilege, userId) => {
     let userData;
     if (!userId) {
       // get user data from async storage
-      const user = await AsyncStorage.getItem("user");
+      const user = await SecureStore.getItemAsync("user");
       userData = JSON.parse(user);
     } else {
       // get user data based on user id from firestore
@@ -445,10 +412,9 @@ const joinClub = async (id, privilege, userId) => {
       clubs: updatedUserClubs,
     });
 
-    // update async storage
     // create object of user data with updated clubs
     userData.clubs = updatedUserClubs;
-    await AsyncStorage.setItem("user", JSON.stringify(userData));
+    await SecureStore.setItemAsync("user", JSON.stringify(userData));
   } catch (error) {
     console.error("Error processing request:", error);
   }
@@ -460,7 +426,7 @@ const requestToJoinClub = async (id, name, publicClub) => {
   } else {
     const schoolKey = await emailSplit();
     // get user id from async storage
-    const userData = await AsyncStorage.getItem("user");
+    const userData = await SecureStore.getItemAsync("user");
     const user = JSON.parse(userData);
 
     // send request to club
@@ -553,7 +519,7 @@ const leaveClubConfirmed = async (id) => {
     const schoolKey = await emailSplit();
 
     // get user id from async storage
-    const userData = await AsyncStorage.getItem("user");
+    const userData = await SecureStore.getItemAsync("user");
     const user = JSON.parse(userData);
     const userId = user.id;
 
@@ -571,12 +537,30 @@ const leaveClubConfirmed = async (id) => {
     let wasOwner = false;
 
     // check if user is owner
-    const clubMembersSnapshot = await getDoc(clubMembersDoc);
-    if (clubMembersSnapshot.exists()) {
-      const clubMember = clubMembersSnapshot.data();
+    const clubMemberSnapshot = await getDoc(clubMembersDoc);
+    if (clubMemberSnapshot.exists()) {
+      const clubMember = clubMemberSnapshot.data();
       if (clubMember.privilege === "owner") {
         wasOwner = true;
       }
+    }
+
+    // check if user is only member
+    const clubMembersRef = collection(
+      firestore,
+      "schools",
+      schoolKey,
+      "clubMemberData",
+      "clubs",
+      id
+    );
+
+    let onlyMember = false;
+
+    const clubMembersSnapshot = await getDocs(clubMembersRef);
+    if (clubMembersSnapshot.size === 1) {
+      // if user is only member, delete club
+      onlyMember = true;
     }
 
     // then remove user from club
@@ -591,19 +575,54 @@ const leaveClubConfirmed = async (id) => {
       userId
     );
     const userClubsSnapshot = await getDoc(userClubsDocRef);
-    const userClubs = userClubsSnapshot.data().clubs;
-    const updatedUserClubs = userClubs.filter((club) => club !== id);
 
-    await updateDoc(userClubsDocRef, {
-      clubs: updatedUserClubs,
-    });
+    if (userClubsSnapshot.exists()) {
+      const userClubs = userClubsSnapshot.data().clubs;
+      const updatedUserClubs = userClubs.filter((club) => club !== id);
 
-    // update async storage
-    // create object of user data with updated clubs
-    user.clubs = updatedUserClubs;
-    await AsyncStorage.setItem("user", JSON.stringify(user));
+      await updateDoc(userClubsDocRef, {
+        clubs: updatedUserClubs,
+      });
 
-    // delete club if no members **not implemented yet**
+      // update async storage
+      // create object of user data with updated clubs
+      user.clubs = updatedUserClubs;
+      await SecureStore.setItemAsync("user", JSON.stringify(user));
+    }
+
+    // get club categories for this club
+    const clubCategoryRef = doc(
+      firestore,
+      "schools",
+      schoolKey,
+      "clubData",
+      id
+    );
+    const clubCategorySnapshot = await getDoc(clubCategoryRef);
+    const clubCategories = clubCategorySnapshot.data().clubCategories;
+
+    if (onlyMember) {
+      await deleteDoc(doc(firestore, "schools", schoolKey, "clubData", id));
+      // delete club from club search data
+      clubCategories.forEach(async (category) => {
+        await deleteDoc(
+          doc(
+            firestore,
+            "schools",
+            schoolKey,
+            "clubSearchData",
+            category,
+            "clubs",
+            id
+          )
+        );
+      });
+
+      // eventually delete messages
+      // eventually delete events
+      alert("You have left the club and the club has been deleted");
+      return;
+    }
 
     // transfer ownership if user was owner
     if (wasOwner) {
@@ -657,7 +676,7 @@ const getSetSchoolData = async (setter) => {
 
 const checkMembership = async (clubId, setPrivilege, setIsRequestSent) => {
   // get user id from async storage
-  const userData = await AsyncStorage.getItem("user");
+  const userData = await SecureStore.getItemAsync("user");
   const user = JSON.parse(userData);
   const userId = user.id;
 
@@ -688,7 +707,23 @@ const checkMembership = async (clubId, setPrivilege, setIsRequestSent) => {
     setPrivilege("none");
   }
 
-  // check if user has requested to join **not implemented yet**
+  // check if user has requested to join
+  const clubRequestsDocRef = doc(
+    firestore,
+    "schools",
+    schoolKey,
+    "clubRequestsData",
+    "clubs",
+    clubId,
+    userId
+  );
+  const requestSnapshot = await getDoc(clubRequestsDocRef);
+
+  if (requestSnapshot.exists()) {
+    setIsRequestSent(true);
+  } else {
+    setIsRequestSent(false);
+  }
 };
 
 const fetchMessages = async (
@@ -742,8 +777,6 @@ const fetchMessages = async (
   fetchedMessages.reverse();
 
   setMessages(fetchedMessages);
-
-  console.log("MESSAGES:", fetchedMessages);
 
   // Calculate and update the count of pinned messages.
   if (setPinnedMessageCount)
@@ -852,9 +885,6 @@ const handleDocumentUploadAndSend = async (
     closeModal();
   }
 
-  console.log("document: ", pickerResult);
-  console.log("document uri: ", pickerResult.assets[0].uri);
-
   if (!pickerResult.canceled) {
     handleDocumentUpload(chatType, setDocumentUrl, pickerResult.assets[0].uri);
   }
@@ -904,13 +934,11 @@ const handlePressMessage = (
 
   setLikesUserDataById();
   setIsLikesModalVisible(true);
-  console.log("Likes:", likes);
 };
 
 // Function to delete a message
 const deleteMessage = async (messageRef) => {
   await deleteDoc(messageRef);
-  console.log("Message deleted successfully");
 };
 
 // pin message
@@ -930,7 +958,7 @@ const handleLongPress = async (
   messageRef
 ) => {
   // get user id
-  const userData = await AsyncStorage.getItem("user");
+  const userData = await SecureStore.getItemAsync("user");
   const user = JSON.parse(userData);
   const userId = user.id;
 
@@ -974,17 +1002,15 @@ const handleLongPress = async (
 
 const deleteAccount = async () => {
   // get user id from async storage
-  const userData = await AsyncStorage.getItem("user");
+  const userData = await SecureStore.getItemAsync("user");
   const user = JSON.parse(userData);
   const id = user.id;
-  const clubArray = userData.clubs;
+  const clubArray = user.clubs;
 
   // remove user from all clubs
   if (clubArray) {
-    console.log("Leaving clubs...");
-    console.log(clubArray);
     clubArray.forEach((club) => {
-      leaveClubConfirmed(club, id);
+      leaveClubConfirmed(club);
     });
   }
 
@@ -1004,6 +1030,7 @@ const deleteAccount = async () => {
 
   // clear user data from async storage
   AsyncStorage.clear();
+  SecureStore.deleteItemAsync("user");
 };
 
 // add user to attendance for an event
@@ -1011,7 +1038,7 @@ const attendEvent = async (eventId) => {
   const schoolKey = await emailSplit();
 
   // get user id from async storage
-  const userData = await AsyncStorage.getItem("user");
+  const userData = await SecureStore.getItemAsync("user");
   const user = JSON.parse(userData);
   const userId = user.id;
 
@@ -1109,146 +1136,139 @@ const getEventDataForClub = async (clubId) => {
 };
 
 ////////////////////////// calendar functions  //////////////////////////
-// get default calendar source (helper)
-async function getDefaultCalendarSource() {
-  const defaultCalendar = await Calendar.getDefaultCalendarAsync();
-  return defaultCalendar.source;
-}
+// // get default calendar source (helper)
+// async function getDefaultCalendarSource() {
+//   const defaultCalendar = await Calendar.getDefaultCalendarAsync();
+//   return defaultCalendar.source;
+// }
 
-// create calendar
-async function getCalendar() {
-  // see if calendar id is already saved
-  // const calendarID = await AsyncStorage.getItem("calendarID");
+// // create calendar
+// async function getCalendar() {
+//   // see if calendar id is already saved
+//   // const calendarID = await AsyncStorage.getItem("calendarID");
 
-  // if (calendarID) {
-  //   console.log("Calendar ID found:", calendarID);
-  //   return calendarID;
-  // }
+//   const defaultCalendarSource = await getDefaultCalendarSource();
+//   const newCalendarID = await Calendar.createCalendarAsync({
+//     title: "Bark Calendar",
+//     color: "red",
+//     entityType: Calendar.EntityTypes.EVENT,
+//     sourceId: defaultCalendarSource.id,
+//     source: defaultCalendarSource,
+//     name: "internalCalendarName",
+//     ownerAccount: "personal",
+//     accessLevel: Calendar.CalendarAccessLevel.OWNER,
+//   });
 
-  const defaultCalendarSource = await getDefaultCalendarSource();
-  const newCalendarID = await Calendar.createCalendarAsync({
-    title: "Bark Calendar",
-    color: "red",
-    entityType: Calendar.EntityTypes.EVENT,
-    sourceId: defaultCalendarSource.id,
-    source: defaultCalendarSource,
-    name: "internalCalendarName",
-    ownerAccount: "personal",
-    accessLevel: Calendar.CalendarAccessLevel.OWNER,
-  });
+//   // save calendar ID to async storage
+//   await AsyncStorage.setItem("calendarID", newCalendarID);
+//   return newCalendarID;
+// }
 
-  // save calendar ID to async storage
-  await AsyncStorage.setItem("calendarID", newCalendarID);
-  return newCalendarID;
-}
+// // sync events to calendar
+// const syncEventsToCalendar = async () => {
+//   // delete old calendar
+//   await unsyncEventsFromCalendar();
 
-// sync events to calendar
-const syncEventsToCalendar = async () => {
-  // delete old calendar
-  await unsyncEventsFromCalendar();
+//   // get calendar ID
+//   const calendarID = await getCalendar();
+//   console.log("Calendar ID:", calendarID);
 
-  // get calendar ID
-  const calendarID = await getCalendar();
-  console.log("Calendar ID:", calendarID);
+//   // get calendar events (eventually cross-reference to make sure no duplicates)
+//   // const events = await Calendar.getEventsAsync(
+//   //   [calendarID],
+//   //   new Date(),
+//   //   new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days from now
+//   // );
 
-  // get calendar events (eventually cross-reference to make sure no duplicates)
-  // const events = await Calendar.getEventsAsync(
-  //   [calendarID],
-  //   new Date(),
-  //   new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days from now
-  // );
+//   // get events for clubs user is in
+//   const userData = await SecureStore.getItemAsync("user");
 
-  // get events for clubs user is in
-  const userData = await AsyncStorage.getItem("user");
+//   if (userData) {
+//     const user = JSON.parse(userData);
+//     const clubs = user.clubs;
 
-  if (userData) {
-    const user = JSON.parse(userData);
-    const clubs = user.clubs;
+//     let events = [];
+//     if (user.clubs) {
+//       // get user's events
+//       for (let i = 0; i < clubs.length; i++) {
+//         const clubId = clubs[i];
+//         const clubEvents = await getEventDataForClub(clubId);
 
-    let events = [];
-    if (user.clubs) {
-      // get user's events
-      for (let i = 0; i < clubs.length; i++) {
-        const clubId = clubs[i];
-        const clubEvents = await getEventDataForClub(clubId);
+//         if (clubEvents) {
+//           events = [...events, ...clubEvents];
+//         }
+//       }
+//     }
 
-        if (clubEvents) {
-          events = [...events, ...clubEvents];
-        }
-      }
-    }
+//     // for each event, add to calendar
+//     for (let i = 0; i < events.length; i++) {
+//       const event = events[i];
+//       addEventToCalendar(event, calendarID);
+//     }
+//   }
+// };
 
-    // for each event, add to calendar
-    for (let i = 0; i < events.length; i++) {
-      const event = events[i];
-      addEventToCalendar(event, calendarID);
-    }
-  }
-};
+// // unsync events from  calendar
+// const unsyncEventsFromCalendar = async () => {
+//   // delete calendar
+//   const calendarID = await AsyncStorage.getItem("calendarID");
+//   if (calendarID) {
+//     console.log("Calendar ID found:", calendarID);
+//     await Calendar.deleteCalendarAsync(calendarID);
+//     console.log("Calendar deleted");
+//   }
 
-// unsync events from  calendar
-const unsyncEventsFromCalendar = async () => {
-  // delete calendar
-  const calendarID = await AsyncStorage.getItem("calendarID");
-  if (calendarID) {
-    console.log("Calendar ID found:", calendarID);
-    await Calendar.deleteCalendarAsync(calendarID);
-    console.log("Calendar deleted");
-  }
+//   // delete calendar ID from async storage
+//   await AsyncStorage.removeItem("calendarID");
+// };
 
-  // delete calendar ID from async storage
-  await AsyncStorage.removeItem("calendarID");
-};
+// // check if sync is toggled on
+// const checkToggleSyncCalendar = async () => {
+//   const signedIn = await AsyncStorage.getItem("syncCalendar");
+//   return signedIn === "true";
+// };
 
-// check if sync is toggled on
-const checkToggleSyncCalendar = async () => {
-  const signedIn = await AsyncStorage.getItem("syncCalendar");
-  return signedIn === "true";
-};
+// // toggle sync  calendar async
+// const toggleSyncCalendar = async (bool) => {
+//   const signedIn = await AsyncStorage.getItem("syncCalendar");
+//   if (signedIn === "true") {
+//     AsyncStorage.setItem("syncCalendar", bool);
+//   } else {
+//     AsyncStorage.setItem("syncCalendar", bool);
+//   }
+// };
 
-// toggle sync  calendar async
-const toggleSyncCalendar = async (bool) => {
-  const signedIn = await AsyncStorage.getItem("syncCalendar");
-  if (signedIn === "true") {
-    AsyncStorage.setItem("syncCalendar", bool);
-  } else {
-    AsyncStorage.setItem("syncCalendar", bool);
-  }
-};
+// // add new event to  calendar
+// const addEventToCalendar = async (event, calendarID) => {
+//   console.log("Event:", event);
+//   const eventDate = event.date;
+//   const minutes = event.duration ? event.duration : 30;
+//   const endDate = new Date(eventDate) + minutes * 60000;
 
-// add new event to  calendar
-const addEventToCalendar = async (event, calendarID) => {
-  console.log("Event:", event);
-  const eventDate = event.date;
-  const minutes = event.duration ? event.duration : 30;
-  const endDate = new Date(eventDate) + minutes * 60000;
+//   // create event object
+//   const newEvent = {
+//     title: event.name,
+//     startDate: new Date(eventDate),
+//     endDate: endDate,
+//     location: event.address,
+//     notes: event.description,
+//   };
 
-  // create event object
-  const newEvent = {
-    title: event.name,
-    startDate: new Date(eventDate),
-    endDate: endDate,
-    location: event.address,
-    notes: event.description,
-  };
-
-  // add event to  calendar
-  try {
-    await Calendar.createEventAsync(calendarID, newEvent);
-    console.log("Event added to Calendar");
-  } catch (error) {
-    console.error("Error adding event to Calendar:", error);
-  }
-};
+//   // add event to  calendar
+//   try {
+//     await Calendar.createEventAsync(calendarID, newEvent);
+//     console.log("Event added to Calendar");
+//   } catch (error) {
+//     console.error("Error adding event to Calendar:", error);
+//   }
+// };
 
 const addEventToDefaultCalendar = async (event) => {
   const defaultCalendar = await Calendar.getCalendarsAsync(
     Calendar.EntityTypes.EVENT
   );
-  console.log("calendars:", defaultCalendar);
 
   const minutes = event.duration ? event.duration : 30;
-  console.log("minutes:", minutes);
   const endDate = new Date(event.date);
   endDate.setMinutes(endDate.getMinutes() + minutes);
 
@@ -1263,43 +1283,43 @@ const addEventToDefaultCalendar = async (event) => {
   await Calendar.createEventAsync(defaultCalendar[0].id, newEvent);
 };
 
-// delete event from calendar
-const deleteEventFromCalendar = async (event) => {
-  try {
-    await apiCalendar.deleteEvent(event.id);
-  } catch (error) {
-    console.error("Error deleting event from  Calendar", error);
-  }
-};
+// // delete event from calendar
+// const deleteEventFromCalendar = async (event) => {
+//   try {
+//     await apiCalendar.deleteEvent(event.id);
+//   } catch (error) {
+//     console.error("Error deleting event from  Calendar", error);
+//   }
+// };
 
-// update event in  calendar
-const updateEventInCalendar = async (event) => {
-  // create event object
-  const newEvent = {
-    summary: event.name,
-    start: {
-      dateTime: new Date(event.date).toISOString(),
-      timeZone: getTimeZoneOffset(), // change to user's timezone
-    },
-    end: {
-      dateTime: event.duration
-        ? (new Date(event.date) + event.time + event.duration).toISOString()
-        : (new Date(event.date) + event.time + 30).toISOString(),
-      timeZone: getTimeZoneOffset(),
-    },
-  };
+// // update event in  calendar
+// const updateEventInCalendar = async (event) => {
+//   // create event object
+//   const newEvent = {
+//     summary: event.name,
+//     start: {
+//       dateTime: new Date(event.date).toISOString(),
+//       timeZone: getTimeZoneOffset(), // change to user's timezone
+//     },
+//     end: {
+//       dateTime: event.duration
+//         ? (new Date(event.date) + event.time + event.duration).toISOString()
+//         : (new Date(event.date) + event.time + 30).toISOString(),
+//       timeZone: getTimeZoneOffset(),
+//     },
+//   };
 
-  // update event in  calendar
-  try {
-    await apiCalendar.updateEvent({
-      calendarId: "primary",
-      eventId: event.id,
-      resource: newEvent,
-    });
-  } catch (error) {
-    console.error("Error updating event in  Calendar:", error);
-  }
-};
+//   // update event in  calendar
+//   try {
+//     await apiCalendar.updateEvent({
+//       calendarId: "primary",
+//       eventId: event.id,
+//       resource: newEvent,
+//     });
+//   } catch (error) {
+//     console.error("Error updating event in  Calendar:", error);
+//   }
+// };
 
 // vote in a poll
 const voteInPoll = async (messageRef, voteId, userId) => {
@@ -1326,6 +1346,18 @@ const setDarkMode = async (darkMode) => {
 const getDarkMode = async () => {
   const darkMode = await AsyncStorage.getItem("darkMode");
   return darkMode === "true";
+};
+
+const showToastIfNewUser = async (type, text1, text2) => {
+  const user = await SecureStore.getItemAsync("user");
+  const userData = JSON.parse(user);
+  if (!userData.clubs || userData.clubs.length === 0) {
+    Toast.show({
+      text1: text1,
+      text2: text2,
+      type: type,
+    });
+  }
 };
 
 export {
@@ -1362,10 +1394,10 @@ export {
   handleImageUploadAndSend,
   handleDocumentUploadAndSend,
   voteInPoll,
-  syncEventsToCalendar,
-  unsyncEventsFromCalendar,
-  toggleSyncCalendar,
-  checkToggleSyncCalendar,
+  // syncEventsToCalendar,
+  // unsyncEventsFromCalendar,
+  // toggleSyncCalendar,
+  // checkToggleSyncCalendar,
   // addEventToCalendar,
   // deleteEventFromCalendar,
   // updateEventInCalendar,
@@ -1373,4 +1405,5 @@ export {
   deleteAccount,
   setDarkMode,
   getDarkMode,
+  showToastIfNewUser,
 };

@@ -6,10 +6,8 @@ import {
   ScrollView,
   Alert,
 } from "react-native";
-// fade
-import Fade from "react-native-fade";
 // backend
-import { doc, refEqual, updateDoc } from "firebase/firestore";
+import { doc, updateDoc } from "firebase/firestore";
 import { firestore } from "../../backend/FirebaseConfig";
 // my components
 import CustomText from "../../components/display/CustomText";
@@ -26,7 +24,7 @@ import {
   getSetUserData,
   addEventToDefaultCalendar,
 } from "../../functions/backendFunctions";
-import { timeToString, reformatDate } from "../../functions/timeFunctions";
+import { reformatDate } from "../../functions/timeFunctions";
 import { goToClubScreen } from "../../functions/navigationFunctions";
 // colors
 import { useTheme } from "@react-navigation/native";
@@ -34,7 +32,6 @@ import { useTheme } from "@react-navigation/native";
 import * as Clipboard from "expo-clipboard";
 // calendar
 import * as Calendar from "expo-calendar";
-import { I } from "@expo/html-elements";
 
 const EventScreen = ({ route, navigation }) => {
   const { eventId, fromScreen } = route.params;
@@ -77,27 +74,22 @@ const EventScreen = ({ route, navigation }) => {
   // get event data
   useEffect(() => {
     const asyncFunc = async () => {
-      console.log("getting event data for", eventId);
       await getSetEventData(eventId, setEvent, setRSVPList);
 
       // get user id
       getSetUserData(setUserData);
 
       const { status } = await Calendar.requestCalendarPermissionsAsync();
-      if (status === "granted") {
-        const calendars = await Calendar.getCalendarsAsync(
-          Calendar.EntityTypes.EVENT
+      if (!status == "granted") {
+        Alert.alert(
+          "Calendar Permissions",
+          "Please enable calendar permissions in your settings."
         );
-        console.log("Here are all your calendars:");
-        console.log({ calendars });
       }
     };
 
     asyncFunc();
   }, []);
-
-  console.log("rsvp list", RSVPList);
-  console.log("event", event);
 
   // check user privilege after event data is loaded
   useEffect(() => {
@@ -110,6 +102,17 @@ const EventScreen = ({ route, navigation }) => {
     }
   }, [event]);
 
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (!event) {
+        Alert.alert("Event not found.");
+        navigation.goBack();
+        return;
+      }
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [event]);
+
   // fade out text after 2 seconds
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -120,8 +123,6 @@ const EventScreen = ({ route, navigation }) => {
 
   // edit event button
   const onEditButtonPress = () => {
-    console.log("editing event", event);
-    console.log("date", new Date(event.date));
     const editingEvent = {
       ...event,
     };
@@ -174,7 +175,6 @@ const EventScreen = ({ route, navigation }) => {
       newRSVPList = [...RSVPList, userData.id];
     }
 
-    console.log("new rsvp list", newRSVPList);
     setRSVPList(newRSVPList);
 
     // update backend
@@ -191,6 +191,16 @@ const EventScreen = ({ route, navigation }) => {
   };
 
   const gap = 20;
+
+  // convert duration to hours
+  const durationToHours = (duration) => {
+    if (duration == undefined) return "";
+    if (duration < 60) return `${duration} minutes`;
+
+    let hours = Math.floor(duration / 60);
+    let minutes = duration % 60;
+    return `${hours} hr ${minutes} min`;
+  };
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
@@ -216,41 +226,40 @@ const EventScreen = ({ route, navigation }) => {
             <View style={{ height: 8 }} />
 
             <View style={styles.eventButtons}>
-              <View style={{ paddingTop: 20, paddingLeft: 20 }}>
-                <IconButton
-                  icon="calendar"
-                  color={colors.button}
-                  onPress={() => {
-                    Alert.alert(
-                      "Add to Calendar",
-                      "Would you like to add this event to your phone's calendar?",
-                      [
-                        {
-                          text: "Cancel",
-                          onPress: () => console.log("Cancel Pressed"),
-                          style: "cancel",
+              <TouchableOpacity
+                style={{ paddingTop: 20, paddingLeft: 20 }}
+                onPress={() => {
+                  Alert.alert(
+                    "Add to Calendar",
+                    "Would you like to add this event to your phone's calendar?",
+                    [
+                      {
+                        text: "Cancel",
+                        onPress: () => console.log("Cancel Pressed"),
+                        style: "cancel",
+                      },
+                      {
+                        text: "OK",
+                        onPress: async () => {
+                          await addEventToDefaultCalendar(event);
+                          Alert.alert(
+                            "Event added to calendar",
+                            "The event has been added to your phone's calendar."
+                          );
                         },
-                        {
-                          text: "OK",
-                          onPress: async () => {
-                            await addEventToDefaultCalendar(event);
-                            Alert.alert(
-                              "Event added to calendar",
-                              "The event has been added to your phone's calendar."
-                            );
-                          },
-                        },
-                      ]
-                    );
-                  }}
-                />
+                      },
+                    ]
+                  );
+                }}
+              >
+                <Ionicons name="calendar" size={24} color={colors.button} />
                 <Ionicons
                   name="add"
                   size={24}
                   color={colors.button}
                   style={{ position: "absolute", top: 5, left: 5 }}
                 />
-              </View>
+              </TouchableOpacity>
               <View style={{ flexDirection: "row", gap: 12, marginTop: 16 }}>
                 <Ionicons name="people" size={24} color={colors.textLight} />
                 <CustomText
@@ -326,7 +335,8 @@ const EventScreen = ({ route, navigation }) => {
             <View style={{ marginTop: gap }}>
               <CustomText
                 style={{ ...styles.textNormal, color: colors.text }}
-                text={`Duration: ${event.duration} min`}
+                text={durationToHours(event.duration)}
+                font={'bold'}
               />
             </View>
           )}

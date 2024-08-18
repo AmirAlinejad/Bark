@@ -60,8 +60,6 @@ const ProfileOverlay = ({ visible, setVisible, userData }) => {
     return mutualClubs;
   };
 
-  console.log(userData);
-
   return (
     <SwipeUpDownModal
       modalVisible={visible}
@@ -94,7 +92,10 @@ const ProfileOverlay = ({ visible, setVisible, userData }) => {
                     {graduationYear() !== "" && (
                       <CustomText
                         text={graduationYear()}
-                        style={styles.secondaryText}
+                        style={[
+                          styles.secondaryText,
+                          { color: colors.textLight },
+                        ]}
                       />
                     )}
                     {major() !== "" && (
@@ -111,6 +112,7 @@ const ProfileOverlay = ({ visible, setVisible, userData }) => {
                     text={`${getMutualClubs().length} Mutual Club(s)`}
                     style={[styles.secondaryText, { color: colors.textLight }]}
                   />
+                  <View style={{ height: 16 }} />
                 </View>
               )}
             </View>

@@ -30,9 +30,7 @@ import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scrollview"
 
 const EditClubScreen = ({ route, navigation }) => {
   // get user data from previous screen
-  const { name, id, img, description, categories, publicClub } = route.params;
-
-  console.log(route.params);
+  const { name, id, img, description, categories } = route.params;
 
   // state variables
   const [form, setForm] = useState({ 

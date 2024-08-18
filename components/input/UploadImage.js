@@ -23,18 +23,15 @@ export default function UploadImage({parentCallback}) {
       aspect: [1,1],
       quality: 1,
     });
-    console.log(JSON.stringify(_image));
     if (!_image.canceled) {
       setImage(_image.assets[0].uri);
       parentCallback(_image.assets[0].uri);
     }
-    console.log(JSON.stringify(image));
   };
 
   // check to see if we have permission to access the camera roll
   const  checkForCameraRollPermission=async()=>{
         const imagePermission = await ImagePicker.getMediaLibraryPermissionsAsync();
-        console.log(imagePermission.status);
 
         setGalleryPermission(imagePermission.status === 'granted');
 

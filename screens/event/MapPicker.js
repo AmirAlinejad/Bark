@@ -48,7 +48,6 @@ const MapPicker = ({ route, navigation }) => {
   const onLocationSelected = (data, details = null) => {
     // 'details' is provided when fetchDetails = true
     setAddress(data.description);
-    console.log("description: ".data.description);
 
     /*// geo code the address
     Geocoder.from(data.description)
@@ -121,7 +120,6 @@ const MapPicker = ({ route, navigation }) => {
           },
         }}
         onPress={(data, details = null) => {
-          console.log(data, details);
           setAddress(data.description);
         }}
         query={{

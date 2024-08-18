@@ -20,9 +20,7 @@ const UpcomingEvents = ({ filteredEvents, screenName, navigation }) => {
     let sortedEvents = [];
     if (filteredEvents != []) {
       sortedEvents = filteredEvents.sort((a, b) => {
-        return (
-          new Date(a.date) - new Date(b.date)
-        );
+        return new Date(a.date) - new Date(b.date);
       });
     }
 
@@ -42,7 +40,6 @@ const UpcomingEvents = ({ filteredEvents, screenName, navigation }) => {
       }
       categorizedEvents[date].push(event);
     });
-    console.log(categorizedEvents);
 
     setCategorizedEvents(categorizedEvents);
   }, [filteredEvents]);

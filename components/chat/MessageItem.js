@@ -107,6 +107,14 @@ const MessageItem = ({
     return max;
   };
 
+  const totalVotes = () => {
+    let total = 0;
+    votesArray().forEach((element) => {
+      total += element;
+    });
+    return total;
+  };
+
   const swipeableRef = useRef(null);
 
   renderRightActions = (progress, dragX) => {
@@ -153,6 +161,10 @@ const MessageItem = ({
       </View>
     );
   };
+
+  if (item.voteOptions) {
+    console.log("votesArray: ", votesArray());
+  }
 
   return (
     <Swipeable
@@ -261,7 +273,7 @@ const MessageItem = ({
             >
               <CustomText
                 style={[styles.pollQuestion, { color: colors.text }]}
-                text={item.question}  
+                text={item.question}
                 font="bold"
               />
               {item.voteOptions.map((option, index) => (
@@ -286,7 +298,8 @@ const MessageItem = ({
                         style={{
                           position: "absolute",
                           width: `${
-                            100 * (votesArray()[option.id] / mostVotes())
+                            100 *
+                            (votesArray()[option.id] / totalVotes() || 0)
                           }%`,
                           height: 30,
                           borderRadius: 8,

@@ -51,7 +51,6 @@ const AttendanceViewer = ({ route, navigation }) => {
     }, [attendees]);
 
     const renderMember = ({ item }) => {
-        console.log(item);
         return (
             <View style={styles.memberContainer}>      
                 <View style={styles.memberInfo}>

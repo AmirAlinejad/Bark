@@ -147,32 +147,30 @@ const ClubCalendar = ({ route, navigation }) => {
     }
   }, [userData]);
 
-  // toggle overlay
-  const toggleFilter = () => {
-    setShowFilter(!showFilter);
-  };
-
   // select a specific date
   const selectSpecificDate = (date) => {
+    if (date.dateString == selectedDate) {
+      setSpecificDateSelected(false);
+      setSelectedDate(new Date().toISOString().slice(0, 10));
+      return;
+    }
     setSelectedDate(date.dateString);
     setSpecificDateSelected(true);
   };
 
   // filter for events
   const filterFunct = (event) => {
-    // // if not same month as calendar
-    // console.log("event month: ", new Date(event.date).getMonth());
-    // console.log("calendar month: ", currenMonth);
-    // if (new Date(event.date).getMonth() != currenMonth) {
-    //   return false;
-    // }
+    // if not same month as calendar
+    if (new Date(event.date).getMonth() != currenMonth) {
+      return false;
+    }
 
-    // // filter by specific date
-    // if (specificDateSelected) {
-    //   if (formatDate(event.date) != selectedDate) {
-    //     return false;
-    //   }
-    // }
+    // filter by specific date
+    if (specificDateSelected) {
+      if (formatDate(event.date) != selectedDate) {
+        return false;
+      }
+    }
 
     // // filter by calendar setting
     // if (calendarSetting == "newClubs") {

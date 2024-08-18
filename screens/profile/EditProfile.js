@@ -7,7 +7,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 // storage
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as SecureStore from "expo-secure-store";
 // keyboard avoiding view
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 // my components
@@ -36,7 +36,6 @@ const EditProfile = ({ route, navigation }) => {
   const [form, setForm] = useState({
     firstName: userData.firstName,
     lastName: userData.lastName,
-    phone: userData.phone,
     graduationYear: userData.graduationYear,
     major: userData.major,
   });
@@ -60,12 +59,6 @@ const EditProfile = ({ route, navigation }) => {
       type: "text",
       title: "Last Name",
       placeholder: "Last Name",
-    },
-    {
-      propName: "phone",
-      type: "phone",
-      title: "Phone Number",
-      placeholder: "Phone Number",
     },
     {
       propName: "graduationYear",
@@ -154,7 +147,7 @@ const EditProfile = ({ route, navigation }) => {
       );
 
       // update async storage
-      await AsyncStorage.setItem("user", JSON.stringify(updatedUserData));
+      await SecureStore.setItemAsync("user", JSON.stringify(updatedUserData));
 
       navigation.goBack();
     } catch (error) {

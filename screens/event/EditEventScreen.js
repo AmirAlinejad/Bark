@@ -73,20 +73,14 @@ const EditEventScreen = ({ route, navigation }) => {
       type: "date",
       title: "Date",
     },
-    // {
-    //   propName: "time",
-    //   type: "time",
-    //   title: "Time",
-    // },
     {
       propName: "duration",
-      type: "text",
-      title: "Duration (mins)",
-      placeholder: "Duration",
+      type: "duration",
+      title: "Duration",
     },
     {
       propName: "roomNumber",
-      type: "text",
+      type: "number",
       title: "Room Number",
       placeholder: "Room Number",
     },
@@ -115,9 +109,6 @@ const EditEventScreen = ({ route, navigation }) => {
     setLoading(true);
     e.preventDefault();
 
-    console.log("editing event", event);
-    console.log("form: ", form);
-
     // check if any fields are empty
     if (!form.eventName || !form.eventDescription) {
       alert("Please fill out all required fields");
@@ -138,7 +129,9 @@ const EditEventScreen = ({ route, navigation }) => {
         date: form.date.toString(),
         publicEvent: form.publicEvent,
       };
-      if (form.duration) updatedEvent.duration = form.duration;
+      if (form.duration !== "")
+        newEvent.duration =
+          form.duration.getMinutes() + form.duration.getHours() * 60;
       if (form.address) updatedEvent.address = form.address;
       if (form.roomNumber) updatedEvent.roomNumber = form.roomNumber;
       if (form.instructions) updatedEvent.instructions = form.instructions;

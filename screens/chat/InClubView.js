@@ -18,7 +18,6 @@ const InClubView = ({ navigation, route }) => {
   const [currentUserPrivilege, setCurrentUserPrivilege] = useState("");
   const [clubDescription, setClubDescription] = useState("");
   const { clubName, imageUrls, chatName } = route.params;
-  console.log("Image URLs:", imageUrls);
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -33,13 +32,6 @@ const InClubView = ({ navigation, route }) => {
         await fetchCurrentUserPrivilege();
         await fetchClubDescription(clubName);
       };
-
-      updateState().then(() => {
-        console.log(
-          "States refreshed. Current privilege:",
-          currentUserPrivilege
-        );
-      });
     }, [clubName])
   );
 
@@ -71,7 +63,6 @@ const InClubView = ({ navigation, route }) => {
       if (snapshot.exists()) {
         const userPrivilege = snapshot.val().privilege;
         setCurrentUserPrivilege(userPrivilege);
-        console.log("User Privilege:", userPrivilege);
       } else {
         console.log("User data not found.");
       }

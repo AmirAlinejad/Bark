@@ -1,6 +1,5 @@
 const formatDate = (date) => {
   // reformat date from to 'YYYY-MM-DD'
-  console.log("reformatting date: " + date);
   let formattedYear = date.slice(11, 15);
   let formattedMonth = date.slice(
     date.indexOf(" ") + 1,
@@ -62,9 +61,7 @@ const formatTime = (time) => {
 
 const timeToString = (date) => {
   // reformat date from 'Day Month DD YYYY HH:MM:SS AM/PM' to 'HH:MM AM/PM'
-  console.log("formatting date: " + date);
   let time = date.slice(16, date.length - 12);
-  console.log("time: " + time);
   let hour = time.substring(0, time.indexOf(":"));
   let minute = time.substring(time.indexOf(":") + 1, time.lrngth);
   let ampm = "AM";
@@ -78,7 +75,6 @@ const timeToString = (date) => {
 // get just the time based on the date string
 const formatStartEndTime = (time) => {
   // reformat date from 'Day Month DD YYYY HH:MM:SS AM/PM' to 'HH:MM AM/PM'
-  console.log("formatting date: " + time);
   let formattedTime = time > 12 ? time - 12 : time;
   formattedTime = time >= 12 ? `${formattedTime} PM` : `${formattedTime} AM`;
   if (time == 0 || time == 24) {
@@ -125,7 +121,6 @@ const dateForObj = (date) => {
     day = "0" + day;
   }
   const year = split[3];
-  console.log(year + "-" + month + "-" + day);
   return year + "-" + month + "-" + day;
 };
 
@@ -139,7 +134,6 @@ const timeForObj = (time) => {
   if (minute < 10) {
     minute = "0" + minute;
   }
-  console.log(hour + ":" + minute);
   return "0000-00-00T" + hour + ":" + minute + ":00" + "-05:00";
 };
 

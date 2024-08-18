@@ -45,7 +45,6 @@ import { Image } from "expo-image";
 import BottomSheetModal from "../../components/chat/BottomSheetModal";
 import ChatMessage from "../../components/chat/ChatMessage";
 import LikesModal from "../../components/chat/LikesModal";
-import Header from "../../components/display/Header";
 import ProfileOverlay from "../../components/overlays/ProfileOverlay";
 import CustomText from "../../components/display/CustomText";
 import ReplyPreview from "../../components/chat/ReplyPreview";
@@ -102,8 +101,6 @@ export default function Chat({ route, navigation }) {
   // Define state for refreshing the messages
   const [fetchLimit, setFetchLimit] = useState(20);
   const [refreshing, setRefreshing] = useState(false);
-
-  console.log(route.params);
 
   // Define states for message text, messages, image URL, and pinned message count
   const [messageText, setMessageText] = useState("");
@@ -227,19 +224,23 @@ export default function Chat({ route, navigation }) {
     return () => unsubscribe();
   }, [fetchLimit]);
 
+  const clearUnreadMessages = async () => {
+    const clubMemberRef = doc(
+      firestore,
+      "schools",
+      schoolKey,
+      "clubMemberData",
+      "clubs",
+      clubId,
+      userData.id
+    );
+    updateDoc(clubMemberRef, { unreadMessages: 0 });
+  };
+
   // clear unread messages once user data is fetched
   useEffect(() => {
     if (userData) {
-      const clubMemberRef = doc(
-        firestore,
-        "schools",
-        schoolKey,
-        "clubMemberData",
-        "clubs",
-        clubId,
-        userData.id
-      );
-      updateDoc(clubMemberRef, { unreadMessages: 0 });
+      clearUnreadMessages();
     }
   }, [userData]);
 
@@ -289,6 +290,15 @@ export default function Chat({ route, navigation }) {
   useEffect(() => {
     setGifUrl(route.params.gif);
   }, [route.params]);
+
+  // clear unread messages once you leave page
+  useEffect(() => {
+    const unsubscribe = navigation.addListener("blur", () => {
+      clearUnreadMessages();
+    });
+
+    return unsubscribe;
+  }, []);
 
   // Function to navigate to the message search screen
   const navigateToMessageSearchScreen = (pin) => {
@@ -439,7 +449,12 @@ export default function Chat({ route, navigation }) {
         );
 
         // say "sent an image" if no text
-        let notificationText = messageText.trim();
+        let notificationText = replyingToMessage ? "Replied to - " : "";
+        if (replyingToMessage) {
+          notificationText += replyingToMessage.user.first + " " + replyingToMessage.user.last + ": ";
+        }
+          
+        notificationText += messageText.trim();
         if (messageText.trim() === "") {
           if (imageUrl) {
             notificationText = "sent an image.";
@@ -486,6 +501,9 @@ export default function Chat({ route, navigation }) {
           const unreadMessages = memberData.unreadMessages + 1;
 
           await updateDoc(memberRef, { unreadMessages });
+
+          // clear unread messages if user is at the bottom
+          clearUnreadMessages();
         }
       } catch (error) {
         console.error("Error sending message:", error);
@@ -515,23 +533,6 @@ export default function Chat({ route, navigation }) {
       setRefreshing(false);
     }, 1000);
   }, []);
-
-  // go to home screen and clear unread messages
-  const goToHomeScreen = () => {
-    navigation.navigate("HomeScreen");
-
-    // Clear unread messages
-    const clubMemberRef = doc(
-      firestore,
-      "schools",
-      schoolKey,
-      "clubMemberData",
-      "clubs",
-      clubId,
-      userData.id
-    );
-    updateDoc(clubMemberRef, { unreadMessages: 0 });
-  };
 
   // go to message search screen
   const goToMessageSearchScreen = () => {

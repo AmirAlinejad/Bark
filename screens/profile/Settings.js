@@ -21,6 +21,7 @@ import CustomButton from "../../components/buttons/CustomButton";
 import SettingsSection from "../../components/display/SettingsSection";
 import { GlobalContext } from "../../App";
 import * as Calendar from "expo-calendar";
+import * as SecureStore from "expo-secure-store";
 
 const Settings = ({ navigation }) => {
   const [userData, setUserData] = useState(null);
@@ -184,6 +185,10 @@ const Settings = ({ navigation }) => {
         if (state.theme === "dark") {
           switchTheme();
         }
+
+        // remove user data from async storage
+        SecureStore.deleteItemAsync("user");
+
       })
       .catch((error) => {
         console.error("Error signing out:", error);

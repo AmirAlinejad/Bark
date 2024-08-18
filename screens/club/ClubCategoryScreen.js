@@ -19,7 +19,6 @@ import { goToClubScreen } from "../../functions/navigationFunctions";
 const ClubCategoryScreen = ({ route, navigation }) => {
   // get club category from route
   const { clubCategory, schoolKey } = route.params;
-  console.log(clubCategory);
 
   // states
   const [searchText, setSearchText] = React.useState("");

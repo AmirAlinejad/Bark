@@ -8,6 +8,7 @@ import {
   FlatList,
   ScrollView,
   Alert,
+  Touchable,
 } from "react-native";
 // expo image
 import { Image } from "expo-image";
@@ -68,7 +69,6 @@ const BottomSheetModal = ({
       try {
         const images = await AsyncStorage.getItem("userImages");
         if (images !== null) {
-          console.log("images:", images);
           setImages(images.split(","));
         }
       } catch (error) {
@@ -138,8 +138,6 @@ const BottomSheetModal = ({
   };
 
   const renderImage = ({ item }) => {
-    console.log("item:", item);
-
     if (item === "add") {
       return (
         <TouchableOpacity
@@ -181,6 +179,15 @@ const BottomSheetModal = ({
     return (
       <TouchableOpacity style={styles.voteOption}>
         <CustomText style={styles.optionText} text={item.text} />
+        <TouchableOpacity
+          onPress={() => {
+            setVoteOptions(
+              voteOptions.filter((option) => option.id !== item.id)
+            );
+          }}
+        >
+          <Ionicons name="close" size={24} color={colors.bark} />
+        </TouchableOpacity>
       </TouchableOpacity>
     );
   };
@@ -194,7 +201,7 @@ const BottomSheetModal = ({
           setValue={setNewVoteOptionText}
           value={newVoteOptionText}
         />
-        <View style={{ justifyContent: "center" }}>
+        <View style={{ justifyContent: "center", marginBottom: 12 }}>
           <IconButton onPress={onAddOption} color={colors.button} icon="add" />
         </View>
       </View>
@@ -237,9 +244,6 @@ const BottomSheetModal = ({
   // send poll message
   const sendPoll = useCallback(async () => {
     // Check if there's a question and at least two options
-    console.log("questionText:", questionText);
-    console.log("voteOptions:", voteOptions);
-    console.log("userData:", userData);
     if (questionText && voteOptions.length >= 2) {
       try {
         // Create the sender object
@@ -274,30 +278,6 @@ const BottomSheetModal = ({
         setQuestionText("");
         setVoteOptions([]);
         setNewVoteOptionText("");
-
-        ////////////////////// worry ab notifications later //////////////////////
-
-        // do for all members in club (if not muted)
-        /*const clubMembersCollection = collection(firestore, 'schools', schoolKey, 'clubMemberData', 'clubs', clubId);
-          const clubMembers = await getDocs(clubMembersCollection);
-          // loop through all members in the club
-          for (const member of clubMembers.docs) {
-              /*if (!member.data().muted && member.id !== auth.currentUser.uid) {
-                  // get the member's data
-                  const memberData = await getDoc(doc(firestore, 'schools', schoolKey, 'chatData', 'clubs', clubId, 'members', member.id));
-                  const memberDataVal = memberData.data();
-                  // send the push notification
-                  sendPushNotification(memberDataVal.expoPushToken, notificationText, userData.firstName, userData.lastName, clubName);
-              }*/
-
-        /*// increment unread messages in club member's data
-              const memberRef = doc(firestore, 'schools', schoolKey, 'clubMemberData', 'clubs', clubId, member.id);
-              const memberSnapshot = await getDoc(memberRef);
-              const memberData = memberSnapshot.data();
-              const unreadMessages = memberData.unreadMessages + 1;
-
-              await updateDoc(memberRef, { unreadMessages });
-          }*/
       } catch (error) {
         console.error("Error sending message:", error);
       }
@@ -464,6 +444,7 @@ const styles = StyleSheet.create({
     marginVertical: 5,
     gap: 10,
     flexDirection: "row",
+    alignItems: "center",
   },
   option: {
     width: 120,

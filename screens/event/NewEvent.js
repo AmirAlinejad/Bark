@@ -29,7 +29,7 @@ const NewEvent = ({ route, navigation }) => {
     eventDescription: event ? event.description : "",
     date: event && event.date ? new Date(event.date) : new Date(),
     // time: event && event.time ? new Date(event.time) : new Date(),
-    duration: event ? event.duration : "",
+    duration: event && event.duration ? new Date(event.date) : new Date(),
     roomNumber: event ? event.roomNumber : "",
     instructions: event ? event.instructions : "",
     publicEvent: event ? event.publicEvent : true,
@@ -86,9 +86,8 @@ const NewEvent = ({ route, navigation }) => {
     // },
     {
       propName: "duration",
-      type: "text",
-      title: "Duration (mins)",
-      placeholder: "Duration",
+      type: "duration",
+      title: "Duration",
     },
     {
       propName: "roomNumber",
@@ -100,7 +99,7 @@ const NewEvent = ({ route, navigation }) => {
       propName: "instructions",
       type: "text",
       title: "Instructions",
-      placeholder: "Instructions",
+      placeholder: "e.g. up the stairs to the left",
     },
     {
       propName: "publicEvent",
@@ -154,7 +153,9 @@ const NewEvent = ({ route, navigation }) => {
           publicEvent: form.publicEvent,
           duration: form.duration,
         };
-        if (form.duration !== "") newEvent.duration = form.duration;
+        if (form.duration !== "")
+          newEvent.duration =
+            form.duration.getMinutes() + form.duration.getHours() * 60;
         //if (location) newEvent.location = location
         if (form.address !== "") newEvent.address = form.address;
         if (form.instructions != "") newEvent.instructions = form.instructions;

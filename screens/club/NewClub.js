@@ -53,8 +53,6 @@ const NewClub = ({ navigation }) => {
     },
   ];
 
-  console.log(form);
-
   useLayoutEffect(() => {
     navigation.setOptions({
       headerTitle: "New Club",
@@ -78,7 +76,6 @@ const NewClub = ({ navigation }) => {
       const clubId = (Math.random() + 1).toString(36).substring(7);
 
       const schoolKey = await emailSplit();
-      console.log(schoolKey);
 
       // add club to clubData
       const clubDoc = doc(firestore, "schools", schoolKey, "clubData", clubId);
@@ -113,6 +110,13 @@ const NewClub = ({ navigation }) => {
 
       // add user to club's members
       await joinClub(clubId, "owner");
+
+      navigation.goBack();
+
+      // go to club screen
+      navigation.navigate("ClubScreen", {
+        clubId: clubId,
+      });
     } catch (error) {
       console.log(error);
       alert("Club creation failed: " + error.message);
@@ -135,22 +139,32 @@ const NewClub = ({ navigation }) => {
           setForm={setForm}
         />
       </KeyboardAwareScrollView>
-      <View style={{ alignSelf: "center", margin: 40, position: 'absolute', bottom: 0, }}>
+      <View
+        style={{
+          alignSelf: "center",
+          margin: 40,
+          position: "absolute",
+          bottom: 0,
+        }}
+      >
         <CustomButton
           text="Submit"
           onPress={onSubmitPressed}
           loading={loading}
           width={100}
-          color={form.clubName && form.clubDescription && form.categoriesSelected.length > 0 ? colors.button : colors.gray}
+          color={
+            form.clubName &&
+            form.clubDescription &&
+            form.categoriesSelected.length > 0
+              ? colors.button
+              : colors.gray
+          }
         />
       </View>
 
       <IconOverlay
         visible={overlayVisible}
         setVisible={setOverlayVisible}
-        closeCondition={() => {
-          navigation.goBack();
-        }}
         icon="checkmark-circle"
         iconColor={colors.green}
         text="Club Created!"

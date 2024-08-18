@@ -22,6 +22,7 @@ import {
   getSetCalendarData,
   getSetUserData,
   getSetMyClubsData,
+  showToastIfNewUser,
 } from "../../functions/backendFunctions";
 import { formatDate, formatStartEndTime } from "../../functions/timeFunctions";
 // modal
@@ -125,15 +126,6 @@ const CalendarScreen = ({ navigation }) => {
     await getSetCalendarData(setEventData);
     await getSetMyClubsData(setMyClubsData);
 
-    // show toast message if no clubs
-    if (userData && userData.clubs.length == 0) {
-      Toast.show({
-        type: "info",
-        text1: "Manage your calendar! 📅",
-        text2: "Use the filter to find new events that interest you.",
-      });
-    }
-
     setLoading(false);
   };
 
@@ -165,6 +157,11 @@ const CalendarScreen = ({ navigation }) => {
 
   // select a specific date
   const selectSpecificDate = (date) => {
+    if (date.dateString == selectedDate) {
+      setSpecificDateSelected(false);
+      setSelectedDate(new Date().toISOString().slice(0, 10));
+      return;
+    }
     setSelectedDate(date.dateString);
     setSpecificDateSelected(true);
   };
@@ -228,9 +225,7 @@ const CalendarScreen = ({ navigation }) => {
     const formattedStartTime = startEndTime[0];
     const formattedEndTime = startEndTime[1];
     // get hour from event date
-    console.log(event.date);
     const hour = new Date(event.date).getHours();
-    console.log("hour: ", hour);
     // if hour outside of bounds
     if (hour < formattedStartTime || hour > formattedEndTime) {
       return false;
@@ -261,6 +256,14 @@ const CalendarScreen = ({ navigation }) => {
     // if all filters pass
     return true;
   };
+
+  useEffect(() => {
+    showToastIfNewUser(
+      "success",
+      "Find events that interest you! 📅",
+      "Use the filter to find new events and manage your clubs."
+    );
+  }, []);
 
   // filtered events (filter when data changes)
   useEffect(() => {

@@ -25,8 +25,6 @@ const InClubView = ({ navigation, route }) => {
   const [currentUserPrivilege, setCurrentUserPrivilege] = useState(""); // not used
   const [isLeaveClubModalVisible, setLeaveClubModalVisible] = useState(false);
 
-  console.log(clubData);
-  
   const { colors } = useTheme();
 
   useLayoutEffect(() => {
@@ -78,9 +76,9 @@ const InClubView = ({ navigation, route }) => {
   };
 
   const leaveClub = () => {
-    leaveClubConfirmed(clubId);
+    leaveClubConfirmed(clubData.clubId);
     toggleLeaveClubModal();
-    navigation.navigate("HomeScreen");
+    navigation.navigate("Home");
   };
 
   const setttingsData = [
@@ -92,7 +90,10 @@ const InClubView = ({ navigation, route }) => {
           icon: "person-add-outline",
           text: `Requests (${getNumRequests()})`,
           onPress: onRequestsButtonPress,
-          disabled: getNumRequests() === 0 || (currentUserPrivilege !== "admin" && currentUserPrivilege !== "owner"),
+          disabled:
+            getNumRequests() === 0 ||
+            (currentUserPrivilege !== "admin" &&
+              currentUserPrivilege !== "owner"),
         },
         {
           id: 3,
@@ -106,7 +107,7 @@ const InClubView = ({ navigation, route }) => {
   ];
 
   if (currentUserPrivilege === "owner" || currentUserPrivilege === "admin") {
-    setttingsData[0].data.push({
+    setttingsData[0].data.unshift({
       id: 1,
       icon: "create-outline",
       text: "Edit Club",
@@ -125,9 +126,9 @@ const InClubView = ({ navigation, route }) => {
       </ScrollView>
       {/* leave club modal */}
       <Modal isVisible={isLeaveClubModalVisible}>
-        <View style={styles.modalContainer}>
+        <View style={[styles.modalContainer, { backgroundColor: colors.card }]}>
           <CustomText
-            style={styles.modalText}
+            style={[styles.modalText, { color: colors.text }]}
             text="Are you sure you want to leave this club?"
           />
           <View style={styles.modalButtons}>
@@ -135,7 +136,7 @@ const InClubView = ({ navigation, route }) => {
             <CustomButton
               text="No"
               onPress={toggleLeaveClubModal}
-              color={colors.green}
+              color={colors.button}
             />
           </View>
         </View>

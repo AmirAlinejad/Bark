@@ -1,7 +1,5 @@
 import React, { useState, useLayoutEffect, useEffect } from "react";
 import { View, StyleSheet, ScrollView, Alert } from "react-native";
-// fade
-import Fade from "react-native-fade";
 // functions
 import {
   requestToJoinClub,
@@ -81,11 +79,23 @@ const ClubScreen = ({ route, navigation }) => {
       await getSetClubCalendarData(clubId, setEventData);
 
       checkMembership(clubId, setCurrentUserPrivilege, setIsRequestSent);
+
       setLoading(false);
     };
 
     asyncFunction();
   }, []);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (!clubData) {
+        Alert.alert("Club not found.");
+        navigation.goBack();
+        return;
+      }
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [clubData]);
 
   // fade out text after 2 seconds
   useEffect(() => {
@@ -234,8 +244,6 @@ const ClubScreen = ({ route, navigation }) => {
     },
   ];
 
-  console.log("clubData", clubData);
-
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       {clubData && (
@@ -279,11 +287,23 @@ const ClubScreen = ({ route, navigation }) => {
               />
 
               {/* join club button */}
-              {currentUserPrivilege === "none" && !loading && (
+              {currentUserPrivilege === "none" &&
+                !isRequestSent &&
+                !loading && (
+                  <View style={{ marginBottom: 10 }}>
+                    <CustomButton
+                      text="Join the club!"
+                      onPress={onRequestButtonPress}
+                    />
+                  </View>
+                )}
+
+              {/* request sent */}
+              {isRequestSent && !loading && (
                 <View style={{ marginBottom: 10 }}>
-                  <CustomButton
-                    text="Join the club!"
-                    onPress={onRequestButtonPress}
+                  <CustomText
+                    style={{ color: colors.textLight }}
+                    text="Request sent."
                   />
                 </View>
               )}
@@ -406,6 +426,7 @@ const styles = StyleSheet.create({
   },
   clubDescription: {
     textAlign: "center",
+    fontSize: 16,
     marginHorizontal: 40,
     marginBottom: 10,
   },
