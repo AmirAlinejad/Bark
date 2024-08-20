@@ -14,15 +14,17 @@ const RequestCard = ({ item, onPressAccept, onPressDecline }) => {
 
   const { colors } = useTheme();
 
+  console.log(item);
+
   return (
     <View style={styles.container}>
-      <ProfileImg profileImg={item.userPhoto} width={50} />
+      <ProfileImg profileImg={item.profileImg} width={50} />
       <View style={styles.cardContent}>
         <View style={{ flex: 1, marginLeft: 20 }}>
           <CustomText
             style={styles.memberName}
             font="bold"
-            text={item.userFirstName + " " + item.userLastName}
+            text={item.firstName + " " + item.lastName}
           />
           <CustomText
             style={[styles.memberPrivilege, { color: colors.textLight }]}

@@ -67,13 +67,13 @@ const InClubView = ({ navigation, route }) => {
   };
 
   // get number of requests
-  const getNumRequests = () => {
-    if (clubData.requests) {
-      return Object.keys(clubData.requests).length;
-    } else {
-      return 0;
-    }
-  };
+  // const getNumRequests = () => {
+  //   if (clubData.requests) {
+  //     return Object.keys(clubData.requests).length;
+  //   } else {
+  //     return 0;
+  //   }
+  // };
 
   const leaveClub = () => {
     leaveClubConfirmed(clubData.clubId);
@@ -88,12 +88,9 @@ const InClubView = ({ navigation, route }) => {
         {
           id: 2,
           icon: "person-add-outline",
-          text: `Requests (${getNumRequests()})`,
+          text: `Requests`,
           onPress: onRequestsButtonPress,
-          disabled:
-            getNumRequests() === 0 ||
-            (currentUserPrivilege !== "admin" &&
-              currentUserPrivilege !== "owner"),
+          disabled: currentUserPrivilege === "member",
         },
         {
           id: 3,

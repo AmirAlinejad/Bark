@@ -20,7 +20,6 @@ import CustomText from "../../components/display/CustomText";
 import CustomButton from "../../components/buttons/CustomButton";
 import SettingsSection from "../../components/display/SettingsSection";
 import { GlobalContext } from "../../App";
-import * as Calendar from "expo-calendar";
 import * as SecureStore from "expo-secure-store";
 
 const Settings = ({ navigation }) => {
@@ -117,14 +116,6 @@ const Settings = ({ navigation }) => {
             });
           },
         },
-        // {
-        //   id: "6",
-        //   icon: "information-circle-outline",
-        //   text: "About Us",
-        //   onPress: () => {
-        //     navigation.navigate("AboutUs");
-        //   },
-        // },
       ],
     },
     {
@@ -150,15 +141,6 @@ const Settings = ({ navigation }) => {
     // check if user is signed in to calendar
     // const isSignedIn = await checkToggleSyncCalendar();
     // setSyncCalendar(isSignedIn);
-
-    const { status } = await Calendar.requestCalendarPermissionsAsync();
-    if (status === "granted") {
-      const calendars = await Calendar.getCalendarsAsync(
-        Calendar.EntityTypes.EVENT
-      );
-      console.log("Here are all your calendars:");
-      console.log({ calendars });
-    }
 
     setLoading(false);
   };
@@ -188,7 +170,6 @@ const Settings = ({ navigation }) => {
 
         // remove user data from async storage
         SecureStore.deleteItemAsync("user");
-
       })
       .catch((error) => {
         console.error("Error signing out:", error);

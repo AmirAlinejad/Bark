@@ -473,10 +473,17 @@ const acceptRequest = async (clubId, clubName, userId) => {
       userId
     )
   );
+
+  Alert.alert("Request Accepted", `You have accepted ${clubName}'s request`);
 };
 
 const declineRequest = async (clubId, userId) => {
   const schoolKey = await emailSplit();
+
+  console.log("Declining request");
+  console.log(clubId);
+  console.log(userId);
+  console.log(schoolKey);
 
   // remove request
   await deleteDoc(
@@ -501,6 +508,7 @@ const getSetRequestsData = async (setter, clubId) => {
     "schools",
     schoolKey,
     "clubRequestsData",
+    "clubs",
     clubId
   );
   const clubRequestsSnapshot = await getDocs(clubRequestsDocRef);
@@ -510,7 +518,16 @@ const getSetRequestsData = async (setter, clubId) => {
     return;
   }
 
-  const requests = clubRequestsSnapshot.docs.map((doc) => doc.data());
+  // turn collection into object w key as id and value as data
+  let requests = [];
+  clubRequestsSnapshot.docs.map((doc, index) => {
+    requests.push({
+      ...doc.data(),
+      userId: doc.id,
+    });
+  });
+
+  console.log(requests);
   setter(requests);
 };
 

@@ -6,9 +6,7 @@ import {
   StyleSheet,
   Text,
   FlatList,
-  ScrollView,
   Alert,
-  Touchable,
 } from "react-native";
 // expo image
 import { Image } from "expo-image";
@@ -41,18 +39,49 @@ import SearchBar from "../input/SearchBar";
 import CustomButton from "../buttons/CustomButton";
 import IconButton from "../buttons/IconButton";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scrollview";
+import { emailSplit } from "../../functions/backendFunctions";
+
+async function sendPushNotification(
+  expoPushToken,
+  message,
+  firstName,
+  lastName,
+  clubName
+) {
+  const text = message ? message : "An image was sent.";
+
+  const notification = {
+    to: expoPushToken,
+    sound: "default",
+    title: clubName,
+    body: `${firstName} ${lastName}: ${text}`,
+    data: { someData: "goes here" },
+  };
+
+  await fetch("https://exp.host/--/api/v2/push/send", {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+      "Accept-encoding": "gzip, deflate",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(notification),
+  });
+}
 
 const BottomSheetModal = ({
   isVisible,
   onClose,
   onUploadImage,
   onOpenCamera,
-  onUploadGif,
   onOpenDocument,
   setImage,
   setTempImageUrl,
   chatRef,
   userData,
+  clubMemberRef,
+  clearUnreadMessages,
+  clubName,
 }) => {
   // state
   const [modalMode, setModalMode] = useState("upload"); // ['upload', 'gif', 'file', 'poll']
@@ -243,6 +272,10 @@ const BottomSheetModal = ({
 
   // send poll message
   const sendPoll = useCallback(async () => {
+    // clear the input
+    setQuestionText("");
+    setVoteOptions([]);
+    setNewVoteOptionText("");
     // Check if there's a question and at least two options
     if (questionText && voteOptions.length >= 2) {
       try {
@@ -272,12 +305,35 @@ const BottomSheetModal = ({
         await addDoc(chatRef, message);
 
         // say "sent an image" if no text
-        const notificationText = "sent a poll";
+        let notificationText = "sent a poll ";
+        notificationText += `"${questionText.trim()}"`;
 
-        // clear the input
-        setQuestionText("");
-        setVoteOptions([]);
-        setNewVoteOptionText("");
+        // do for all members in club (if not muted)
+        const clubMembers = await getDocs(clubMemberRef);
+        // loop through all members in the club
+        for (const member of clubMembers.docs) {
+          if (!member.data().muted && member.id !== userData.id) {
+            // send the push notification
+            sendPushNotification(
+              member.data().expoPushToken,
+              notificationText,
+              userData.firstName,
+              userData.lastName,
+              clubName
+            );
+          }
+
+          // increment unread messages in club member's data
+          const memberRef = doc(clubMemberRef, member.id);
+          const memberSnapshot = await getDoc(memberRef);
+          const memberData = memberSnapshot.data();
+          const unreadMessages = memberData.unreadMessages + 1;
+
+          await updateDoc(memberRef, { unreadMessages });
+
+          // clear unread messages if user is at the bottom
+          clearUnreadMessages();
+        }
       } catch (error) {
         console.error("Error sending message:", error);
       }

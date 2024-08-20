@@ -90,7 +90,7 @@ const SplashScreen = ({ navigation }) => {
             const response = await signInWithEmailAndPassword(
               auth,
               user.email,
-              "123456" // fix this
+              user.password
             );
 
             // different cases for different screens

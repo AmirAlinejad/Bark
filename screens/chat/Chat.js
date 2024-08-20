@@ -451,9 +451,13 @@ export default function Chat({ route, navigation }) {
         // say "sent an image" if no text
         let notificationText = replyingToMessage ? "Replied to - " : "";
         if (replyingToMessage) {
-          notificationText += replyingToMessage.user.first + " " + replyingToMessage.user.last + ": ";
+          notificationText +=
+            replyingToMessage.user.first +
+            " " +
+            replyingToMessage.user.last +
+            ": ";
         }
-          
+
         notificationText += messageText.trim();
         if (messageText.trim() === "") {
           if (imageUrl) {
@@ -766,7 +770,17 @@ export default function Chat({ route, navigation }) {
                   "chats",
                   chatName
                 )}
+                clubMemberRef={collection(
+                  firestore,
+                  "schools",
+                  schoolKey,
+                  "clubMemberData",
+                  "clubs",
+                  clubId
+                )}
+                clearUnreadMessages={clearUnreadMessages}
                 userData={userData}
+                clubName={clubName}
               />
 
               {/* Container for TextInput and Image Preview */}

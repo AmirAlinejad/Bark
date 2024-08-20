@@ -12,7 +12,7 @@ import {
 import MaskedView from "@react-native-masked-view/masked-view";
 import { LinearGradient } from "expo-linear-gradient";
 // use focus effect
-import { useFocusEffect } from "@react-navigation/native";
+import { useFocusEffect, useIsFocused } from "@react-navigation/native";
 // stack navigator
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 // async storage
@@ -51,14 +51,10 @@ const ClubList = ({ navigation }) => {
   const [loading, setLoading] = useState(true);
   // school key to pass to club category screen
   const [schoolKey, setSchoolKey] = useState("");
+  // screen timer
+  const [timer, setTimer] = useState(0);
 
   const { colors } = useTheme();
-
-  // useLayoutEffect(() => {
-  //   navigation.setOptions({
-  //
-  //   });
-  // }, [navigation]);
 
   // go to add club screen
   const onAddClubPress = () => {
@@ -93,9 +89,36 @@ const ClubList = ({ navigation }) => {
     }
   };
 
+  // increment timer if user stays on screen
+  const focused = useIsFocused();
+
+  useEffect(() => {
+    if (focused) {
+      const time = 10;
+      const interval = setInterval(() => {
+        if (timer < time) {
+          setTimer(timer + 1);
+        }
+      }, 1000);
+
+      if (timer == time) {
+        Toast.show({
+          type: "info",
+          text1: "Can't find a club?",
+          text2: "Try refreshing the page!",
+          visibilityTime: 3000,
+        });
+        setTimer(timer + 1);
+      }
+
+      return () => clearInterval(interval);
+    }
+  }, [focused, timer]);
+
   // get data from firebase
   useFocusEffect(
     React.useCallback(() => {
+      setTimer(0);
       // get school key
       const getSetSchoolKey = async () => {
         const schoolkey = await emailSplit();
@@ -105,14 +128,9 @@ const ClubList = ({ navigation }) => {
 
       loadClubSearchData(); // get data from async storage
 
-      // show mesage of user stays on screen for 5 seconds
-      setTimeout(() => {
-        Toast.show({
-          type: "info",
-          text1: "Can't find a club?",
-          text2: "Try refreshing the page!",
-        });
-      }, 20000);
+      return () => {
+        setShowText(false);
+      };
     }, [])
   );
 

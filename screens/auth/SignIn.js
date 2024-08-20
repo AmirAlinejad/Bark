@@ -94,6 +94,9 @@ const SignIn = ({ route, navigation }) => {
         doc(firestore, "schools", schoolKey, "userData", response.user.uid)
       );
 
+      console.log("setting user data in async storage");
+      console.log(userData.data());
+
       // set user data in async storage
       await SecureStore.setItemAsync("user", JSON.stringify(userData.data()));
 

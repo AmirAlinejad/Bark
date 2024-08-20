@@ -336,7 +336,7 @@ const EventScreen = ({ route, navigation }) => {
               <CustomText
                 style={{ ...styles.textNormal, color: colors.text }}
                 text={durationToHours(event.duration)}
-                font={'bold'}
+                font={"bold"}
               />
             </View>
           )}
