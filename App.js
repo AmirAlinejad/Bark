@@ -53,6 +53,7 @@ async function registerForPushNotificationsAsync() {
       projectId: Constants.expoConfig.extra.eas.projectId,
     });
     console.log('token: ', token);
+    
   } else {
     alert("Must use physical device for Push Notifications");
   }
@@ -136,7 +137,6 @@ export default App = () => {
     },
   };
 
-  // notifications
   const [appState, setAppState] = useState(AppState.currentState);
 
   // linking
@@ -147,7 +147,7 @@ export default App = () => {
   // notifications
   Notifications.setNotificationHandler({
     handleNotification: async () => ({
-      shouldShowAlert: true,
+      shouldShowAlert: appState === "background",
       shouldPlaySound: false,
       shouldSetBadge: true,
     }),

@@ -24,6 +24,7 @@ const Form = ({
   eventId,
   clubId,
   clubCategories,
+  notes,
 }) => {
   const { colors } = useTheme();
   const route = useRoute();
@@ -281,6 +282,7 @@ const Form = ({
         if (form.address) updatedEvent.address = form.address;
         if (form.roomNumber) updatedEvent.roomNumber = form.roomNumber;
         if (form.instructions) updatedEvent.instructions = form.instructions;
+        if (form.repeats) updatedEvent.repeats = form.repeats;
 
         navigation.navigate("Map Picker", {
           event: updatedEvent,
@@ -304,6 +306,71 @@ const Form = ({
           />
         </TouchableOpacity>
       );
+    } else if (type == "repeats") {
+      const options = [
+        { value: "Never", label: "Never" },
+        { value: "Daily", label: "Daily" },
+        { value: "Weekly", label: "Weekly" },
+        { value: "Monthly", label: "Monthly" },
+      ];
+
+      return (
+        <SelectList
+          data={options}
+          setSelected={(val) => updateForm(propName, val)}
+          save="value"
+          boxStyles={{
+            borderWidth: 1,
+            borderColor: colors.inputBorder,
+            borderRadius: 12,
+            width: 200,
+            padding: 15,
+            marginBottom: 20,
+          }}
+          dropdownStyles={{
+            borderWidth: 1,
+            borderColor: colors.inputBorder,
+            borderRadius: 12,
+            width: 200,
+            marginBottom: 20,
+          }}
+          checkBoxStyles={{
+            borderRadius: 12,
+            borderWidth: 1,
+            borderColor: colors.inputBorder,
+          }}
+          disabledCheckBoxStyles={{
+            borderRadius: 12,
+            borderWidth: 1,
+            borderColor: colors.inputBorder,
+          }}
+          labelStyles={{
+            opacity: 0,
+            marginBottom: -16,
+            marginLeft: 5,
+          }}
+          badgeTextStyles={{
+            fontFamily: "Nunito_400Regular",
+            color: colors.text,
+            fontSize: 16,
+          }}
+          badgeStyles={{
+            backgroundColor: colors.inputBorder,
+            borderRadius: 12,
+            padding: 5,
+            margin: 5,
+          }}
+          inputStyles={{
+            color: colors.text,
+            fontSize: 14,
+            marginTop: 3,
+          }}
+          dropdownTextStyles={{
+            color: colors.text,
+            fontSize: 14,
+          }}
+        />
+      );
     }
   };
 
@@ -321,6 +388,12 @@ const Form = ({
             prop.type,
             prop.placeholder,
             prop.options
+          )}
+          {prop.notes && (
+            <CustomText
+              style={{ ...styles.smallText, color: colors.textLight }}
+              text={prop.notes}
+            />
           )}
         </View>
       ))}
@@ -358,6 +431,11 @@ const styles = StyleSheet.create({
     alignSelf: "flex-start",
     backgroundColor: "transparent",
     marginBottom: 12,
+  },
+  smallText: {
+    // for required fields
+    marginBottom: 8,
+    fontSize: 14,
   },
 });
 

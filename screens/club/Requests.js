@@ -50,19 +50,18 @@ const Requests = ({ route, navigation }) => {
         {requests.length === 0 && (
           <View
             style={{
-              position: "absolute",
-              left: Dimensions.get("window").width / 2 - 105,
-              top: 350,
+              justifyContent: "center",
+              alignItems: "center",
+              flex: 1,
+              height: Dimensions.get("window").height-250,
             }}
           >
-            <View style={{ justifyContent: "center", alignItems: "center" }}>
-              <Ionicons name="mail" size={100} color={colors.gray} />
-              <CustomText
-                text="No requests to display."
-                font="bold"
-                style={{ fontSize: 20, color: colors.textLight }}
-              />
-            </View>
+            <Ionicons name="mail" size={100} color={colors.gray} />
+            <CustomText
+              text="No requests to display."
+              font="bold"
+              style={{ fontSize: 20, color: colors.textLight }}
+            />
           </View>
         )}
 

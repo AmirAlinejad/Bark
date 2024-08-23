@@ -1,12 +1,14 @@
 // get auth and deep linking params and navigate to the appropriate screen
-import React, { useEffect, useRef } from "react";
-import { View, Image, StyleSheet, Animated, Easing } from "react-native";
+import React, { useEffect } from "react";
+import { View, StyleSheet, Animated, Easing } from "react-native";
 // auth
 import { auth } from "../../backend/FirebaseConfig";
 import { signInWithEmailAndPassword } from "firebase/auth";
 // storage
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as SecureStore from "expo-secure-store";
+// notifications
+import * as Notifications from "expo-notifications";
 // logo
 import SplashScreenImg from "../../assets/whiteLogo.png";
 import SplashScreenFx from "../../assets/splash.png";
@@ -19,6 +21,87 @@ import { useTheme } from "@react-navigation/native";
 
 // screen
 const SplashScreen = ({ navigation }) => {
+  useEffect(() => {
+    let isMounted = true;
+    let clubId = "";
+    let chatName = "";
+    let URL = "";
+
+    async function redirect(notification, navigation) {
+      const url = notification.request.content.data?.url;
+      if (url) {
+        const { queryParams } = Linking.parse(url);
+        clubId = queryParams.clubId;
+        chatName = queryParams.chatName;
+        URL = url;
+
+        console.log("clubId: ", clubId);
+        console.log("chatName: ", chatName);
+      }
+
+      // see if user is logged in
+      const user = await SecureStore.getItemAsync("user").then((data) => {
+        return data ? JSON.parse(data) : null;
+      });
+
+      // if user is signed in, navigate to the home screen, otherwise navigate to the onboarding screens
+      if (user) {
+        // does not need auth right now but eventually will save email and password in async storage (update permissions in firebase)
+        try {
+          const response = await signInWithEmailAndPassword(
+            auth,
+            user.email,
+            user.password
+          );
+
+          // // different cases for different screens
+          // if (clubId) {
+          //   if (chatName) {
+          //     // navigate to the club screen
+          //     navigation.navigate("Main", { screen: "HomeScreen" });
+          //     navigation.navigate("Main", {
+          //       screen: "ClubScreen",
+          //       params: { clubId: clubId, goToHomeScreen: true },
+          //     });
+          //   } else {
+          //     // navigate to the club screen
+          //     navigation.navigate("Main", { screen: "HomeScreen" });
+          //     navigation.navigate("Main", {
+          //       screen: "ClubScreen",
+          //       params: { clubId: clubId, goToHomeScreen: true },
+          //     });
+          //   }
+          // }
+        } catch (error) {
+          console.log(error);
+          navigation.navigate("Onboarding");
+          AsyncStorage.clear();
+          SecureStore.deleteItemAsync("user");
+        }
+      } else {
+        navigation.navigate("Onboarding");
+      }
+    }
+
+    Notifications.getLastNotificationResponseAsync().then((response) => {
+      if (!isMounted || !response?.notification) {
+        return;
+      }
+      redirect(response?.notification);
+    });
+
+    const subscription = Notifications.addNotificationResponseReceivedListener(
+      (response) => {
+        redirect(response.notification);
+      }
+    );
+
+    return () => {
+      isMounted = false;
+      subscription.remove();
+    };
+  }, []);
+
   const { colors } = useTheme();
 
   state = {
@@ -56,7 +139,7 @@ const SplashScreen = ({ navigation }) => {
       useNativeDriver: false, // <-- neccessary
     }).start();
   };
-  
+
   // navigate to the appropriate screen after 3 seconds
   useEffect(() => {
     setTimeout(() => {
@@ -188,7 +271,7 @@ const SplashScreen = ({ navigation }) => {
       ]}
     >
       <LinearGradient
-        colors={["#FF5028", "#ff7a28",]}
+        colors={["#FF5028", "#ff7a28"]}
         style={{
           position: "absolute",
           left: 0,

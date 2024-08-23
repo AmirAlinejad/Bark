@@ -34,7 +34,8 @@ const EditEventScreen = ({ route, navigation }) => {
     eventDescription: event ? event.description : "",
     date: event && event.date ? new Date(event.date) : new Date(),
     // time: event && event.time ? new Date(event.time) : new Date(),
-    duration: event ? event.duration : 0,
+    duration: event ? event.duration : new Date(),
+    repeats: event ? event.repeats : "never",
     roomNumber: event ? event.roomNumber : "",
     instructions: event ? event.instructions : "",
     publicEvent: event ? event.publicEvent : true,
@@ -79,6 +80,11 @@ const EditEventScreen = ({ route, navigation }) => {
       title: "Duration",
     },
     {
+      propName: "repeats",
+      type: "repeats",
+      title: "Repeats",
+    },
+    {
       propName: "roomNumber",
       type: "number",
       title: "Room Number",
@@ -94,6 +100,7 @@ const EditEventScreen = ({ route, navigation }) => {
       propName: "publicEvent",
       type: "boolean",
       title: "Public Event",
+      notes: "Public events are visible to all users.",
     },
     {
       propName: "address",
@@ -127,11 +134,10 @@ const EditEventScreen = ({ route, navigation }) => {
         name: form.eventName,
         description: form.eventDescription,
         date: form.date.toString(),
+        duration: form.duration.toString(),
         publicEvent: form.publicEvent,
+        repeats: form.repeats,
       };
-      if (form.duration !== "")
-        newEvent.duration =
-          form.duration.getMinutes() + form.duration.getHours() * 60;
       if (form.address) updatedEvent.address = form.address;
       if (form.roomNumber) updatedEvent.roomNumber = form.roomNumber;
       if (form.instructions) updatedEvent.instructions = form.instructions;
@@ -162,6 +168,7 @@ const EditEventScreen = ({ route, navigation }) => {
         date: form.date.toString(),
         categories: event.categories,
         publicEvent: form.publicEvent,
+        repeats: form.repeats,
       };
 
       await setDoc(calendarDataDoc, updatedCalendarData);
@@ -203,7 +210,6 @@ const EditEventScreen = ({ route, navigation }) => {
   // delete event
   const deleteThisEvent = async () => {
     deleteEvent(event.id);
-    deleteEventFromGoogleCalendar(event);
     navigation.navigate("Home Screen");
   };
 
@@ -261,7 +267,7 @@ const EditEventScreen = ({ route, navigation }) => {
             <CustomButton
               text="No"
               onPress={() => setModalVisible(false)}
-              color={colors.green}
+              color={colors.button}
             />
           </View>
         </View>

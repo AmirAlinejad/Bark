@@ -95,7 +95,7 @@ const EventScreen = ({ route, navigation }) => {
   useEffect(() => {
     if (event != undefined) {
       const asyncFunc = async () => {
-        await checkMembership(event.clubId, setCurrentUserPrivilege);
+        await checkMembership(event.clubId, setCurrentUserPrivilege, () => {});
       };
 
       asyncFunc();
@@ -145,6 +145,7 @@ const EventScreen = ({ route, navigation }) => {
       duration: event.duration,
       instructions: event.instructions,
       roomNumber: event.roomNumber,
+      repeats: event.repeats,
     };
 
     navigation.navigate("NewEvent", {
@@ -194,11 +195,9 @@ const EventScreen = ({ route, navigation }) => {
 
   // convert duration to hours
   const durationToHours = (duration) => {
-    if (duration == undefined) return "";
-    if (duration < 60) return `${duration} minutes`;
-
-    let hours = Math.floor(duration / 60);
-    let minutes = duration % 60;
+    const newDuration = new Date(duration);
+    const hours = newDuration.getHours();
+    const minutes = newDuration.getMinutes();
     return `${hours} hr ${minutes} min`;
   };
 
@@ -223,7 +222,15 @@ const EventScreen = ({ route, navigation }) => {
               text={reformatDate(event.date)}
             />
 
-            <View style={{ height: 8 }} />
+            {/* repeat */}
+            {event.repeats !== "never" && event.repeats !== "Never" && (
+              <View style={{ marginTop: 8 }}>
+                <CustomText
+                  style={{ ...styles.textSmall, color: colors.textLight }}
+                  text={`(Repeats ${event.repeats})`}
+                />
+              </View>
+            )}
 
             <View style={styles.eventButtons}>
               <TouchableOpacity

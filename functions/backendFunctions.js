@@ -15,7 +15,6 @@ import {
   orderBy,
 } from "firebase/firestore";
 import { getAuth, deleteUser } from "firebase/auth";
-import { getTimeZoneOffset } from "./timeFunctions";
 // storage
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as SecureStore from "expo-secure-store";
@@ -28,7 +27,6 @@ import * as DocumentPicker from "expo-document-picker";
 // functions
 import { handleImageUpload, handleDocumentUpload } from "./uploadImage";
 //  calendar
-import { apiCalendar } from "../backend/CalendarApiConfig";
 import * as Calendar from "expo-calendar";
 // toast
 import Toast from "react-native-toast-message";
@@ -63,11 +61,12 @@ const getSetUserData = async (setter) => {
 };
 
 const getProfileData = async (userId) => {
+  const schoolKey = await emailSplit();
   try {
     const userDocRef = doc(
       firestore,
       "schools",
-      emailSplit(),
+      schoolKey,
       "userData",
       userId
     );
@@ -158,13 +157,21 @@ const getSetClubData = async (clubId, setter) => {
 };
 
 // get set my clubs data
-const getSetMyClubsData = async (setter, setMutedClubs) => {
+const getSetMyClubsData = async (setter, setMutedClubs, setLoading) => {
   const schoolKey = await emailSplit();
 
   // get clubs from async storage
   const userData = await SecureStore.getItemAsync("user");
   const user = JSON.parse(userData);
-  const clubs = user.clubs;
+  let clubs = user.clubs;
+
+  console.log("getting clubs");
+  console.log(clubs);
+
+  // take away null or undefined clubs
+  if (clubs) {
+    clubs = clubs.filter((club) => club);
+  }
 
   // get club data
   const clubData = [];
@@ -172,6 +179,9 @@ const getSetMyClubsData = async (setter, setMutedClubs) => {
   if (clubs) {
     for (let i = 0; i < clubs.length; i++) {
       const clubId = clubs[i];
+      console.log(schoolKey);
+      console.log(clubId);
+
       const clubDocRef = doc(
         firestore,
         "schools",
@@ -182,7 +192,7 @@ const getSetMyClubsData = async (setter, setMutedClubs) => {
       const clubDocSnapshot = await getDoc(clubDocRef);
 
       if (clubDocSnapshot.exists()) {
-        clubData.push(clubDocSnapshot.data());
+        clubData[i] = clubDocSnapshot.data();
 
         // get club member data
         const clubMemberRef = doc(
@@ -224,7 +234,7 @@ const getSetMyClubsData = async (setter, setMutedClubs) => {
         );
         const clubMessagesSnapshot = await getDocs(clubMessagesQuery);
 
-        if (!clubMessagesSnapshot.empty) {
+        if (clubMessagesSnapshot.size > 0) {
           const messageData = clubMessagesSnapshot.docs[0].data();
 
           // most recent message
@@ -260,19 +270,36 @@ const getSetMyClubsData = async (setter, setMutedClubs) => {
           }
         } else {
           clubData[i].lastMessage = "No messages yet";
-          clubData[i].lastMessageTime = null;
+          clubData[i].lastMessageTime = "";
         }
+      } else {
+        console.log("Club not found.");
       }
     }
   }
 
   // update async storage
+  console.log("saving club data to async storage");
+  console.log(clubData);
   await AsyncStorage.setItem("myClubs", JSON.stringify(clubData));
+
+  // get clubs ids from clubData
+  const clubIds = clubs;
+  // save to async storage to user data
+  console.log("saving club ids to user data");
+  console.log(clubIds);
+  await SecureStore.getItemAsync("user").then((userData) => {
+    const user = JSON.parse(userData);
+    user.clubs = clubIds;
+    SecureStore.setItemAsync("user", JSON.stringify(user));
+  });
 
   if (setMutedClubs) {
     setMutedClubs(mutedClubs);
   }
   setter(clubData);
+
+  setLoading(false);
 };
 
 const getSetCalendarData = async (setter) => {
@@ -399,7 +426,7 @@ const joinClub = async (id, privilege, userId) => {
     if (updatedUserClubs == undefined) {
       updatedUserClubs = [];
     }
-    updatedUserClubs.push(id);
+    updatedUserClubs = [...updatedUserClubs, id];
 
     const userDocRef = doc(
       firestore,
@@ -413,7 +440,9 @@ const joinClub = async (id, privilege, userId) => {
     });
 
     // create object of user data with updated clubs
+    console.log(updatedUserClubs);
     userData.clubs = updatedUserClubs;
+
     await SecureStore.setItemAsync("user", JSON.stringify(userData));
   } catch (error) {
     console.error("Error processing request:", error);
@@ -456,6 +485,10 @@ const requestToJoinClub = async (id, name, publicClub) => {
 };
 
 const acceptRequest = async (clubId, clubName, userId) => {
+  console.log("Accepting request");
+  console.log(clubId);
+  console.log(userId);
+  console.log(clubName);
   // join club
   joinClub(clubId, "member", userId);
 
@@ -1285,19 +1318,120 @@ const addEventToDefaultCalendar = async (event) => {
     Calendar.EntityTypes.EVENT
   );
 
-  const minutes = event.duration ? event.duration : 30;
+  const eventDuration = new Date(event.duration);
+  let minutes = eventDuration.getMinutes() + eventDuration.getHours() * 60;
+  console.log(minutes);
+
+  // const startDate = new Date(event.date);
+  // if (event.repeats === "Daily") {
+  //   for (let i = 0; i < 30; i++) {
+  //     const endDate = new Date(startDate);
+  //     endDate.setMinutes(endDate.getMinutes() + minutes);
+
+  //     const newEvent = {
+  //       title: event.name,
+  //       startDate: new Date(event.date),
+  //       endDate: endDate,
+  //       location: event.address,
+  //       notes: event.description,
+  //     };
+
+  //     await Calendar.createEventAsync(defaultCalendar[0].id, newEvent);
+
+  //     // increment date
+  //     startDate.setDate(startDate.getDate() + 1);
+  //   }
+  // } else if (event.repeats === "Weekly") {
+  //   for (let i = 0; i < 4; i++) {
+  //     const endDate = new Date(startDate);
+  //     endDate.setMinutes(endDate.getMinutes() + minutes);
+
+  //     const newEvent = {
+  //       title: event.name,
+  //       startDate: new Date(event.date),
+  //       endDate: endDate,
+  //       location: event.address,
+  //       notes: event.description,
+  //     };
+
+  //     await Calendar.createEventAsync(defaultCalendar[0].id, newEvent);
+
+  //     // increment date
+  //     startDate.setDate(startDate.getDate() + 7);
+  //   }
+  // } else if (event.repeats === "Monthly") {
+  //   for (let i = 0; i < 12; i++) {
+  //     const endDate = new Date(startDate);
+  //     endDate.setMinutes(endDate.getMinutes() + minutes);
+
+  //     const newEvent = {
+  //       title: event.name,
+  //       startDate: new Date(event.date),
+  //       endDate: endDate,
+  //       location: event.address,
+  //       notes: event.description,
+  //     };
+
+  //     await Calendar.createEventAsync(defaultCalendar[0].id, newEvent);
+
+  //     // increment date
+  //     startDate.setMonth(startDate.getMonth() + 1);
+  //   }
+  // } else {
+
   const endDate = new Date(event.date);
   endDate.setMinutes(endDate.getMinutes() + minutes);
 
-  const newEvent = {
-    title: event.name,
-    startDate: new Date(event.date),
-    endDate: endDate,
-    location: event.address,
-    notes: event.description,
-  };
+  let newEvent;
+
+  if (event.repeats === "Daily") {
+    newEvent = {
+      title: event.name,
+      startDate: new Date(event.date),
+      endDate: endDate,
+      location: event.address,
+      notes: event.description,
+      recurrenceRule: {
+        frequency: "daily",
+        occurence: 30,
+      },
+    };
+  } else if (event.repeats === "Weekly") {
+    newEvent = {
+      title: event.name,
+      startDate: new Date(event.date),
+      endDate: endDate,
+      location: event.address,
+      notes: event.description,
+      recurrenceRule: {
+        frequency: "weekly",
+        occurence: 52,
+      },
+    };
+  } else if (event.repeats === "Monthly") {
+    newEvent = {
+      title: event.name,
+      startDate: new Date(event.date),
+      endDate: endDate,
+      location: event.address,
+      notes: event.description,
+      recurrenceRule: {
+        frequency: "monthly",
+        occurence: 12,
+      },
+    };
+  } else {
+    newEvent = {
+      title: event.name,
+      startDate: new Date(event.date),
+      endDate: endDate,
+      location: event.address,
+      notes: event.description,
+    };
+  }
 
   await Calendar.createEventAsync(defaultCalendar[0].id, newEvent);
+  // }
 };
 
 // // delete event from calendar

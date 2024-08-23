@@ -290,7 +290,7 @@ const ClubList = ({ navigation }) => {
                     sortedClubs.length === 0 ? (
                       <View style={styles.noClubsView}>
                         <Ionicon
-                          name="megaphone"
+                          name="people-circle"
                           size={100}
                           color={colors.gray}
                         />
@@ -301,6 +301,14 @@ const ClubList = ({ navigation }) => {
                           ]}
                           text="No clubs found."
                           font="bold"
+                        />
+                        <CustomText
+                          style={{ color: colors.textLight, fontSize: 16 }}
+                          text="Try refreshing the page"
+                        />
+                        <CustomText
+                          style={{ color: colors.textLight, fontSize: 16 }}
+                          text="or search for a different club."
                         />
                       </View>
                     ) : (

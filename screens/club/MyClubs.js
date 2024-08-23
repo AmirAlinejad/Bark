@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 // react native components
-import { View, StyleSheet, ScrollView } from "react-native";
+import { View, StyleSheet, ScrollView, ActivityIndicator } from "react-native";
 // use focus effect
 import { useFocusEffect } from "@react-navigation/native";
 // async storage
@@ -29,6 +29,8 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 // toast
 import Toast from "react-native-toast-message";
+import { A } from "@expo/html-elements";
+import { set } from "firebase/database";
 
 const Stack = createNativeStackNavigator();
 
@@ -48,16 +50,14 @@ const MyClubs = ({ navigation }) => {
 
   const { colors } = useTheme();
 
-  const asyncFunc = async () => {
-    setLoading(true);
+  console.log("loading", loading);
 
+  const asyncFunc = async () => {
     // get user data
     getSetUserData(setUserData);
 
     // get all club data from db
-    getSetMyClubsData(setClubData, setMutedClubs);
-
-    setLoading(false);
+    getSetMyClubsData(setClubData, setMutedClubs, setLoading);
   };
 
   // load myClubs data from async storage
@@ -78,8 +78,11 @@ const MyClubs = ({ navigation }) => {
 
   // show toast message for new users
   useEffect(() => {
-    showToastIfNewUser('error', 'Welcome to Bark! 🎉', 'Join a club to start chatting with clubs and classmates!');
-
+    showToastIfNewUser(
+      "error",
+      "Welcome to Bark! 🎉",
+      "Join a club to start chatting with clubs and classmates!"
+    );
   }, []);
 
   // toggle mute
@@ -182,27 +185,28 @@ const MyClubs = ({ navigation }) => {
               contentInsetAdjustmentBehavior="automatic"
             >
               <GestureHandlerRootView>
-                {
-                  // if loading
-                  loading ? (
-                    <View style={styles.noClubsView}>
-                      <Ionicon
-                        name="chatbubbles"
-                        size={100}
-                        color={colors.gray}
-                      />
-                      <CustomText
-                        style={[styles.title, { color: colors.textLight }]}
-                        text="Loading..."
-                        font="bold"
-                      />
-                    </View>
-                  ) : (
-                    <View>
-                      {
-                        // if no clubs found
-                        sortedClubs.length === 0 ? (
-                          <View style={styles.noClubsView}>
+                <View>
+                  {
+                    // if no clubs found
+                    sortedClubs.length === 0 ? (
+                      <View style={styles.noClubsView}>
+                        {loading ? (
+                          <View>
+                            <ActivityIndicator
+                              size="large"
+                              color={colors.gray}
+                            />
+                            <CustomText
+                              style={[
+                                styles.title,
+                                { color: colors.textLight },
+                              ]}
+                              text="Clubs loading..."
+                              font="bold"
+                            />
+                          </View>
+                        ) : (
+                          <View style={{ alignItems: "center" }}>
                             <Ionicon
                               name="chatbubbles"
                               size={100}
@@ -216,39 +220,43 @@ const MyClubs = ({ navigation }) => {
                               text="No clubs found."
                               font="bold"
                             />
+                            <CustomText 
+                              style={{ color: colors.textLight, fontSize: 16 }}
+                              text="Join a club to start chatting!"
+                            />
                           </View>
-                        ) : (
-                          // create a chat club card for each club
-                          sortedClubs.map((item, index) => {
-                            return (
-                              <View key={index}>
-                                <ChatClubCard
-                                  name={item.clubName}
-                                  description={item.clubDescription}
-                                  img={item.clubImg}
-                                  muted={
-                                    mutedClubs !== undefined
-                                      ? mutedClubs.includes(item.clubId)
-                                      : false
-                                  }
-                                  toggleMute={() => toggleMute(item.clubId)}
-                                  unreadMessages={item.unreadMessages}
-                                  lastMessage={item.lastMessage}
-                                  lastMessageTime={item.lastMessageTime}
-                                  clubId={item.clubId}
-                                  navigation={navigation}
-                                />
-                                {index === sortedClubs.length - 1 ? null : (
-                                  <View style={styles.separator}></View>
-                                )}
-                              </View>
-                            );
-                          })
-                        )
-                      }
-                    </View>
-                  )
-                }
+                        )}
+                      </View>
+                    ) : (
+                      // create a chat club card for each club
+                      sortedClubs.map((item, index) => {
+                        return (
+                          <View key={index}>
+                            <ChatClubCard
+                              name={item.clubName}
+                              description={item.clubDescription}
+                              img={item.clubImg}
+                              muted={
+                                mutedClubs !== undefined
+                                  ? mutedClubs.includes(item.clubId)
+                                  : false
+                              }
+                              toggleMute={() => toggleMute(item.clubId)}
+                              unreadMessages={item.unreadMessages}
+                              lastMessage={item.lastMessage}
+                              lastMessageTime={item.lastMessageTime}
+                              clubId={item.clubId}
+                              navigation={navigation}
+                            />
+                            {index === sortedClubs.length - 1 ? null : (
+                              <View style={styles.separator}></View>
+                            )}
+                          </View>
+                        );
+                      })
+                    )
+                  }
+                </View>
               </GestureHandlerRootView>
             </ScrollView>
           </View>

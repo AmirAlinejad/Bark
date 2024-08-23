@@ -162,10 +162,6 @@ const MessageItem = ({
     );
   };
 
-  if (item.voteOptions) {
-    console.log("votesArray: ", votesArray());
-  }
-
   return (
     <Swipeable
       ref={swipeableRef}

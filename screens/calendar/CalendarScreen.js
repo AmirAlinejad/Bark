@@ -124,7 +124,7 @@ const CalendarScreen = ({ navigation }) => {
 
     await getSetUserData(setUserData);
     await getSetCalendarData(setEventData);
-    await getSetMyClubsData(setMyClubsData);
+    await getSetMyClubsData(setMyClubsData, () => {}, () => {});
 
     setLoading(false);
   };
@@ -268,8 +268,75 @@ const CalendarScreen = ({ navigation }) => {
   // filtered events (filter when data changes)
   useEffect(() => {
     if (eventData) {
-      const filteredEvents = eventData.filter(filterFunct);
+      let repeatedEvents = [];
+      eventData.forEach((event) => {
+        if (event.repeats == "Weekly") {
+          let date = new Date(event.date);
+          let endDate = new Date(event.date);
 
+          // set end date to 6 months from now
+          endDate.setMonth(endDate.getMonth() + 6);
+
+          // add event to repeatedEvents for each day
+          while (date <= endDate) {
+            repeatedEvents = [
+              ...repeatedEvents,
+              {
+                ...event,
+                date: date.toString(),
+              },
+            ];
+
+            // increment date by 7 days
+            date.setDate(date.getDate() + 7);
+          }
+        } else if (event.repeats == "Monthly") {
+          let date = new Date(event.date);
+          let endDate = new Date(event.date);
+
+          // set end date to 6 months from now
+          endDate.setMonth(endDate.getMonth() + 6);
+
+          // add event to repeatedEvents for each day
+          while (date <= endDate) {
+            repeatedEvents = [
+              ...repeatedEvents,
+              {
+                ...event,
+                date: date.toString(),
+              },
+            ];
+
+            // increment date by 1 month
+            date.setMonth(date.getMonth() + 1);
+          }
+        } else if (event.repeats == "Daily") {
+          console.log("daily event");
+          let date = new Date(event.date);
+          let endDate = new Date(event.date);
+
+          // set end date to 1 month from now
+          endDate.setMonth(endDate.getMonth() + 1);
+
+          // add event to repeatedEvents for each day
+          while (date <= endDate) {
+            repeatedEvents = [
+              ...repeatedEvents,
+              {
+                ...event,
+                date: date.toString(),
+              },
+            ];
+
+            // increment date by 1 day
+            date.setDate(date.getDate() + 1);
+          }
+        } else {
+          repeatedEvents = [...repeatedEvents, event];
+        }
+      });
+
+      const filteredEvents = repeatedEvents.filter(filterFunct);
       setFilteredEvents(filteredEvents);
 
       // mark dates on calendar (try to make this more efficient)
@@ -295,6 +362,11 @@ const CalendarScreen = ({ navigation }) => {
             color: CLUBCATEGORIES.find((item) => item.value == category).color,
           };
         });
+
+        // remove duplicate dot colors
+        dotColors = dotColors.filter(
+          (v, i, a) => a.findIndex((t) => t.color === v.color) === i
+        );
 
         // add dots with dot color to marked dates if not already there
         if (markedDates[formattedDate].dots == null) {
@@ -325,6 +397,9 @@ const CalendarScreen = ({ navigation }) => {
           });
         }
       });
+
+    
+
       // add specific date if selected
       if (specificDateSelected) {
         markedDates = {
@@ -415,6 +490,7 @@ const CalendarScreen = ({ navigation }) => {
                   <UpcomingEvents
                     filteredEvents={filteredEvents}
                     navigation={navigation}
+                    calendar={true}
                   />
                 </View>
               </View>

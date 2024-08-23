@@ -84,9 +84,6 @@ const SignIn = ({ route, navigation }) => {
         return;
       }
 
-      // Navigate to the home screen
-      navigation.navigate("Main");
-
       const schoolKey = response.user.email.split("@")[1].split(".")[0];
 
       // get user data from firestore
@@ -94,14 +91,23 @@ const SignIn = ({ route, navigation }) => {
         doc(firestore, "schools", schoolKey, "userData", response.user.uid)
       );
 
-      console.log("setting user data in async storage");
-      console.log(userData.data());
+      if (!userData.exists()) {
+        // if user data does not exist, sign out and show error
+        setErrorMessage("User data not found. Please sign up.");
+        setLoading(false);
+        return;
+      }
+
+      console.log("userData", userData.data());
 
       // set user data in async storage
       await SecureStore.setItemAsync("user", JSON.stringify(userData.data()));
 
       // set school key in async storage
       await AsyncStorage.setItem("schoolKey", schoolKey);
+
+      // Navigate to the home screen
+      navigation.navigate("Main");
 
       // show welcome toast
       if (userData.data().clubs.length == 0) {

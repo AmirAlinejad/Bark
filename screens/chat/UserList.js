@@ -3,27 +3,23 @@ import {
   View,
   StyleSheet,
   FlatList,
-  Text,
   TouchableOpacity,
   Alert,
   ScrollView,
-  Animated,
 } from "react-native";
 // storage
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as SecureStore from "expo-secure-store";
 // modal
 import Modal from "react-native-modal";
 // my components
-import Header from "../../components/display/Header";
-import SearchBar from "../../components/input/SearchBar";
 import ProfileImg from "../../components/display/ProfileImg";
 import CustomText from "../../components/display/CustomText";
 import ToggleButton from "../../components/buttons/ToggleButton";
 import ProfileOverlay from "../../components/overlays/ProfileOverlay";
 import CustomButton from "../../components/buttons/CustomButton";
 // Firebase
-import { doc, getDoc, updateDoc, deleteDoc } from "firebase/firestore";
-import { db, firestore } from "../../backend/FirebaseConfig";
+import { doc, updateDoc, deleteDoc } from "firebase/firestore";
+import { firestore } from "../../backend/FirebaseConfig";
 // icons
 import Icon from "react-native-vector-icons/MaterialCommunityIcons"; // Ensure react-native-vector-icons is installed
 // functions
@@ -34,8 +30,6 @@ import {
 } from "../../functions/backendFunctions";
 // styles
 import { useTheme } from "@react-navigation/native";
-// icons
-import { Ionicons } from "@expo/vector-icons";
 
 const UserList = ({ route, navigation }) => {
   const { clubId } = route.params;
@@ -43,7 +37,7 @@ const UserList = ({ route, navigation }) => {
   const [clubMembers, setClubMembers] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedPrivilege, setSelectedPrivilege] = useState("all");
-  const [currentUserId, setCurrentUserId] = useState(null);
+  const [currentUserId, setCurrentUserId] = useState("none");
   const [currentUserPrivilege, setCurrentUserPrivilege] = useState("");
   const [filteredMembers, setFilteredMembers] = useState([]);
   // overlay
@@ -74,10 +68,8 @@ const UserList = ({ route, navigation }) => {
 
     const asyncFunc = async () => {
       // get current user id from async storage
-      const user = await AsyncStorage.getItem("user");
-
-      setCurrentUserId(user.uid);
-      checkMembership(clubId, setCurrentUserPrivilege);
+      setCurrentUserId(user.id);
+      checkMembership(clubId, setCurrentUserPrivilege, () => {});
       setLoading(false);
     };
 
@@ -277,7 +269,10 @@ const UserList = ({ route, navigation }) => {
             </View>
 
             <CustomText
-              style={[styles.memberPrivilege, { marginTop: 12, color: colors.textLight }]}
+              style={[
+                styles.memberPrivilege,
+                { marginTop: 12, color: colors.textLight },
+              ]}
               text={item.privilege}
             />
           </View>

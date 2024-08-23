@@ -34,7 +34,7 @@ const QRCodeScreen = ({ route, navigation }) => {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <Header navigation={navigation} text={name} back />
       <View style={styles.qrCodeView}>
-        <View style={[styles.qrCodeBox, { backgroundColor: colors.card }]}>
+        <View style={[styles.qrCodeBox, { backgroundColor: colors.card, borderColor: colors.text }]}>
           <QRCode
             value={link}
             size={250}
@@ -76,6 +76,7 @@ const styles = StyleSheet.create({
     height: 290,
     alignItems: "center",
     justifyContent: "center",
+    borderWidth: 8,
   },
   buttons: {
     marginTop: 40,

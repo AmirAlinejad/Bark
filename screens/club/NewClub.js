@@ -38,7 +38,12 @@ const NewClub = ({ navigation }) => {
       title: "Club Name",
       placeholder: "Club Name",
     },
-    { propName: "publicClub", type: "boolean", title: "Public Club" },
+    {
+      propName: "publicClub",
+      type: "boolean",
+      title: "Public Club",
+      notes: "You don't need to approve members for public clubs.",
+    },
     {
       propName: "clubDescription",
       type: "textLong",

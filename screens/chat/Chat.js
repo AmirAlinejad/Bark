@@ -64,14 +64,16 @@ import { isSameDay } from "../../functions/timeFunctions";
 import { goToClubScreen } from "../../functions/navigationFunctions";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 // colors
-import { useTheme } from "@react-navigation/native";
+import { useFocusEffect, useTheme } from "@react-navigation/native";
 
 async function sendPushNotification(
   expoPushToken,
   message,
   firstName,
   lastName,
-  clubName
+  clubName,
+  clubId,
+  chatName,
 ) {
   const text = message ? message : "An image was sent.";
 
@@ -80,7 +82,7 @@ async function sendPushNotification(
     sound: "default",
     title: clubName,
     body: `${firstName} ${lastName}: ${text}`,
-    data: { someData: "goes here" },
+    data: { link: "myapp://clubId=" + clubId + "&chatName=" + chatName },
   };
 
   await fetch("https://exp.host/--/api/v2/push/send", {
@@ -218,7 +220,7 @@ export default function Chat({ route, navigation }) {
     getSetUserData(setUserData);
 
     // Check the user's membership status
-    checkMembership(clubId, setCurrentUserPrivilege);
+    checkMembership(clubId, setCurrentUserPrivilege, () => {});
 
     // Cleanup subscription on component unmount
     return () => unsubscribe();
@@ -279,12 +281,19 @@ export default function Chat({ route, navigation }) {
     };
 
     fetchLikedMessages();
-
-    setTimeout(() => {
-      // scroll to bottom unanimated
-      flatListRef.current.scrollToEnd({ animated: false });
-    }, 500);
   }, [messages]);
+
+  useFocusEffect(
+    useCallback(() => {
+      // Do something when the screen is focused
+      setTimeout(() => {
+        scrollToBottom();
+      }, 500);
+      return () => {
+        // Do something when the screen is unfocused
+      };
+    }, [])
+  );
 
   // Use the route params to set the selected GIF URL
   useEffect(() => {
@@ -357,6 +366,8 @@ export default function Chat({ route, navigation }) {
     setTempImageUrl(null);
     setGifUrl(null); // Reset the gifUrl after sending the message
     setReplyingToMessage(null);
+
+    scrollToBottom();
 
     // List of threat words
     const threatWords = ["bomb", "kill", "violence"]; // Add more threat words here if needed
@@ -486,7 +497,9 @@ export default function Chat({ route, navigation }) {
               notificationText,
               userData.firstName,
               userData.lastName,
-              clubName
+              clubName,
+              clubId,
+              chatName
             );
           }
 

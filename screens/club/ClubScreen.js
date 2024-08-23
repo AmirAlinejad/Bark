@@ -329,6 +329,7 @@ const ClubScreen = ({ route, navigation }) => {
                 filteredEvents={filteredEvents}
                 screenName={"ClubScreen"}
                 navigation={navigation}
+                calendar={false}
               />
 
               {/* extra space at the bottom of the screen */}
