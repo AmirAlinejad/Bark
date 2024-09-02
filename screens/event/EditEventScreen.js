@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 // react native components
-import { View, StyleSheet, TouchableOpacity, TextInput } from "react-native";
+import { View, StyleSheet } from "react-native";
 // my components
 import CustomText from "../../components/display/CustomText";
 import CustomButton from "../../components/buttons/CustomButton";
@@ -12,12 +12,8 @@ import Modal from "react-native-modal";
 import { doc, setDoc } from "firebase/firestore";
 import { firestore } from "../../backend/FirebaseConfig";
 // functions
-import {
-  emailSplit,
-  deleteEvent,
-  updateEventInGoogleCalendar,
-  deleteEventFromGoogleCalendar,
-} from "../../functions/backendFunctions";
+import { emailSplit } from "../../functions/backendFunctions";
+import { deleteEvent } from "../../functions/eventFunctions";
 // icons
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 // styles
@@ -173,9 +169,8 @@ const EditEventScreen = ({ route, navigation }) => {
 
       await setDoc(calendarDataDoc, updatedCalendarData);
 
-      // updateEventInGoogleCalendar(updatedEvent);
-
-      navigation.navigate("Home Screen"); // make go back to event screen eventually
+      navigation.goBack();
+      navigation.goBack();
     } catch (error) {
       console.log(error);
       alert("Edit Event failed: " + error.message);

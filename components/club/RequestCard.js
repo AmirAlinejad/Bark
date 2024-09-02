@@ -11,10 +11,7 @@ import Ionicon from "react-native-vector-icons/Ionicons";
 import { useTheme } from "@react-navigation/native";
 
 const RequestCard = ({ item, onPressAccept, onPressDecline }) => {
-
   const { colors } = useTheme();
-
-  console.log(item);
 
   return (
     <View style={styles.container}>

@@ -8,10 +8,12 @@ import {
 } from "react-native";
 // functions
 import {
-  pinMessage,
   updateProfileData,
+} from "../../functions/profileFunctions";
+import {
+  pinMessage,
   voteInPoll,
-} from "../../functions/backendFunctions";
+} from "../../functions/chatFunctions";
 // my components
 import ProfileImg from "../display/ProfileImg";
 import CustomText from "../display/CustomText";

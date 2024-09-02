@@ -41,7 +41,7 @@ const IconOverlay = ({
             font="bold"
           />
 
-          <CustomButton text="Close" onPress={closeOverlay}/>
+          <CustomButton text="Close" onPress={closeOverlay} />
         </View>
       </View>
     </Modal>

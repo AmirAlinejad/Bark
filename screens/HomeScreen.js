@@ -1,6 +1,4 @@
 import React from "react";
-// react native components
-import { View, StyleSheet } from "react-native";
 // react navigation components
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 // icons

@@ -4,24 +4,18 @@ import {
   View,
   StyleSheet,
   TouchableOpacity,
-  TextInput,
   ActivityIndicator,
 } from "react-native";
 // my components
-import CustomText from "../../components/display/CustomText";
-import CustomInput from "../../components/input/CustomInput";
 import CustomButton from "../../components/buttons/CustomButton";
-import Header from "../../components/display/Header";
 import ClubImg from "../../components/club/ClubImg";
-import PrivacySwitch from "../../components/input/PrivacySwitch";
 import Form from "../Form";
 // functions
 import { emailSplit } from "../../functions/backendFunctions";
 // image picking
-import { handleImageUploadAndSend } from "../../functions/backendFunctions";
+import { handleImageUploadAndSend } from "../../functions/chatFunctions"; // weird path, but it works
 // backend
-import { ref, update } from "firebase/database";
-import { db, firestore } from "../../backend/FirebaseConfig";
+import { firestore } from "../../backend/FirebaseConfig";
 import { updateDoc, doc } from "firebase/firestore";
 // colors
 import { useTheme } from "@react-navigation/native";
@@ -33,9 +27,9 @@ const EditClubScreen = ({ route, navigation }) => {
   const { name, id, img, description, categories } = route.params;
 
   // state variables
-  const [form, setForm] = useState({ 
-    clubName: name, 
-    clubDescription: description
+  const [form, setForm] = useState({
+    clubName: name,
+    clubDescription: description,
   });
   const [clubImg, setClubImg] = useState(img);
   const [loading, setLoading] = useState(false);
@@ -51,7 +45,7 @@ const EditClubScreen = ({ route, navigation }) => {
     },
     {
       propName: "clubDescription",
-      type: "text",
+      type: "textLong",
       title: "Club Description",
       placeholder: "Club Description",
     },
@@ -99,7 +93,7 @@ const EditClubScreen = ({ route, navigation }) => {
           "clubs",
           id
         );
-       
+
         await updateDoc(categoryDoc, newClubData);
       }
 
@@ -130,7 +124,11 @@ const EditClubScreen = ({ route, navigation }) => {
         </View>
 
         <View style={styles.clubContainer}>
-          <Form formPropertiesAndTypes={formPropertiesAndTypes} form={form} setForm={setForm} />
+          <Form
+            formPropertiesAndTypes={formPropertiesAndTypes}
+            form={form}
+            setForm={setForm}
+          />
         </View>
 
         <View style={styles.buttonContainer}>

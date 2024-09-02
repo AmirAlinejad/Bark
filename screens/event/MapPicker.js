@@ -1,4 +1,4 @@
-import React, { useState, } from "react";
+import React, { useState } from "react";
 // react native components
 import { View, StyleSheet } from "react-native";
 // my components
@@ -127,7 +127,7 @@ const MapPicker = ({ route, navigation }) => {
           language: "en",
         }}
       />
-      
+
       <View style={styles.submitButton}>
         <CustomButton text="Submit" onPress={onSubmitPressed} />
       </View>

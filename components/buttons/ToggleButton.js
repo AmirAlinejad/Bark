@@ -20,21 +20,24 @@ const ToggleButton = ({
   
   const containerStyle = [
     styles.container,
+    {
+      borderColor: toggledCol
+    },
     // set bg color if toggled
     toggled
       ? {
           backgroundColor: toggledCol,
 
           // add shadow if toggled
-          shadowColor: "#000",
+          shadowColor: colors.text,
           shadowOffset: {
             width: 2,
             height: 2,
           },
           shadowOpacity: 0.15,
-          shadowRadius: 1.5,
+          shadowRadius: 2.5,
         }
-      : { backgroundColor: untoggledCol },
+      : { },
   ];
 
   // set text color if toggled
@@ -62,9 +65,10 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     borderRadius: 30,
-    padding: 10,
+    padding: 6,
     paddingHorizontal: 15,
     gap: 8,
+    borderWidth: 1,
   },
   text: {
     fontWeight: "bold",

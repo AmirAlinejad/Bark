@@ -12,10 +12,10 @@ import CustomText from "../../components/display/CustomText";
 // functions
 import {
   emailSplit,
-  getSetMyClubsData,
-  getSetUserData,
   showToastIfNewUser,
 } from "../../functions/backendFunctions";
+import { getSetMyClubsData } from "../../functions/clubFunctions";
+import { getSetUserData } from "../../functions/profileFunctions";
 // backend
 import { firestore } from "../../backend/FirebaseConfig";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
@@ -29,8 +29,6 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 // toast
 import Toast from "react-native-toast-message";
-import { A } from "@expo/html-elements";
-import { set } from "firebase/database";
 
 const Stack = createNativeStackNavigator();
 
@@ -49,8 +47,6 @@ const MyClubs = ({ navigation }) => {
   const [loading, setLoading] = useState(true);
 
   const { colors } = useTheme();
-
-  console.log("loading", loading);
 
   const asyncFunc = async () => {
     // get user data
@@ -151,7 +147,7 @@ const MyClubs = ({ navigation }) => {
       <Stack.Screen
         name="ClubList"
         options={{
-          headerTitle: "My Clubs",
+          headerTitle: "💬 My Clubs",
           headerLargeTitle: true,
           headerShadowVisible: false,
           headerSearchBarOptions: {

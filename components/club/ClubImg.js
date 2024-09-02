@@ -14,16 +14,23 @@ const ClubImg = ({ clubImg, width, editable }) => {
     <View
       style={[
         styles.imgContainer,
-        { backgroundColor: colors.gray, width: width, height: width, borderRadius: width / 6 },
+        {
+          backgroundColor: colors.gray,
+          width: width,
+          height: width,
+          borderRadius: width / 6,
+        },
       ]}
     >
-      <Image
-        source={{ uri: clubImg }}
-        style={[
-          styles.imgContainer,
-          { width: width, height: width, borderRadius: width / 6 },
-        ]}
-      />
+      {clubImg && (
+        <Image
+          source={{ uri: clubImg }}
+          style={[
+            styles.imgContainer,
+            { width: width, height: width, borderRadius: width / 6 },
+          ]}
+        />
+      )}
       {/* if there is no club image, display a default icon */}
       {!clubImg && !editable && (
         <View style={{ position: "absolute" }}>

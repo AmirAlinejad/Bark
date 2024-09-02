@@ -1,9 +1,4 @@
-import React, {
-  useState,
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-} from "react";
+import React, { useState, useEffect, useLayoutEffect } from "react";
 import { View, StyleSheet, ScrollView } from "react-native";
 // modal
 import Modal from "react-native-modal";
@@ -15,10 +10,9 @@ import SettingsSection from "../../components/display/SettingsSection";
 import { useTheme } from "@react-navigation/native";
 // functions
 import {
-  getSetClubData,
   checkMembership,
   leaveClubConfirmed,
-} from "../../functions/backendFunctions";
+} from "../../functions/clubFunctions";
 
 const InClubView = ({ navigation, route }) => {
   const { clubData } = route.params;
@@ -90,7 +84,9 @@ const InClubView = ({ navigation, route }) => {
           icon: "person-add-outline",
           text: `Requests`,
           onPress: onRequestsButtonPress,
-          disabled: currentUserPrivilege === "member",
+          disabled:
+            currentUserPrivilege !== "owner" &&
+            currentUserPrivilege !== "admin",
         },
         {
           id: 3,

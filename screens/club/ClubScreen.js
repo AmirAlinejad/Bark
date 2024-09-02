@@ -2,16 +2,13 @@ import React, { useState, useLayoutEffect, useEffect } from "react";
 import { View, StyleSheet, ScrollView, Alert } from "react-native";
 // functions
 import {
-  requestToJoinClub,
-  checkMembership,
   getSetClubData,
-  getSetClubCalendarData,
-  emailSplit,
-} from "../../functions/backendFunctions";
-import {
-  goToChatScreen,
-  goToAdminChatScreen,
-} from "../../functions/navigationFunctions";
+  checkMembership,
+  requestToJoinClub,
+} from "../../functions/clubFunctions";
+import { getSetClubCalendarData } from "../../functions/eventFunctions";
+import { emailSplit } from "../../functions/backendFunctions";
+import { goToAdminChatScreen } from "../../functions/navigationFunctions";
 // my components
 import UpcomingEvents from "../../components/event/UpcomingEvents";
 import CustomText from "../../components/display/CustomText";
@@ -120,22 +117,23 @@ const ClubScreen = ({ route, navigation }) => {
   };
 
   // request to join club
-  const onRequestButtonPress = () => {
+  const onRequestButtonPress = async () => {
     if (isRequestSent) {
       Alert.alert("Request already sent.");
       return;
     }
     // change modal
-    requestToJoinClub(clubId, clubData.clubName, clubData.publicClub);
+    await requestToJoinClub(clubId, clubData.clubName, clubData.publicClub);
     if (clubData.publicClub) {
       setJoinClubModalVisible(true);
 
-      // start timer for checking membership
-      const timer = setTimeout(() => {
+      // start timer for checking membership 1 second after
+      setTimeout(() => {
         checkMembership(clubId, setCurrentUserPrivilege, setIsRequestSent);
       }, 1000);
     } else {
       setRequestClubModalVisible(true);
+      setIsRequestSent(true);
     }
   };
 

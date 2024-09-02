@@ -1,22 +1,19 @@
 import React, { useEffect, useState, useLayoutEffect } from "react";
 import { StyleSheet, FlatList } from "react-native";
 // firebase
-import {
-  collection,
-  query,
-  limit,
-  onSnapshot,
-  orderBy,
-} from "firebase/firestore";
+import { collection, query, onSnapshot, orderBy } from "firebase/firestore";
 import { firestore } from "../../backend/FirebaseConfig";
 // my components
 import ClubCardVertical from "../../components/club/ClubCardVertical";
 // functions
-import { fetchClubs } from "../../functions/backendFunctions";
+import { fetchClubs } from "../../functions/clubFunctions";
 // functions
 import { goToClubScreen } from "../../functions/navigationFunctions";
+// colors
+import { useTheme } from "@react-navigation/native";
 
 const ClubCategoryScreen = ({ route, navigation }) => {
+  const { colors } = useTheme();
   // get club category from route
   const { clubCategory, schoolKey } = route.params;
 
@@ -53,8 +50,8 @@ const ClubCategoryScreen = ({ route, navigation }) => {
         clubCategory.slice(3),
         "clubs"
       ),
-      orderBy("clubMembers", "desc"),
-      limit(fetchLimit)
+      orderBy("clubMembers", "desc")
+      // limit(fetchLimit)
     ); // order by club members eventually
 
     const unsubscribe = onSnapshot(
@@ -115,6 +112,18 @@ const ClubCategoryScreen = ({ route, navigation }) => {
       )}
       keyExtractor={(item) => item.clubId}
       onEndReached={onRefresh}
+      // ListFooterComponent={
+      //   <TouchableOpacity
+      //     onPress={() => {
+      //       setFetchLimit(fetchLimit + 20);
+      //     }}
+      //   >
+      //     <CustomText
+      //       text="Load more clubs"
+      //       style={{ color: colors.button, fontSize: 16 }}
+      //     />
+      //   </TouchableOpacity>
+      // }
     />
   );
 };

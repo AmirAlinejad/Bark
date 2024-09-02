@@ -8,7 +8,6 @@ import CustomText from "./CustomText";
 import { useTheme } from "@react-navigation/native";
 
 const SettingsSection = ({ data, loading }) => {
-
   const { colors } = useTheme();
   if (!loading) {
     loading = false;
@@ -71,7 +70,9 @@ const SettingsSection = ({ data, loading }) => {
               text={item.title}
             />
           )}
-          <View style={[styles.settingsContent, { backgroundColor: colors.card }]}>
+          <View
+            style={[styles.settingsContent, { backgroundColor: colors.card }]}
+          >
             <FlatList
               scrollEnabled={false}
               data={item.data}

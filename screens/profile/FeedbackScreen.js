@@ -1,16 +1,18 @@
 import React, { useState } from "react";
 import { View, StyleSheet, TextInput } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
-// backend
+// expo image
+import { Image } from "expo-image";
 import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
 import { firestore } from "../../backend/FirebaseConfig";
 import { emailSplit } from "../../functions/backendFunctions";
 // my components
-import Header from "../../components/display/Header";
 import CustomButton from "../../components/buttons/CustomButton";
 import CustomText from "../../components/display/CustomText";
 // styles
 import { useTheme } from "@react-navigation/native";
+// logo
+import Logo from "../../assets/brand/logo.png";
 
 const FeedbackScreen = ({ route, navigation }) => {
   const { userData } = route.params;
@@ -64,7 +66,7 @@ const FeedbackScreen = ({ route, navigation }) => {
         contentContainerStyle={{ marginHorizontal: 20 }}
       >
         <CustomText
-          text="Please provide feedback on your experience with Bark!"
+          text="We want to hear from you!"
           style={[styles.textStyle, { color: colors.text }]}
         />
 
@@ -87,7 +89,15 @@ const FeedbackScreen = ({ route, navigation }) => {
         <View style={styles.buttonContainer}>
           <CustomButton text="Submit" onPress={submitFeedback} width={90} />
         </View>
-        <CustomText text="Your feedback is important to us!" font="light" />
+        <CustomText
+          text="Thanks for helping us improve our app."
+          font="light"
+        />
+        <View
+          style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
+        >
+          <Image source={Logo} style={{ width: 200, height: 200 }} />
+        </View>
       </KeyboardAwareScrollView>
     </View>
   );

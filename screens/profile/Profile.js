@@ -7,10 +7,8 @@ import CustomText from "../../components/display/CustomText";
 import ProfileImg from "../../components/display/ProfileImg";
 import IconButton from "../../components/buttons/IconButton";
 // functions
-import {
-  getSetUserData,
-  deleteAccount,
-} from "../../functions/backendFunctions";
+import { deleteAccount } from "../../functions/profileFunctions";
+import { getSetUserData } from "../../functions/profileFunctions";
 // firebase
 import { getAuth, signOut } from "firebase/auth";
 // colors

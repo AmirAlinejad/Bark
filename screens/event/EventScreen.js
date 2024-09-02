@@ -17,13 +17,13 @@ import CustomButton from "../../components/buttons/CustomButton";
 // icons
 import { Ionicons } from "@expo/vector-icons";
 // functions
+import { emailSplit } from "../../functions/backendFunctions";
 import {
-  emailSplit,
-  checkMembership,
-  getSetEventData,
-  getSetUserData,
   addEventToDefaultCalendar,
-} from "../../functions/backendFunctions";
+  getSetEventData,
+} from "../../functions/eventFunctions";
+import { checkMembership } from "../../functions/clubFunctions";
+import { getSetUserData } from "../../functions/profileFunctions";
 import { reformatDate } from "../../functions/timeFunctions";
 import { goToClubScreen } from "../../functions/navigationFunctions";
 // colors
@@ -337,13 +337,12 @@ const EventScreen = ({ route, navigation }) => {
             )}
           </View>
 
-          {/* duration */}
-          {event.duration && (
+          {/* room number */}
+          {event.roomNumber && (
             <View style={{ marginTop: gap }}>
               <CustomText
                 style={{ ...styles.textNormal, color: colors.text }}
-                text={durationToHours(event.duration)}
-                font={"bold"}
+                text={`Room: ${event.roomNumber}`}
               />
             </View>
           )}
@@ -358,12 +357,13 @@ const EventScreen = ({ route, navigation }) => {
             </View>
           )}
 
-          {/* room number */}
-          {event.room && (
+          {/* duration */}
+          {event.duration && (
             <View style={{ marginTop: gap }}>
               <CustomText
                 style={{ ...styles.textNormal, color: colors.text }}
-                text={`Room: ${event.roomNumber}`}
+                text={durationToHours(event.duration)}
+                font={"bold"}
               />
             </View>
           )}

@@ -4,9 +4,12 @@ import { View, StyleSheet, TouchableOpacity } from "react-native";
 // my components
 import CustomText from "../display/CustomText";
 import ClubImg from "./ClubImg";
+import { useTheme } from "@react-navigation/native";
 
 // club card displayed on the club list screen
 const ClubCardVertical = ({ onPress, name, description, img, memberCount }) => {
+  const { colors } = useTheme();
+
   return (
     <TouchableOpacity style={styles.clubCard} onPress={onPress}>
       <View style={styles.container}>
@@ -16,22 +19,17 @@ const ClubCardVertical = ({ onPress, name, description, img, memberCount }) => {
           <View style={styles.nameAndDesc}>
             {/* club name and description */}
             <CustomText
-              style={styles.textName}
+              style={[styles.textName, { color: colors.text }]}
               text={name}
               numberOfLines={1}
               font="bold"
             />
             <CustomText
-              style={styles.textNormal}
+              style={[styles.textNormal, { color: colors.text }]}
               text={description}
               numberOfLines={3}
             />
           </View>
-          {/*<View style={styles.cardRight}>
-            {/* member count */}
-          {/*<CustomText style={styles.numberText} text={`${memberCount}  `} numberOfLines={1} />
-            <Ionicons name="people-outline" size={25} color={Colors.black} />   
-          </View>*/}
         </View>
       </View>
     </TouchableOpacity>

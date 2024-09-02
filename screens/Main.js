@@ -9,11 +9,8 @@ import EventScreen from "./event/EventScreen";
 import EditEventScreen from "./event/EditEventScreen";
 import NewEvent from "./event/NewEvent";
 import MapPicker from "./event/MapPicker";
-import AttendanceScreen from "./event/AttendanceScreen";
-import AttendanceViewer from "./event/AttendanceViewer";
 
 import Chat from "./chat/Chat";
-import GifSelectionScreen from "./chat/GifSelectionScreen";
 import ImageGalleryScreen from "./chat/ImageGalleryScreen";
 import ImageViewerScreen from "./chat/ImageViewerScreen";
 import MessageSearchScreen from "./chat/MessageSearchScreen";
@@ -34,30 +31,8 @@ import Settings from "./profile/Settings";
 import QRCodeScreen from "./QRCodeScreen";
 // stack navigator
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import { getFocusedRouteNameFromRoute } from "@react-navigation/native";
-import { setParams } from "@react-navigation/native";
 // colors
 import { useTheme } from "@react-navigation/native";
-
-function getHeaderTitle(route) {
-  // If the focused route is not found, we need to assume it's the initial screen
-  // This can happen during if there hasn't been any navigation inside the screen
-  // In our case, it's "Feed" as that's the first screen inside the navigator
-  const routeName = getFocusedRouteNameFromRoute(route) ?? "Feed";
-
-  switch (routeName) {
-    case "Home":
-      return "My Clubs";
-    case "Profile":
-      return "Profile";
-    case "Calendar":
-      return "Calendar";
-    case "Search":
-      return "Search";
-    default:
-      return "Home";
-  }
-}
 
 const dontShowHeaderProps = { headerShown: false, gestureEnabled: true };
 const noTitleProps = {
@@ -111,7 +86,7 @@ const Main = () => {
       <Stack.Screen
         name="ClubScreen"
         component={ClubScreen}
-        options={noTitleProps}
+        options={{ ...noTitleProps, gestureEnabled: true }}
       />
       <Stack.Screen
         name="ClubCategoryScreen"
@@ -134,16 +109,6 @@ const Main = () => {
         options={noTitleProps}
       />
       <Stack.Screen
-        name="AttendanceScreen"
-        component={AttendanceScreen}
-        options={headerProps}
-      />
-      <Stack.Screen
-        name="AttendanceViewer"
-        component={AttendanceViewer}
-        options={headerProps}
-      />
-      <Stack.Screen
         name="NewEvent"
         component={NewEvent}
         options={headerProps}
@@ -156,12 +121,7 @@ const Main = () => {
       <Stack.Screen
         name="Chat"
         component={Chat}
-        options={{...headerProps, gestureEnabled: true}}
-      />
-      <Stack.Screen
-        name="GifSelectionScreen"
-        component={GifSelectionScreen}
-        options={headerProps}
+        options={{ ...headerProps, gestureEnabled: true }}
       />
       <Stack.Screen
         name="ImageGalleryScreen"

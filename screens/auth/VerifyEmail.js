@@ -3,7 +3,6 @@ import { View, StyleSheet, ActivityIndicator } from "react-native";
 // my components
 import CustomText from "../../components/display/CustomText";
 import CustomButton from "../../components/buttons/CustomButton";
-import Header from "../../components/display/Header";
 // icons
 import Ionicons from "react-native-vector-icons/Ionicons";
 // firebase

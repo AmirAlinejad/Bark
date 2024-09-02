@@ -7,10 +7,7 @@ import CustomText from "../../components/display/CustomText";
 import IconOverlay from "../../components/overlays/IconOverlay";
 import Form from "../Form";
 // functions
-import {
-  emailSplit,
-  addEventToGoogleCalendar,
-} from "../../functions/backendFunctions";
+import { emailSplit } from "../../functions/backendFunctions";
 // backend
 import { firestore } from "../../backend/FirebaseConfig";
 // date time picker

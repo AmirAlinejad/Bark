@@ -13,7 +13,7 @@ import { useTheme } from "@react-navigation/native";
 import {
   handleLongPress,
   handlePressMessage,
-} from "../../functions/backendFunctions";
+} from "../../functions/chatFunctions";
 import { chatFormatDate } from "../../functions/timeFunctions";
 
 const ChatMessage = ({

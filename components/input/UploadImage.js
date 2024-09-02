@@ -47,7 +47,6 @@ export default function UploadImage({parentCallback}) {
 
   return (
     <View style={imageUploaderStyles.container}>
-<<<<<<< HEAD:components/input/UploadImage.js
       {
           image  && <Image source={{ uri: image }} style={imageUploaderStyles.imageStyle} />
       }
@@ -57,17 +56,6 @@ export default function UploadImage({parentCallback}) {
           <AntDesign name="camera" size={20} color="black" />
         </TouchableOpacity>
       </View>
-=======
-        {
-            image  && <Image source={{ uri: image }} style={imageUploaderStyles.imageStyle} />
-        }
-            <View style={imageUploaderStyles.uploadBtnContainer}>
-                <TouchableOpacity onPress={addImage} style={imageUploaderStyles.uploadBtn} >
-                    <CustomText text={image ? 'Edit' : 'Upload' + ' Image'} />
-                    <AntDesign name="camera" size={20} color="black" />
-                </TouchableOpacity>
-            </View>
->>>>>>> dfe4a17ddd108df15325f902cdfdaa4361e7c37e:components/UploadImage.js
     </View>
   );
 }

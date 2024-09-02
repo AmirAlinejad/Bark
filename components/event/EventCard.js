@@ -40,7 +40,7 @@ const EventCard = ({
 
         <View style={styles.cardText}>
           <CustomText
-            style={[styles.textNormal, {color: colors.text}]}
+            style={[styles.textNormal, { color: colors.text }]}
             text={name}
             font="bold"
             numberOfLines={1}

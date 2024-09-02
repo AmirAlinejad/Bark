@@ -16,17 +16,17 @@ import CustomButton from "../../components/buttons/CustomButton";
 import ProfileImg from "../../components/display/ProfileImg";
 import Form from "../Form";
 // backend functions
-import {
-  emailSplit,
-  handleImageUploadAndSend,
-} from "../../functions/backendFunctions";
+import { emailSplit } from "../../functions/backendFunctions";
+// image picking
+import { handleImageUploadAndSend } from "../../functions/chatFunctions"; // weird path, but it works
 // colors
 import { useTheme } from "@react-navigation/native";
 // macros
 import { MAJORS } from "../../macros/macros";
 // backend
-import { doc, setDoc } from "firebase/firestore";
+import { doc, setDoc, updateDoc } from "firebase/firestore";
 import { firestore } from "../../backend/FirebaseConfig";
+import { update } from "firebase/database";
 
 const EditProfile = ({ route, navigation }) => {
   // get user data from previous screen
@@ -145,6 +145,29 @@ const EditProfile = ({ route, navigation }) => {
         doc(firestore, "schools", schoolKey, "userData", userData.id),
         updatedUserData
       );
+
+      // update club member data
+      if (userData.clubs) {
+        for (let i = 0; i < userData.clubs.length; i++) {
+          const clubId = userData.clubs[i];
+          await updateDoc(
+            doc(
+              firestore,
+              "schools",
+              schoolKey,
+              "clubMemberData",
+              "clubs",
+              clubId,
+              userData.id
+            ),
+            {
+              firstName: form.firstName,
+              lastName: form.lastName,
+              profileImg: profileImg,
+            }
+          );
+        }
+      }
 
       // update async storage
       await SecureStore.setItemAsync("user", JSON.stringify(updatedUserData));

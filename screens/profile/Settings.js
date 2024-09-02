@@ -4,17 +4,9 @@ import Modal from "react-native-modal";
 import { getAuth } from "firebase/auth";
 import { signOut } from "firebase/auth";
 import { useTheme } from "@react-navigation/native";
-import {
-  getSetUserData,
-  deleteAccount,
-} from "../../functions/backendFunctions";
-import {
-  syncEventsToCalendar,
-  unsyncEventsFromCalendar,
-  checkToggleSyncCalendar,
-  toggleSyncCalendar,
-  setDarkMode,
-} from "../../functions/backendFunctions";
+import { deleteAccount } from "../../functions/profileFunctions";
+import { getSetUserData } from "../../functions/profileFunctions";
+import { setDarkMode } from "../../functions/backendFunctions";
 
 import CustomText from "../../components/display/CustomText";
 import CustomButton from "../../components/buttons/CustomButton";
@@ -119,7 +111,7 @@ const Settings = ({ navigation }) => {
       ],
     },
     {
-      title: " ",
+      title: "Don't Press",
       data: [
         {
           id: "9",
@@ -150,8 +142,8 @@ const Settings = ({ navigation }) => {
   }, []);
 
   // delete account
-  const deleteAccountFunc = () => {
-    deleteAccount();
+  const deleteAccountFunc = async () => {
+    await deleteAccount();
     setDeleteAccountModal(false);
     navigation.navigate("Onboarding");
   };

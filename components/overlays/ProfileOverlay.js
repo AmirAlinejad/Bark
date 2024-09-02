@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { View, StyleSheet, TouchableWithoutFeedback } from "react-native";
 // functions
-import { getSetUserData } from "../../functions/backendFunctions";
+import { getSetUserData } from "../../functions/profileFunctions";
 // styles
 import { useTheme } from "@react-navigation/native";
 // modal
@@ -108,10 +108,15 @@ const ProfileOverlay = ({ visible, setVisible, userData }) => {
                       />
                     )}
                   </View>
-                  <CustomText
-                    text={`${getMutualClubs().length} Mutual Club(s)`}
-                    style={[styles.secondaryText, { color: colors.textLight }]}
-                  />
+                  {getMutualClubs().length > 0 && (
+                    <CustomText
+                      text={`${getMutualClubs().length} Mutual Club(s)`}
+                      style={[
+                        styles.secondaryText,
+                        { color: colors.textLight },
+                      ]}
+                    />
+                  )}
                   <View style={{ height: 16 }} />
                 </View>
               )}

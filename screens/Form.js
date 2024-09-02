@@ -102,11 +102,11 @@ const Form = ({
           style={[styles.inputContainer, { borderColor: colors.inputBorder }]}
         >
           <TextInput
-            placeholder={placeholder}
+            placeholder={placeholder + ' (max 300 characters)'}
             value={form[propName]}
             onChangeText={(val) => updateForm(propName, val)}
             keyboardType="default"
-            maxLength={200}
+            maxLength={300}
             numberOfLines={5}
             style={[styles.input, { color: colors.text }]}
             multiline={true}

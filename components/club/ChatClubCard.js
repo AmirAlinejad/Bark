@@ -32,6 +32,27 @@ const ChatClubCard = ({
 
   const swipeableRef = React.useRef(null);
 
+  // format last message time
+  const reformatDate = (lastMessageTime) => {
+    // say date if message was not sent today
+    const today = new Date();
+    const date = new Date(lastMessageTime);
+
+    if (date.getDate() !== today.getDate()) {
+      if (date.toLocaleDateString() === "Invalid Date") {
+        return "";
+      }
+
+      return date.toLocaleDateString();
+    } else {
+      // take out seconds
+      return date.toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    }
+  };
+
   const renderRightActions = (progress, dragX) => {
     return (
       <RectButton
@@ -98,7 +119,7 @@ const ChatClubCard = ({
               </View>
               <CustomText
                 style={[styles.timeText, { color: colors.textLight }]}
-                text={lastMessageTime}
+                text={reformatDate(lastMessageTime)}
                 numberOfLines={1}
               />
             </TouchableOpacity>
@@ -128,7 +149,7 @@ const ChatClubCard = ({
                 <Ionicons
                   name="notifications-off-outline"
                   size={30}
-                  style={[ styles.muteButton, { color: colors.text }]}
+                  style={[styles.muteButton, { color: colors.text }]}
                 />
               )}
             </View>

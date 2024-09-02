@@ -9,10 +9,9 @@ import { auth } from "../../backend/FirebaseConfig";
 // react native components
 import { View, StyleSheet, TouchableOpacity } from "react-native";
 // assets
-import Logo from "../../assets/logo.png";
-// firestore
-import { firestore } from "../../backend/FirebaseConfig";
-import { doc, getDoc } from "firebase/firestore";
+import Logo from "../../assets/brand/logo.png";
+// functions
+import { getUserData } from "../../functions/profileFunctions";
 // my components
 import CustomText from "../../components/display/CustomText";
 import CustomInput from "../../components//input/CustomInput";
@@ -86,22 +85,10 @@ const SignIn = ({ route, navigation }) => {
 
       const schoolKey = response.user.email.split("@")[1].split(".")[0];
 
-      // get user data from firestore
-      const userData = await getDoc(
-        doc(firestore, "schools", schoolKey, "userData", response.user.uid)
-      );
-
-      if (!userData.exists()) {
-        // if user data does not exist, sign out and show error
-        setErrorMessage("User data not found. Please sign up.");
-        setLoading(false);
-        return;
-      }
-
-      console.log("userData", userData.data());
+      const userData = await getUserData();
 
       // set user data in async storage
-      await SecureStore.setItemAsync("user", JSON.stringify(userData.data()));
+      await SecureStore.setItemAsync("user", JSON.stringify(userData));
 
       // set school key in async storage
       await AsyncStorage.setItem("schoolKey", schoolKey);
@@ -110,7 +97,7 @@ const SignIn = ({ route, navigation }) => {
       navigation.navigate("Main");
 
       // show welcome toast
-      if (userData.data().clubs.length == 0) {
+      if (userData.clubs.length == 0) {
         Toast.show({
           type: "info",
           text1: "Welcome to Bark! 🎉",

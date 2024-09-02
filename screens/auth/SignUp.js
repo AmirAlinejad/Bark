@@ -10,7 +10,7 @@ import { Image } from "expo-image";
 // navigation
 import { useFocusEffect } from "@react-navigation/native";
 // assets
-import Logo from "../../assets/logo.png";
+import Logo from "../../assets/brand/logo.png";
 // my components
 import CustomText from "../../components/display/CustomText";
 import CustomInput from "../../components//input/CustomInput";
@@ -29,6 +29,8 @@ import { FIREBASE_AUTH, firestore } from "../../backend/FirebaseConfig";
 import { useTheme } from "@react-navigation/native";
 // global context
 import { GlobalContext } from "../../App";
+// ionicons
+import { Ionicons } from "@expo/vector-icons";
 
 const SignUp = ({ navigation }) => {
   // global context
@@ -66,6 +68,16 @@ const SignUp = ({ navigation }) => {
     setLoading(true);
     setErrorMessage("");
     e.preventDefault();
+
+    if (
+      password.length < 8 ||
+      !/[A-Z]/.test(password) ||
+      !/[!@#$%^&*]/.test(password)
+    ) {
+      setErrorMessage("Password invalid, please enter a new password");
+      setLoading(false);
+      return;
+    }
 
     if (!userName || !email || !password || !confirmPassword) {
       setErrorMessage("Please fill in all fields");
@@ -150,6 +162,29 @@ const SignUp = ({ navigation }) => {
     }, [])
   );
 
+  const renderCheckMark = (bool, text) => {
+    return (
+      <View style={{ flexDirection: "row" }}>
+        <View
+          style={[
+            styles.checkMark,
+            { backgroundColor: bool ? colors.green : colors.gray },
+          ]}
+        >
+          <Ionicons
+            name={bool ? "checkmark" : "checkmark"}
+            size={20}
+            color={colors.white}
+          />
+        </View>
+        <CustomText
+          style={{ marginLeft: 10, marginTop: 4, color: colors.textLight }}
+          text={text}
+        />
+      </View>
+    );
+  };
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <KeyboardAwareScrollView
@@ -179,10 +214,23 @@ const SignUp = ({ navigation }) => {
             secureTextEntry={passwordVisible}
             onEyeIconPress={togglePasswordVisibility}
           />
-          <CustomText
-            style={{ color: colors.textLight, marginBottom: 8, marginTop: -8, marginLeft: 8 }}  
-            text="Password must be at least 6 characters"
-          />
+
+          {
+            renderCheckMark(password.length >= 8, "At least 8 characters") // TODO: add password validation
+          }
+          {
+            renderCheckMark(
+              /[A-Z]/.test(password),
+              "At least 1 uppercase letter"
+            ) // TODO: add password validation
+          }
+          {
+            renderCheckMark(
+              /[!@#$%^&*]/.test(password),
+              "At least 1 special character"
+            ) // TODO: add password validation
+          }
+          <View style={{ height: 10 }} />
           <CustomInput
             placeholder="Confirm Password"
             value={confirmPassword}
@@ -277,6 +325,14 @@ const styles = StyleSheet.create({
   errorMessage: {
     color: "red",
     marginBottom: 10,
+  },
+  checkMark: {
+    width: 25,
+    height: 25,
+    borderRadius: 15,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 8,
   },
 });
 

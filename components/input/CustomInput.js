@@ -34,7 +34,10 @@ const CustomInput = ({
         onChangeText={setValue}
         keyboardType={keyboardType}
         secureTextEntry={secureTextEntry}
-        style={[styles.input, { color: colors.text, borderColor: colors.inputBorder }]}
+        style={[
+          styles.input,
+          { color: colors.text, borderColor: colors.inputBorder },
+        ]}
         placeholderTextColor={colors.textLight}
         maxLength={maxLength}
         multiline={multiline}

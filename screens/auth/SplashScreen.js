@@ -10,97 +10,141 @@ import * as SecureStore from "expo-secure-store";
 // notifications
 import * as Notifications from "expo-notifications";
 // logo
-import SplashScreenImg from "../../assets/whiteLogo.png";
-import SplashScreenFx from "../../assets/splash.png";
+import SplashScreenImg from "../../assets/brand/whiteLogo.png";
+import SplashScreenFx from "../../assets/fx/splashOverlay.png";
 // gradient
 import { LinearGradient } from "expo-linear-gradient";
 // linking
 import * as Linking from "expo-linking";
 // theme
 import { useTheme } from "@react-navigation/native";
+// backend
+import { getClubData } from "../../functions/clubFunctions";
+// navigation
+import {
+  goToAdminChatScreen,
+  goToChatScreen,
+} from "../../functions/navigationFunctions";
 
 // screen
 const SplashScreen = ({ navigation }) => {
-  useEffect(() => {
-    let isMounted = true;
-    let clubId = "";
-    let chatName = "";
-    let URL = "";
+  // useEffect(() => {
+  //   let isMounted = true;
+  //   let clubId = "";
+  //   let chatName = "";
+  //   let URL = "";
 
-    async function redirect(notification, navigation) {
-      const url = notification.request.content.data?.url;
-      if (url) {
-        const { queryParams } = Linking.parse(url);
-        clubId = queryParams.clubId;
-        chatName = queryParams.chatName;
-        URL = url;
+  //   async function redirect(notification, navigation) {
+  //     const url = notification.request.content.data?.url;
+  //     if (url) {
+  //       const { queryParams } = Linking.parse(url);
+  //       clubId = queryParams.clubId;
+  //       chatName = queryParams.chatName;
+  //       URL = url;
 
-        console.log("clubId: ", clubId);
-        console.log("chatName: ", chatName);
-      }
+  //       console.log("clubId: ", clubId);
+  //       console.log("chatName: ", chatName);
+  //     }
 
-      // see if user is logged in
-      const user = await SecureStore.getItemAsync("user").then((data) => {
-        return data ? JSON.parse(data) : null;
-      });
+  //     // see if user is logged in
+  //     const user = await SecureStore.getItemAsync("user").then((data) => {
+  //       return data ? JSON.parse(data) : null;
+  //     });
 
-      // if user is signed in, navigate to the home screen, otherwise navigate to the onboarding screens
-      if (user) {
-        // does not need auth right now but eventually will save email and password in async storage (update permissions in firebase)
-        try {
-          const response = await signInWithEmailAndPassword(
-            auth,
-            user.email,
-            user.password
-          );
+  //     // if user is signed in, navigate to the home screen, otherwise navigate to the onboarding screens
+  //     if (user) {
+  //       // does not need auth right now but eventually will save email and password in async storage (update permissions in firebase)
+  //       try {
+  //         const response = await signInWithEmailAndPassword(
+  //           auth,
+  //           user.email,
+  //           user.password
+  //         );
 
-          // // different cases for different screens
-          // if (clubId) {
-          //   if (chatName) {
-          //     // navigate to the club screen
-          //     navigation.navigate("Main", { screen: "HomeScreen" });
-          //     navigation.navigate("Main", {
-          //       screen: "ClubScreen",
-          //       params: { clubId: clubId, goToHomeScreen: true },
-          //     });
-          //   } else {
-          //     // navigate to the club screen
-          //     navigation.navigate("Main", { screen: "HomeScreen" });
-          //     navigation.navigate("Main", {
-          //       screen: "ClubScreen",
-          //       params: { clubId: clubId, goToHomeScreen: true },
-          //     });
-          //   }
-          // }
-        } catch (error) {
-          console.log(error);
-          navigation.navigate("Onboarding");
-          AsyncStorage.clear();
-          SecureStore.deleteItemAsync("user");
-        }
-      } else {
-        navigation.navigate("Onboarding");
-      }
-    }
+  //         if (!response.user.emailVerified) {
+  //           alert("Please verify your email before signing in.");
+  //           navigation.navigate("Onboarding");
+  //           AsyncStorage.clear();
+  //           SecureStore.deleteItemAsync("user");
+  //         }
 
-    Notifications.getLastNotificationResponseAsync().then((response) => {
-      if (!isMounted || !response?.notification) {
-        return;
-      }
-      redirect(response?.notification);
-    });
+  //         // different cases for different screens
+  //         if (clubId) {
+  //           if (chatName) {
+  //             if (chatName == "chat") {
+  //               // get club data
+  //               const clubData = await getClubData(clubId);
 
-    const subscription = Notifications.addNotificationResponseReceivedListener(
-      (response) => {
-        redirect(response.notification);
-      }
-    );
+  //               if (!clubData) {
+  //                 alert("Club not found.");
+  //                 return;
+  //               }
 
-    return () => {
-      isMounted = false;
-      subscription.remove();
-    };
-  }, []);
+  //               // navigate to the chat screen
+  //               navigation.navigate("Main", { screen: "HomeScreen" });
+  //               goToChatScreen(
+  //                 clubData.clubName,
+  //                 clubData.clubId,
+  //                 clubData.clubImg,
+  //                 navigation
+  //               );
+  //             } else if (chatName == "admin") {
+  //               // get club data
+  //               const clubData = await getClubData(clubId);
+
+  //               if (!clubData) {
+  //                 alert("Club not found.");
+  //                 return;
+  //               }
+
+  //               // navigate to the chat screen
+  //               navigation.navigate("Main", { screen: "HomeScreen" });
+  //               navigation.navigate("Main", {
+  //                 screen: "ClubScreen",
+  //                 params: { clubId: clubId, goToHomeScreen: true },
+  //               });
+  //               goToAdminChatScreen(clubData, navigation);
+  //             }
+  //           } else {
+  //             // navigate to the club screen
+  //             navigation.navigate("Main", { screen: "HomeScreen" });
+  //             navigation.navigate("Main", {
+  //               screen: "ClubScreen",
+  //               params: { clubId: clubId, goToHomeScreen: true },
+  //             });
+  //           }
+  //         } else {
+  //           navigation.navigate("Main"); // put back
+  //         }
+  //       } catch (error) {
+  //         console.log(error);
+  //         navigation.navigate("Onboarding");
+  //         AsyncStorage.clear();
+  //         SecureStore.deleteItemAsync("user");
+  //       }
+  //     } else {
+  //       navigation.navigate("Onboarding");
+  //     }
+  //   }
+
+  //   Notifications.getLastNotificationResponseAsync().then((response) => {
+  //     if (!isMounted || !response?.notification) {
+  //       return;
+  //     }
+  //     redirect(response?.notification);
+  //   });
+
+  //   const subscription = Notifications.addNotificationResponseReceivedListener(
+  //     (response) => {
+  //       redirect(response.notification);
+  //     }
+  //   );
+
+  //   return () => {
+  //     isMounted = false;
+  //     subscription.remove();
+  //   };
+  // }, []);
 
   const { colors } = useTheme();
 
@@ -157,6 +201,8 @@ const SplashScreen = ({ navigation }) => {
               const { queryParams } = Linking.parse(url);
               URL = url;
               screenName = queryParams.screen;
+
+              console.log("screenName: ", screenName);
             }
           })
           .catch((err) => console.error("An error occurred", err));
@@ -168,6 +214,7 @@ const SplashScreen = ({ navigation }) => {
 
         // if user is signed in, navigate to the home screen, otherwise navigate to the onboarding screens
         if (user) {
+          console.log("user: ", user);
           // does not need auth right now but eventually will save email and password in async storage (update permissions in firebase)
           try {
             const response = await signInWithEmailAndPassword(
@@ -217,18 +264,8 @@ const SplashScreen = ({ navigation }) => {
                 screen: "Chat",
                 params: { chatId: chatId },
               });
-            } else if (screenName == "attendance") {
-              const { queryParams } = Linking.parse(URL);
-              const eventId = queryParams.eventId;
-
-              // navigate to the chat screen
-              navigation.navigate("Main", { screen: "HomeScreen" });
-              navigation.navigate("Main", {
-                screen: "EventAttendance",
-                params: { eventId: eventId },
-              });
             } else {
-              navigation.navigate("Main"); // put back
+              navigation.navigate("Main", { screen: "HomeScreen" });
             }
 
             if (!response.user.emailVerified) {

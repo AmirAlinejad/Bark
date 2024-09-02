@@ -18,16 +18,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import Giphy from "../../assets/PoweredBy_200px-White_HorizText.png";
 import GiphyAttribution from "../../assets/PoweredBy_200px-White_HorizText.png";
 // backend
-import { firestore } from "../../backend/FirebaseConfig";
-import { auth } from "../../backend/FirebaseConfig";
-import {
-  addDoc,
-  collection,
-  doc,
-  getDocs,
-  getDoc,
-  updateDoc,
-} from "firebase/firestore";
+import { addDoc, doc, getDocs, getDoc, updateDoc } from "firebase/firestore";
 // colors
 import { useTheme } from "@react-navigation/native";
 // icons
@@ -39,35 +30,8 @@ import SearchBar from "../input/SearchBar";
 import CustomButton from "../buttons/CustomButton";
 import IconButton from "../buttons/IconButton";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scrollview";
-import { emailSplit } from "../../functions/backendFunctions";
-
-async function sendPushNotification(
-  expoPushToken,
-  message,
-  firstName,
-  lastName,
-  clubName
-) {
-  const text = message ? message : "An image was sent.";
-
-  const notification = {
-    to: expoPushToken,
-    sound: "default",
-    title: clubName,
-    body: `${firstName} ${lastName}: ${text}`,
-    data: { someData: "goes here" },
-  };
-
-  await fetch("https://exp.host/--/api/v2/push/send", {
-    method: "POST",
-    headers: {
-      Accept: "application/json",
-      "Accept-encoding": "gzip, deflate",
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(notification),
-  });
-}
+// functions
+import { sendPushNotification } from "../../functions/chatFunctions";
 
 const BottomSheetModal = ({
   isVisible,
@@ -207,7 +171,10 @@ const BottomSheetModal = ({
   const renderPollItem = ({ item }) => {
     return (
       <TouchableOpacity style={styles.voteOption}>
-        <CustomText style={styles.optionText} text={item.text} />
+        <CustomText
+          style={[styles.optionText, { color: colors.text }]}
+          text={item.text}
+        />
         <TouchableOpacity
           onPress={() => {
             setVoteOptions(
@@ -242,7 +209,7 @@ const BottomSheetModal = ({
     const response = await fetch(
       `https://api.giphy.com/v1/gifs/search?api_key=mCWWr1G26e4ZDcNz1bHjKDsbk9142AOC&q=${
         searchTerm ? searchTerm : "trending"
-      }&limit=30&offset=0&rating=g&lang=en`
+      }&limit=21&offset=0&rating=g&lang=en`
     );
     const { data } = await response.json();
     setGifs(data.map((item) => item.images.fixed_height.url));
@@ -398,6 +365,8 @@ const BottomSheetModal = ({
                   keyExtractor={(item, index) => index.toString()}
                   renderItem={renderImage}
                   numColumns={3}
+                  style={{ width: "100%", height: 1000 }}
+                  contentContainerStyle={{ alignItems: "center", height: 1500 }}
                 />
 
                 <Image source={{ uri: GiphyAttribution }} />

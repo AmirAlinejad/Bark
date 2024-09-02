@@ -1,6 +1,5 @@
 // parent component for sign in/up screens
 import React from "react";
-import { Text } from "react-native";
 // screens
 import SignUp from "./SignUp";
 import SignIn from "./SignIn";

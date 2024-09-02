@@ -7,8 +7,6 @@ import {
   Alert,
   ScrollView,
 } from "react-native";
-// storage
-import * as SecureStore from "expo-secure-store";
 // modal
 import Modal from "react-native-modal";
 // my components
@@ -24,12 +22,15 @@ import { firestore } from "../../backend/FirebaseConfig";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons"; // Ensure react-native-vector-icons is installed
 // functions
 import {
-  emailSplit,
-  checkMembership,
   fetchClubMembers,
-} from "../../functions/backendFunctions";
+  checkMembership,
+  leaveClubConfirmed,
+} from "../../functions/clubFunctions";
+import { emailSplit } from "../../functions/backendFunctions";
 // styles
 import { useTheme } from "@react-navigation/native";
+// auth
+import { auth } from "../../backend/FirebaseConfig";
 
 const UserList = ({ route, navigation }) => {
   const { clubId } = route.params;
@@ -68,8 +69,7 @@ const UserList = ({ route, navigation }) => {
 
     const asyncFunc = async () => {
       // get current user id from async storage
-      setCurrentUserId(user.id);
-      checkMembership(clubId, setCurrentUserPrivilege, () => {});
+      checkMembership(clubId, setCurrentUserPrivilege);
       setLoading(false);
     };
 
@@ -104,9 +104,11 @@ const UserList = ({ route, navigation }) => {
 
   // sets buttons for editing members
   const actionButtonPressed = (member) => {
+    const user = auth.currentUser;
+    const id = user.uid;
     const buttons = [];
     // Ensure actions cannot be performed on the owner or the current user
-    if (member.privilege !== "owner" && member.id !== currentUserId) {
+    if (member.privilege !== "owner" && member.id !== id) {
       if (
         currentUserPrivilege === "owner" ||
         currentUserPrivilege === "admin"
@@ -217,19 +219,11 @@ const UserList = ({ route, navigation }) => {
 
   const removeMemberConfirmed = async (memberId) => {
     // Assuming memberId is the ID of the member being removed.
-    const schoolKey = await emailSplit();
-    const memberDocRef = doc(
-      firestore,
-      "schools",
-      schoolKey,
-      "clubMemberData",
-      "clubs",
-      clubId,
-      memberId
-    );
-    await deleteDoc(memberDocRef);
+    leaveClubConfirmed(clubId, memberId);
 
-    fetchClubMembers(clubId, setClubMembers);
+    setTimeout(() => {
+      fetchClubMembers(clubId, setClubMembers);
+    }, 2000);
     Alert.alert(
       "Removal Success",
       "Member has been successfully removed from the club."
@@ -283,7 +277,7 @@ const UserList = ({ route, navigation }) => {
           onPress={() => actionButtonPressed(item)}
           style={{ marginRight: 5 }}
         >
-          <Icon name="dots-vertical" size={24} color="black" />
+          <Icon name="dots-vertical" size={24} color={colors.textLight} />
         </TouchableOpacity>
         {/* )} */}
       </View>
@@ -331,7 +325,7 @@ const UserList = ({ route, navigation }) => {
       />
 
       <Modal isVisible={removeMember !== null}>
-        <View style={styles.modalContainer}>
+        <View style={[styles.modalContainer, { backgroundColor: colors.card }]}>
           <CustomText
             style={{ ...styles.modalText, color: colors.text }}
             text="Are you sure you want to remove this user from the club?"

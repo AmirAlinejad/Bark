@@ -176,7 +176,11 @@ const UpcomingEvents = ({
             <CustomText
               text="No upcoming events."
               font="bold"
-              style={[styles.messageText, { color: colors.gray }]}
+              style={[styles.messageText, { color: colors.textLight }]}
+            />
+            <CustomText
+              text="Check back later for more events!"
+              style={{ fontSize: 16, color: colors.textLight }}
             />
           </View>
         )}
@@ -206,7 +210,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     textAlign: "center",
     marginTop: 10,
-    marginBottom: 64,
+    marginBottom: 8,
   },
 });
 

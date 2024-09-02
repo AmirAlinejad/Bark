@@ -6,7 +6,6 @@ import {
   ScrollView,
   FlatList,
   ActivityIndicator,
-  TouchableOpacity,
 } from "react-native";
 // mask view
 import MaskedView from "@react-native-masked-view/masked-view";
@@ -28,14 +27,12 @@ import Ionicon from "react-native-vector-icons/Ionicons";
 import { CLUBCATEGORIES } from "../../macros/macros";
 // functions
 import {
-  getClubCategoryData,
   emailSplit,
   showToastIfNewUser,
 } from "../../functions/backendFunctions";
+import { getClubCategoryData } from "../../functions/clubFunctions";
 // styles
 import { useTheme } from "@react-navigation/native";
-// toast
-import Toast from "react-native-toast-message";
 
 const Stack = createNativeStackNavigator();
 
@@ -53,6 +50,8 @@ const ClubList = ({ navigation }) => {
   const [schoolKey, setSchoolKey] = useState("");
   // screen timer
   const [timer, setTimer] = useState(0);
+  // search timer
+  const [searchTimer, setSearchTimer] = useState(0);
 
   const { colors } = useTheme();
 
@@ -62,8 +61,6 @@ const ClubList = ({ navigation }) => {
   };
 
   const asyncFunc = async () => {
-    setLoading(true);
-
     // get data for each club category
     let data = {};
     for (let i = 0; i < CLUBCATEGORIES.length; i++) {
@@ -71,13 +68,40 @@ const ClubList = ({ navigation }) => {
       const clubData = await getClubCategoryData(category);
 
       data[category] = clubData;
+      setClubData((prevData) => {
+        return { ...prevData, [category]: clubData };
+      });
     }
-    console.log(data);
 
-    // update async storage
-    await AsyncStorage.setItem("clubSearchData", JSON.stringify(data));
+    // store data in async storage
+    try {
+      await AsyncStorage.setItem("clubSearchData", JSON.stringify(data));
+    } catch (error) {
+      console.error("Error setting club search data:", error);
+    }
+    setLoading(false);
+  };
 
-    setClubData(data);
+  const loadSearchData = async () => {
+    setLoading(true);
+
+    if (searchText.length == 0) {
+      setLoading(false);
+      return;
+    }
+
+    // get data for each club category
+    let data = {};
+    for (let i = 0; i < CLUBCATEGORIES.length; i++) {
+      const category = CLUBCATEGORIES[i].value;
+      const clubData = await getClubCategoryData(category, searchText);
+
+      data[category] = clubData;
+      setClubData((prevData) => {
+        return { ...prevData, [category]: clubData };
+      });
+    }
+
     setLoading(false);
   };
 
@@ -86,6 +110,7 @@ const ClubList = ({ navigation }) => {
     const clubSearchData = await AsyncStorage.getItem("clubSearchData");
     if (clubSearchData) {
       setClubData(JSON.parse(clubSearchData));
+      setLoading(false);
     }
   };
 
@@ -101,32 +126,42 @@ const ClubList = ({ navigation }) => {
         }
       }, 1000);
 
-      if (timer == time) {
-        Toast.show({
-          type: "info",
-          text1: "Can't find a club?",
-          text2: "Try refreshing the page!",
-          visibilityTime: 3000,
-        });
-        setTimer(timer + 1);
-      }
+      // if (timer == time) {
+      //   Toast.show({
+      //     type: "info",
+      //     text1: "Can't find a club?",
+      //     text2: "Try refreshing the page!",
+      //     visibilityTime: 3000,
+      //   });
+      //   setTimer(timer + 1);
+      // }
 
       return () => clearInterval(interval);
     }
   }, [focused, timer]);
 
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (searchTimer > 0) {
+        setSearchTimer(searchTimer - 1);
+      }
+    }, 1000);
+
+    if (searchTimer == 0) {
+      loadSearchData();
+    }
+
+    return () => clearInterval(interval);
+  }, [searchTimer]);
+
   // get data from firebase
   useFocusEffect(
     React.useCallback(() => {
       setTimer(0);
-      // get school key
-      const getSetSchoolKey = async () => {
-        const schoolkey = await emailSplit();
-        setSchoolKey(schoolkey);
-      };
-      getSetSchoolKey();
 
       loadClubSearchData(); // get data from async storage
+
+      asyncFunc(); // get data from firebase
 
       return () => {
         setShowText(false);
@@ -140,7 +175,13 @@ const ClubList = ({ navigation }) => {
       "Search for clubs!🔎",
       "Find a club that fits your interests."
     );
-    asyncFunc();
+
+    // get school key
+    const getSetSchoolKey = async () => {
+      const schoolkey = await emailSplit();
+      setSchoolKey(schoolkey);
+    };
+    getSetSchoolKey();
   }, []);
 
   // filter for clubs
@@ -170,7 +211,7 @@ const ClubList = ({ navigation }) => {
 
       if (filteredData.length > 0) {
         sortedClubs.push({
-          categoryName: emoji + category,
+          categoryName: emoji + " " + category,
           data: filteredData,
         });
       }
@@ -195,13 +236,15 @@ const ClubList = ({ navigation }) => {
       <Stack.Screen
         name="ClubList"
         options={{
-          headerTitle: "Search Clubs",
+          headerTitle: "🔎 Search Clubs",
           headerLargeTitle: true,
           headerShadowVisible: false,
           headerSearchBarOptions: {
             placeholder: "Search Clubs",
             onChangeText: (event) => {
               setSearchText(event.nativeEvent.text);
+
+              setSearchTimer(1);
             },
             hideWhenScrolling: false,
             textColor: colors.text,
@@ -217,11 +260,11 @@ const ClubList = ({ navigation }) => {
           headerStyle: {
             backgroundColor: colors.background,
           },
-          headerRight: () => (
-            <TouchableOpacity onPress={asyncFunc}>
-              <Ionicon name="refresh" size={30} color={colors.button} />
-            </TouchableOpacity>
-          ),
+          // headerRight: () => (
+          //   <TouchableOpacity onPress={asyncFunc}>
+          //     <Ionicon name="refresh" size={30} color={colors.button} />
+          //   </TouchableOpacity>
+          // ),
         }}
       >
         {() => (
@@ -323,17 +366,13 @@ const ClubList = ({ navigation }) => {
                             category.data.length != 0 &&
                             (categoriesSelected.length == 0 ||
                               categoriesSelected.includes(
-                                category.categoryName.slice(2)
+                                category.categoryName.slice(3)
                               ))
                           ) {
                             return (
                               <View key={index} style={styles.categoryView}>
                                 <ClubCategory
-                                  name={
-                                    category.categoryName.slice(0, 2) +
-                                    " " +
-                                    category.categoryName.slice(2)
-                                  }
+                                  name={category.categoryName}
                                   data={category.data}
                                   schoolKey={schoolKey}
                                   navigation={navigation}

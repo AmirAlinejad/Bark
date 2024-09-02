@@ -8,7 +8,6 @@ import React, {
 import {
   TouchableOpacity,
   View,
-  Text,
   TextInput,
   FlatList,
   StyleSheet,
@@ -35,7 +34,7 @@ import {
   limit,
   doc,
 } from "firebase/firestore";
-import { auth, firestore } from "../../backend/FirebaseConfig";
+import { firestore } from "../../backend/FirebaseConfig";
 // icons
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import Ionicons from "react-native-vector-icons/Ionicons";
@@ -52,49 +51,22 @@ import IconButton from "../../components/buttons/IconButton";
 import ClubImg from "../../components/club/ClubImg";
 // functions
 import {
-  checkMembership,
-  fetchMessages,
-  handleCameraPress,
   handleImageUploadAndSend,
-  getSetUserData,
+  handleCameraPress,
   handleDocumentUploadAndSend,
-} from "../../functions/backendFunctions";
-import { deleteImageFromStorage } from "../../functions/chatFunctions";
+  sendPushNotification,
+} from "../../functions/chatFunctions";
+import { getSetUserData } from "../../functions/profileFunctions";
+import { fetchMessages } from "../../functions/chatFunctions";
+import { checkMembership } from "../../functions/clubFunctions";
+import { deleteImageFromStorage } from "../../functions/fileFunctions";
 import { isSameDay } from "../../functions/timeFunctions";
 import { goToClubScreen } from "../../functions/navigationFunctions";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 // colors
 import { useFocusEffect, useTheme } from "@react-navigation/native";
-
-async function sendPushNotification(
-  expoPushToken,
-  message,
-  firstName,
-  lastName,
-  clubName,
-  clubId,
-  chatName,
-) {
-  const text = message ? message : "An image was sent.";
-
-  const notification = {
-    to: expoPushToken,
-    sound: "default",
-    title: clubName,
-    body: `${firstName} ${lastName}: ${text}`,
-    data: { link: "myapp://clubId=" + clubId + "&chatName=" + chatName },
-  };
-
-  await fetch("https://exp.host/--/api/v2/push/send", {
-    method: "POST",
-    headers: {
-      Accept: "application/json",
-      "Accept-encoding": "gzip, deflate",
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(notification),
-  });
-}
+// auth
+import { getAuth } from "firebase/auth";
 
 export default function Chat({ route, navigation }) {
   // keyboard state
@@ -141,6 +113,7 @@ export default function Chat({ route, navigation }) {
 
   const { colors } = useTheme();
 
+  // header options
   useLayoutEffect(() => {
     navigation.setOptions({
       headerLargeTitle: false,
@@ -155,11 +128,17 @@ export default function Chat({ route, navigation }) {
             </View>
             <CustomText
               text={
-                clubName.length > 20
-                  ? clubName.substring(0, 20) + "..."
+                clubName.length > 30
+                  ? clubName.substring(0, 30) + "..."
                   : clubName
               }
-              style={[styles.clubNameText, { color: colors.text }]}
+              style={[
+                styles.clubNameText,
+                {
+                  color: colors.text,
+                  fontSize: clubName.length > 12 ? 16 : 20,
+                },
+              ]}
               font="bold"
             />
           </View>
@@ -176,7 +155,7 @@ export default function Chat({ route, navigation }) {
     });
   }, [navigation]);
 
-  // Define functions to handle modal open and close0
+  // Define functions to handle modal open and close
   const openModal = () => {
     setIsModalVisible(true);
 
@@ -227,6 +206,12 @@ export default function Chat({ route, navigation }) {
   }, [fetchLimit]);
 
   const clearUnreadMessages = async () => {
+    const auth = getAuth();
+    const user = auth.currentUser;
+    if (!user) {
+      return;
+    }
+
     const clubMemberRef = doc(
       firestore,
       "schools",
@@ -234,7 +219,7 @@ export default function Chat({ route, navigation }) {
       "clubMemberData",
       "clubs",
       clubId,
-      userData.id
+      user.uid
     );
     updateDoc(clubMemberRef, { unreadMessages: 0 });
   };
@@ -459,6 +444,19 @@ export default function Chat({ route, navigation }) {
           message
         );
 
+        // add message to club data
+        if (chatName === "chat") {
+          const clubRef = doc(
+            firestore,
+            "schools",
+            schoolKey,
+            "clubData",
+            clubId
+          );
+
+          await updateDoc(clubRef, { mostRecentMessage: message });
+        }
+
         // say "sent an image" if no text
         let notificationText = replyingToMessage ? "Replied to - " : "";
         if (replyingToMessage) {
@@ -488,8 +486,17 @@ export default function Chat({ route, navigation }) {
           clubId
         );
         const clubMembers = await getDocs(clubMembersCollection);
+
+        let clubMembersArray = clubMembers.docs;
+        // filter club members if admin chat
+        if (chatName === "admin") {
+          clubMembersArray = clubMembers.docs.filter(
+            (member) => member.data().privilege === "admin" || member.data().privilege === "owner"
+          );
+        }
+
         // loop through all members in the club
-        for (const member of clubMembers.docs) {
+        for (const member of clubMembersArray) {
           if (!member.data().muted && member.id !== userData.id) {
             // send the push notification
             sendPushNotification(
@@ -668,8 +675,8 @@ export default function Chat({ route, navigation }) {
           <View
             style={{
               position: "absolute",
-              left: Dimensions.get("window").width / 2 - 75,
-              top: 350,
+              left: Dimensions.get("window").width / 2 - 110,
+              top: 360,
             }}
           >
             <View style={{ justifyContent: "center", alignItems: "center" }}>
@@ -678,6 +685,10 @@ export default function Chat({ route, navigation }) {
                 text="Start chatting!"
                 font="bold"
                 style={{ fontSize: 20, color: colors.textLight }}
+              />
+              <CustomText
+                text="Send a message to get started."
+                style={{ fontSize: 16, color: colors.textLight }}
               />
             </View>
           </View>
@@ -987,7 +998,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 5,
+    marginLeft: 20,
     flex: 1,
+    maxWidth: 160,
   },
 
   // admin chat banner
