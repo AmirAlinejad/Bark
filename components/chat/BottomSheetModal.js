@@ -280,14 +280,16 @@ const BottomSheetModal = ({
         // loop through all members in the club
         for (const member of clubMembers.docs) {
           if (!member.data().muted && member.id !== userData.id) {
-            // send the push notification
-            sendPushNotification(
-              member.data().expoPushToken,
-              notificationText,
-              userData.firstName,
-              userData.lastName,
-              clubName
-            );
+            if (member.data().expoPushToken) {
+              // send the push notification
+              sendPushNotification(
+                member.data().expoPushToken,
+                notificationText,
+                userData.firstName,
+                userData.lastName,
+                clubName
+              );
+            }
           }
 
           // increment unread messages in club member's data
@@ -365,7 +367,7 @@ const BottomSheetModal = ({
                   keyExtractor={(item, index) => index.toString()}
                   renderItem={renderImage}
                   numColumns={3}
-                  style={{ width: "100%", height: 1000 }}
+                  style={{ width: "100%", height: 1100 }}
                   contentContainerStyle={{ alignItems: "center", height: 1500 }}
                 />
 
@@ -441,11 +443,10 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
   },
   modal: {
+    flex: 1,
     width: "100%",
-    height: 800,
     justifyContent: "flex-start",
     alignItems: "center",
-    marginTop: 60,
     borderTopLeftRadius: 25,
     borderTopRightRadius: 25,
   },

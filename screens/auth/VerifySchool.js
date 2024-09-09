@@ -67,7 +67,7 @@ const VerifySchool = ({ navigation }) => {
           ) : (
             <View style={styles.content}>
               <CustomText
-                style={styles.text}
+                style={[styles.text, { fontSize: 30 }]}
                 text="We couldn't verify your school. Please check your email and try again."
               />
               <CustomText

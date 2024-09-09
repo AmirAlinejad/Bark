@@ -5,7 +5,7 @@ import { getSetUserData } from "../../functions/profileFunctions";
 // styles
 import { useTheme } from "@react-navigation/native";
 // modal
-import SwipeUpDownModal from "react-native-swipe-modal-up-down";
+import Modal from "react-native-modal";
 // my components
 import CustomText from "../display/CustomText";
 import ProfileImg from "../display/ProfileImg";
@@ -23,7 +23,7 @@ const ProfileOverlay = ({ visible, setVisible, userData }) => {
 
   const graduationYear = () => {
     if (userData.graduationYear) {
-      return "🎓" + userData.graduationYear;
+      return "🎓 " + userData.graduationYear;
     } else {
       return "";
     }
@@ -31,7 +31,7 @@ const ProfileOverlay = ({ visible, setVisible, userData }) => {
 
   const major = () => {
     if (userData.major) {
-      return userData.major;
+      return userData.major.slice(0, 2) + " " + userData.major.slice(2);
     } else {
       return "";
     }
@@ -61,82 +61,62 @@ const ProfileOverlay = ({ visible, setVisible, userData }) => {
   };
 
   return (
-    <SwipeUpDownModal
-      modalVisible={visible}
-      pressToanimate={visible}
-      onClose={closeOverlay}
-      ContentModal={
-        <TouchableWithoutFeedback>
-          <View style={styles.modal}>
-            <View
-              style={[styles.modalContent, { backgroundColor: colors.card }]}
-            >
-              {userData && (
-                <View style={styles.profileContainer}>
-                  <View
-                    style={[styles.bar, { backgroundColor: colors.gray }]}
-                  />
-                  <ProfileImg profileImg={userData.profileImg} width={80} />
-                  <View style={{ height: 8 }} />
-                  <CustomText
-                    style={[styles.name, { color: colors.text }]}
-                    text={userData.firstName + " " + userData.lastName}
-                    font="bold"
-                  />
-                  <CustomText
-                    style={[styles.userName, { color: colors.textLight }]}
-                    text={"@" + userData.userName}
-                    font={"bold"}
-                  />
-                  <View style={[styles.info, { color: colors.textLight }]}>
-                    {graduationYear() !== "" && (
-                      <CustomText
-                        text={graduationYear()}
-                        style={[
-                          styles.secondaryText,
-                          { color: colors.textLight },
-                        ]}
-                      />
-                    )}
-                    {major() !== "" && (
-                      <CustomText
-                        text={major()}
-                        style={[
-                          styles.secondaryText,
-                          { color: colors.textLight },
-                        ]}
-                      />
-                    )}
-                  </View>
-                  {getMutualClubs().length > 0 && (
-                    <CustomText
-                      text={`${getMutualClubs().length} Mutual Club(s)`}
-                      style={[
-                        styles.secondaryText,
-                        { color: colors.textLight },
-                      ]}
-                    />
-                  )}
-                  <View style={{ height: 16 }} />
-                </View>
-              )}
-            </View>
+    <Modal
+      isVisible={visible}
+      onSwipeComplete={closeOverlay}
+      swipeDirection="down"
+      onBackdropPress={closeOverlay}
+      style={[styles.modalContent, { backgroundColor: colors.card }]}
+    >
+      {userData && (
+        <View style={styles.profileContainer}>
+          <View style={[styles.bar, { backgroundColor: colors.gray }]} />
+          <ProfileImg profileImg={userData.profileImg} width={80} />
+          <View style={{ height: 8 }} />
+          <CustomText
+            style={[styles.name, { color: colors.text }]}
+            text={userData.firstName + " " + userData.lastName}
+            font="bold"
+          />
+          <CustomText
+            style={[styles.userName, { color: colors.textLight }]}
+            text={"@" + userData.userName}
+            font={"bold"}
+          />
+          <View style={[styles.info, { color: colors.textLight, marginTop: 20 }]}>
+            {graduationYear() !== "" && (
+              <CustomText
+                text={graduationYear()}
+                style={[styles.secondaryText, { color: colors.textLight }]}
+              />
+            )}
+            {major() !== "" && (
+              <CustomText
+                text={major()}
+                style={[styles.secondaryText, { color: colors.textLight }]}
+              />
+            )}
           </View>
-        </TouchableWithoutFeedback>
-      }
-    />
+          {getMutualClubs().length > 0 && (
+            <CustomText
+              text={`${getMutualClubs().length} Mutual Club(s)`}
+              style={[styles.secondaryText, { marginTop: 16, color: colors.textLight }]}
+              font="bold"
+            />
+          )}
+          <View style={{ height: 16 }} />
+        </View>
+      )}
+    </Modal>
   );
 };
 
 const styles = StyleSheet.create({
-  modal: {
-    flex: 1,
-    marginTop: 500,
-    alignItems: "center",
-  },
   modalContent: {
     flex: 1,
-    width: "100%",
+    height: 500,
+    margin: 0,
+    marginTop: 500,
     alignItems: "center",
     justifyContent: "flex-start",
     borderTopLeftRadius: 30,
@@ -161,10 +141,10 @@ const styles = StyleSheet.create({
     marginVertical: 12,
   },
   name: {
-    fontSize: 24,
+    fontSize: 28,
   },
   userName: {
-    fontSize: 16,
+    fontSize: 20,
   },
   secondaryText: {
     fontSize: 16,

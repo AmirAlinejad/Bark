@@ -2,7 +2,7 @@
   "expo": {
     "name": "Bark",
     "slug": "Bark",
-    "version": "1.2.1",
+    "version": "1.2.4",
     "orientation": "portrait",
     "icon": "./assets/brand/icon.png",
     "userInterfaceStyle": "light",
@@ -20,7 +20,7 @@
       },
       "supportsTablet": true,
       "bundleIdentifier": "com.sbpete.Bark",
-      "buildNumber": "1.2.1",
+      "buildNumber": "1.2.4",
       "infoPlist": {
         "NSPrivacyAccessedAPITypes": [
           {

@@ -1,4 +1,4 @@
-import React, { useRef } from "react";
+import React, { useRef, useEffect } from "react";
 import {
   View,
   StyleSheet,
@@ -7,13 +7,8 @@ import {
   Animated,
 } from "react-native";
 // functions
-import {
-  updateProfileData,
-} from "../../functions/profileFunctions";
-import {
-  pinMessage,
-  voteInPoll,
-} from "../../functions/chatFunctions";
+import { updateProfileData } from "../../functions/profileFunctions";
+import { pinMessage, voteInPoll } from "../../functions/chatFunctions";
 // my components
 import ProfileImg from "../display/ProfileImg";
 import CustomText from "../display/CustomText";
@@ -287,7 +282,12 @@ const MessageItem = ({
                       text={`(${votesArray()[option.id]})  `}
                     />
 
-                    <View style={styles.pollGraph}>
+                    <View
+                      style={[
+                        styles.pollGraph,
+               
+                      ]}
+                    >
                       <LinearGradient // Background Linear Gradient
                         colors={[colors.purple, colors.button]}
                         locations={[0, 1]}
@@ -296,8 +296,7 @@ const MessageItem = ({
                         style={{
                           position: "absolute",
                           width: `${
-                            100 *
-                            (votesArray()[option.id] / totalVotes() || 0)
+                            100 * (votesArray()[option.id] / totalVotes() || 0)
                           }%`,
                           height: 30,
                           borderRadius: 8,
@@ -428,13 +427,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "rgba(0, 0, 0, 0.1)",
-    borderRadius: 8,
-  },
-  pollGraphBar: {
-    width: 200,
-    height: 30,
-    backgroundColor: "black",
-    maskImage: "linear-gradient(to right, rgba(0,0,0,0), rgba(0,0,0,1))",
     borderRadius: 8,
   },
   pollOptionButton: {

@@ -158,6 +158,7 @@ const UpcomingEvents = ({
                           id={item.id}
                           name={item.name}
                           date={item.date}
+                          showDate={date}
                           icon={icon}
                           iconColor={iconColor}
                           screenName={screenName}

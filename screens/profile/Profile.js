@@ -108,7 +108,7 @@ const Profile = ({ navigation }) => {
   const gradYear = userData?.graduationYear
     ? userData.graduationYear
     : "Add Year";
-  const major = userData?.major ? userData.major : "📚Add Major";
+  const major = userData?.major ? userData.major : "📚 Add Major";
 
   return (
     <Stack.Navigator>
@@ -139,14 +139,14 @@ const Profile = ({ navigation }) => {
                 <View style={styles.detailsView}>
                   <TouchableOpacity onPress={goToEditProfile}>
                     <CustomText
-                      text={"🎓" + gradYear}
+                      text={"🎓 " + gradYear}
                       style={[styles.detailsText, { color: colors.textLight }]}
                     />
                   </TouchableOpacity>
                   <View style={{ width: 25 }} />
                   <TouchableOpacity onPress={goToEditProfile}>
                     <CustomText
-                      text={major}
+                      text={major.slice(0, 2) + " " + major.slice(2)}
                       style={[styles.detailsText, { color: colors.textLight }]}
                     />
                   </TouchableOpacity>

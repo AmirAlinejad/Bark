@@ -284,7 +284,7 @@ const Form = ({
         if (form.instructions) updatedEvent.instructions = form.instructions;
         if (form.repeats) updatedEvent.repeats = form.repeats;
 
-        navigation.navigate("Map Picker", {
+        navigation.navigate("Location", {
           event: updatedEvent,
           fromEdit: route.name === "Edit Event",
         });

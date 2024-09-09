@@ -10,11 +10,13 @@ import {
   doc,
   updateDoc,
   deleteDoc,
+  orderBy,
 } from "firebase/firestore";
 import { firestore } from "../backend/FirebaseConfig";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Alert } from "react-native";
 import { getProfileData, getUserData } from "./profileFunctions";
+import { sendPushNotification } from "./chatFunctions";
 import { emailSplit } from "./backendFunctions";
 import { auth } from "../backend/FirebaseConfig";
 
@@ -52,7 +54,8 @@ const getClubCategoryData = async (category, searchText) => {
   const clubsQuery = query(
     clubsDocRef,
     limit(10),
-    where("clubName", ">=", searchText ? searchText : "")
+    where("clubName", ">=", searchText ? searchText : ""),
+    orderBy("clubMembers", "desc")
   );
   const clubsSnapshot = await getDocs(clubsQuery);
 
@@ -74,6 +77,9 @@ const getSetClubData = async (clubId, setter) => {
 
   if (!clubDocSnapshot.exists()) {
     console.log("Club not found.");
+    Alert.alert("Club not found.");
+    navigation.goBack();
+
     return;
   }
 
@@ -205,6 +211,17 @@ const getSetMyClubsData = async (setter, setMutedClubs, setLoading) => {
 
   await SecureStore.setItemAsync("user", JSON.stringify(userData));
 
+  // filter clubs created by user
+  const clubsCreated = userData.clubsCreated.filter((club) =>
+    clubIds.includes(club)
+  );
+
+  // update user data in firestore
+  await updateDoc(userDocRef, {
+    clubs: clubIds,
+    clubsCreated: clubsCreated,
+  });
+
   if (setMutedClubs) {
     setMutedClubs(mutedClubs);
   }
@@ -254,6 +271,44 @@ const joinClub = async (id, privilege, userId) => {
     );
     await setDoc(clubMembersDoc, clubMember);
 
+    // increment club member count in club data
+    const clubDocRef = doc(firestore, "schools", schoolKey, "clubData", id);
+
+    const clubDocSnapshot = await getDoc(clubDocRef);
+    if (clubDocSnapshot.exists()) {
+      const clubData = clubDocSnapshot.data();
+      let clubMembers = clubData.clubMembers;
+      if (clubMembers == undefined) {
+        clubMembers = 0;
+      }
+      clubMembers++;
+
+      // update club search data
+      const clubCategories = clubData.clubCategories;
+      clubCategories.forEach(async (category) => {
+        await updateDoc(
+          doc(
+            firestore,
+            "schools",
+            schoolKey,
+            "clubSearchData",
+            category,
+            "clubs",
+            id
+          ),
+          {
+            clubMembers: clubMembers,
+          }
+        );
+      });
+
+      await updateDoc(clubDocRef, {
+        clubMembers: clubMembers,
+      });
+    } else {
+      console.log("Club not found.");
+    }
+
     // append clubid to user's clubs
     let updatedUserClubs = userData.clubs;
 
@@ -302,14 +357,49 @@ const requestToJoinClub = async (id, name, publicClub) => {
       userName: user.userName,
       firstName: user.firstName,
       lastName: user.lastName,
-      expoPushToken: user.expoPushToken,
     };
     if (user.profileImg) {
       clubRequest.profileImg = user.profileImg;
     }
+    if (user.expoPushToken) {
+      clubRequest.expoPushToken = user.expoPushToken;
+    }
 
     // post request
     await setDoc(clubRequestsDocRef, clubRequest);
+
+    // send notification to club owner and admins
+    const clubMembersRef = collection(
+      firestore,
+      "schools",
+      schoolKey,
+      "clubMemberData",
+      "clubs",
+      id
+    );
+
+    const clubMembersSnapshot = await getDocs(clubMembersRef);
+
+    if (clubMembersSnapshot.empty) {
+      console.log("No members found.");
+      return;
+    }
+
+    clubMembersSnapshot.docs.map(async (doc) => {
+      const memberData = doc.data();
+      if (
+        (memberData.privilege === "owner" ||
+          memberData.privilege === "admin") &&
+        memberData.expoPushToken
+      ) {
+        await sendPushNotification(
+          memberData.expoPushToken,
+          "New Club Request",
+          "New member request for " + name,
+          "Accept or decline the request in the club settings"
+        );
+      }
+    });
   }
 };
 
@@ -440,6 +530,39 @@ const leaveClubConfirmed = async (clubId, user) => {
 
     // then remove user from club
     await deleteDoc(clubMembersDoc);
+
+    // decrement club member count
+    const clubDocRef = doc(firestore, "schools", schoolKey, "clubData", clubId);
+    const clubDocSnapshot = await getDoc(clubDocRef);
+
+    if (clubDocSnapshot.exists()) {
+      const clubData = clubDocSnapshot.data();
+      let clubMembers = clubData.clubMembers;
+      clubMembers--;
+
+      // update club search data
+      const clubCategories = clubData.clubCategories;
+      clubCategories.forEach(async (category) => {
+        await updateDoc(
+          doc(
+            firestore,
+            "schools",
+            schoolKey,
+            "clubSearchData",
+            category,
+            "clubs",
+            clubId
+          ),
+          {
+            clubMembers: clubMembers,
+          }
+        );
+      });
+
+      await updateDoc(clubDocRef, {
+        clubMembers: clubMembers,
+      });
+    }
 
     // remove club from user data
     const userClubsDocRef = doc(
@@ -574,7 +697,12 @@ const leaveClubConfirmed = async (clubId, user) => {
   }
 };
 
-const checkMembership = async (clubId, setPrivilege, setIsRequestSent) => {
+const checkMembership = async (
+  clubId,
+  setPrivilege,
+  setIsRequestSent,
+  setMembershipChecked
+) => {
   // get user id from auth
   const userId = auth.currentUser.uid;
 
@@ -625,6 +753,43 @@ const checkMembership = async (clubId, setPrivilege, setIsRequestSent) => {
       setIsRequestSent(false);
     }
   }
+
+  if (setMembershipChecked) {
+    setMembershipChecked(true);
+  }
+};
+
+const updateExpoPushTokenForUserClubs = async (userId, expoPushToken) => {
+  console.log("Updating expo push token for user clubs");
+
+  const schoolKey = await emailSplit();
+
+  // get user clubs
+  const userDocRef = doc(firestore, "schools", schoolKey, "userData", userId);
+  const userDocSnapshot = await getDoc(userDocRef);
+
+  if (!userDocSnapshot.exists()) {
+    console.log("User not found.");
+    return;
+  }
+
+  const userClubs = userDocSnapshot.data().clubs;
+
+  // update expo push token for each club
+  userClubs.forEach(async (clubId) => {
+    const clubMemberRef = doc(
+      firestore,
+      "schools",
+      schoolKey,
+      "clubMemberData",
+      "clubs",
+      clubId,
+      userId
+    );
+    await updateDoc(clubMemberRef, {
+      expoPushToken: expoPushToken,
+    });
+  });
 };
 
 export {
@@ -641,4 +806,5 @@ export {
   getSetRequestsData,
   leaveClubConfirmed,
   checkMembership,
+  updateExpoPushTokenForUserClubs,
 };

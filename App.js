@@ -16,7 +16,7 @@ import * as Linking from "expo-linking";
 // backend
 import { getDarkMode } from "./functions/backendFunctions";
 // toast
-import Toast from 'react-native-toast-message';
+import Toast from "react-native-toast-message";
 
 export const GlobalContext = createContext();
 
@@ -45,15 +45,13 @@ async function registerForPushNotificationsAsync() {
       finalStatus = status;
     }
     if (finalStatus !== "granted") {
-      alert("Failed to get push token for push notification!");
       return;
     }
 
     token = await Notifications.getExpoPushTokenAsync({
       projectId: Constants.expoConfig.extra.eas.projectId,
     });
-    console.log('token: ', token);
-    
+    console.log("token: ", token);
   } else {
     alert("Must use physical device for Push Notifications");
   }
@@ -65,7 +63,6 @@ async function registerForPushNotificationsAsync() {
 const Stack = createNativeStackNavigator();
 
 export default App = () => {
-
   const [state, setState] = useState({
     theme: "light",
   });

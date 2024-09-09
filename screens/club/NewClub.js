@@ -113,6 +113,7 @@ const NewClub = ({ navigation }) => {
         clubDescription: form.clubDescription,
         clubCategories: form.categoriesSelected,
         publicClub: form.publicClub,
+        clubMembers: 0,
       });
 
       // add club to club search data for each category

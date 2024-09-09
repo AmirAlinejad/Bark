@@ -111,7 +111,7 @@ const Settings = ({ navigation }) => {
       ],
     },
     {
-      title: "Don't Press",
+      title: " ",
       data: [
         {
           id: "9",

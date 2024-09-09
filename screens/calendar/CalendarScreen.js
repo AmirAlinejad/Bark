@@ -6,6 +6,7 @@ import {
   ScrollView,
   TouchableWithoutFeedback,
   TouchableOpacity,
+  Switch,
 } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 // my components
@@ -110,6 +111,7 @@ const CalendarScreen = ({ navigation }) => {
   const [clubCategoriesSelected, setClubCategoriesSelected] = React.useState(
     []
   ); // club categories selected if calendar setting is 'newClubs'
+  const [upcomingOnly, setUpcomingOnly] = React.useState(true); // filter by upcoming events only
   const [startEndTime, setStartEndTime] = React.useState([0, 24]); // filter by time of day
   const [clubList, setClubList] = useState([]);
 
@@ -133,6 +135,9 @@ const CalendarScreen = ({ navigation }) => {
   useFocusEffect(
     React.useCallback(() => {
       getDataAsync();
+
+      // set selected date to null
+      setSpecificDateSelected(false);
     }, [])
   );
 
@@ -176,6 +181,11 @@ const CalendarScreen = ({ navigation }) => {
     }
     // if not same month as calendar
     if (new Date(event.date).getMonth() != currenMonth) {
+      return false;
+    }
+
+    // if date is in the past
+    if (new Date(event.date) < new Date() && upcomingOnly) {
       return false;
     }
 
@@ -423,6 +433,7 @@ const CalendarScreen = ({ navigation }) => {
     specificDateSelected,
     selectedDate,
     currenMonth,
+    upcomingOnly,
   ]);
 
   return (
@@ -550,6 +561,22 @@ const CalendarScreen = ({ navigation }) => {
                             icon="search"
                           />
                         </View>
+                      </View>
+
+                      <View style={[ styles.toggleButtonRow, { alignItems: 'center' } ]}>
+                        <CustomText
+                          style={[
+                            styles.filterSectionTitle,
+                            { color: colors.text },
+                          ]}
+                          font="bold"
+                          text={`Upcoming Only`}
+                        />
+                        <Switch
+                          value={upcomingOnly}
+                          onValueChange={() => setUpcomingOnly(!upcomingOnly)}
+                          trackColor={{ false: colors.gray, true: colors.button }}
+                        />
                       </View>
 
                       <CustomText
@@ -752,13 +779,13 @@ const styles = StyleSheet.create({
 
   // filter overlay
   modal: {
-    height: "100%",
+    flex: 1,
     justifyContent: "flex-end",
     alignItems: "center",
   },
   filter: {
+    flex: 1,
     width: "100%",
-    height: "92%",
     alignItems: "flex-start",
     justifyContent: "flex-start",
     borderTopLeftRadius: 30,

@@ -1,5 +1,4 @@
-import React, { useState } from "react";
-// storage
+import React, { useState, useContext } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as SecureStore from "expo-secure-store";
 // navigation
@@ -76,22 +75,29 @@ const SignIn = ({ route, navigation }) => {
     try {
       const response = await signInWithEmailAndPassword(auth, email, password);
 
+      console.log("response: ", response);
+
+      if (!response) {
+        setErrorMessage("Sign-in failed. Please try again.");
+        setLoading(false);
+        return;
+      }
+
       // make sure email is verified
       if (!response.user.emailVerified) {
         setErrorMessage("Please verify your email before signing in.");
+        alert("Please verify your email before signing in.");
+        navigation.navigate("VerifyEmail");
         setLoading(false);
         return;
       }
 
       const schoolKey = response.user.email.split("@")[1].split(".")[0];
 
-      const userData = await getUserData();
-
-      // set user data in async storage
-      await SecureStore.setItemAsync("user", JSON.stringify(userData));
-
       // set school key in async storage
       await AsyncStorage.setItem("schoolKey", schoolKey);
+
+      const userData = await getUserData();
 
       // Navigate to the home screen
       navigation.navigate("Main");

@@ -410,9 +410,69 @@ export const SCHOOLS = {
   },
   utk: {
     name: "The University of Tennessee, Knoxville",
-    emoji: "🍊",
+    emoji: "🟧⬜️",
     mascot: "Volunteers",
     key: "utk",
+  },
+  belmont: {
+    name: "Belmont University",
+    emoji: "🔷",
+    mascot: "Bruins",
+    key: "belmont",
+  },
+  ua: {
+    name: "The University of Alabama",
+    emoji: "🐘",
+    mascot: "Crimson Tide",
+    key: "ua",
+  },
+  ksu: {
+    name: "Kennesaw State University",
+    emoji: "🦉",
+    mascot: "Owls",
+    key: "ksu",
+  },
+  vanderbilt: {
+    name: "Vanderbilt University",
+    emoji: "⚓",
+    mascot: "Commodores",
+    key: "vanderbilt",
+  },
+  gsu: {
+    name: "Georgia State University",
+    emoji: "🐾",
+    mascot: "Panthers",
+    key: "gsu",
+  },
+  gatech: {
+    name: "Georgia Institute of Technology",
+    emoji: "🐝",
+    mascot: "Yellow Jackets",
+    key: "gatech",
+  },
+  emory: {
+    name: "Emory University",
+    emoji: "🦅",
+    mascot: "Eagles",
+    key: "emory",
+  },
+  fsu: {
+    name: "Florida State University",
+    emoji: "🔸",
+    mascot: "Seminoles",
+    key: "fsu",
+  },
+  uf: {
+    name: "University of Florida",
+    emoji: "🐊",
+    mascot: "Gators",
+    key: "uf",
+  },
+  usc: {
+    name: "University of South Carolina",
+    emoji: "🐔",
+    mascot: "Gamecocks",
+    key: "usc",
   },
 };
 

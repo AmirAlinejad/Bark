@@ -1,10 +1,7 @@
 const formatDate = (date) => {
   // reformat date from to 'YYYY-MM-DD'
   let formattedYear = date.slice(11, 15);
-  let formattedMonth = date.slice(
-    date.indexOf(" ") + 1,
-    date.indexOf(" ") + 4
-  );
+  let formattedMonth = date.slice(date.indexOf(" ") + 1, date.indexOf(" ") + 4);
   let formattedDay = date.slice(8, 10);
   if (formattedMonth == "Jan") {
     formattedMonth = "01";
@@ -233,6 +230,50 @@ const getTimeZoneOffset = () => {
   return `${offset < 0 ? "+" : "-"}${hours}:${minutes}`;
 };
 
+// get day of week from date string
+// date string looks like Sep, 12, 2022
+// return Monday, Tuesday, etc.
+const getDayOfWeek = (date) => {
+  // create date object from date string
+  const getMonth = (month) => {
+    if (month === "Jan") {
+      return 0;
+    } else if (month === "Feb") {
+      return 1;
+    } else if (month === "Mar") {
+      return 2;
+    } else if (month === "Apr") {
+      return 3;
+    } else if (month === "May") {
+      return 4;
+    } else if (month === "Jun") {
+      return 5;
+    } else if (month === "Jul") {
+      return 6;
+    } else if (month === "Aug") {
+      return 7;
+    } else if (month === "Sep") {
+      return 8;
+    } else if (month === "Oct") {
+      return 9;
+    } else if (month === "Nov") {
+      return 10;
+    } else if (month === "Dec") {
+      return 11;
+    }
+
+    return 0;
+  };
+
+  const dateObj = new Date(
+    date.split(", ")[1],
+    getMonth(date.split(" ")[0]),
+    date.split(" ")[1].slice(0, -1)
+  );
+
+  return dateObj.toDateString();
+};
+
 export {
   formatDate,
   formatTime,
@@ -245,4 +286,5 @@ export {
   chatFormatDate,
   chatFormatTime,
   getTimeZoneOffset,
+  getDayOfWeek,
 };

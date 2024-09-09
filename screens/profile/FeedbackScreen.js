@@ -93,11 +93,11 @@ const FeedbackScreen = ({ route, navigation }) => {
           text="Thanks for helping us improve our app."
           font="light"
         />
-        <View
+        {/* <View
           style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
         >
           <Image source={Logo} style={{ width: 200, height: 200 }} />
-        </View>
+        </View> */}
       </KeyboardAwareScrollView>
     </View>
   );

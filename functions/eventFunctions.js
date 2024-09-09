@@ -213,6 +213,25 @@ const addEventToDefaultCalendar = async (event) => {
   await Calendar.createEventAsync(defaultCalendar[0].id, newEvent);
 };
 
+const getRSVPProfileData = async (rsvpList, setter) => {
+  let rsvpProfileData = [];
+  for (let i = 0; i < rsvpList.length; i++) {
+    const profileData = await getProfileData(rsvpList[i]);
+    const profileObj = {
+      username: profileData.userName,
+      first: profileData.firstName,
+      last: profileData.lastName,
+      id: profileData.id,
+    };
+    if (profileData.profileImg) {
+      profileObj.profileImg = profileData.profileImg;
+    }
+    rsvpProfileData = [...rsvpProfileData, profileObj];
+  }
+
+  setter(rsvpProfileData);
+};
+
 export {
   getSetCalendarData,
   getClubCalendarData,
@@ -223,4 +242,5 @@ export {
   getSetEventAttendance,
   getAttendeesData,
   addEventToDefaultCalendar,
+  getRSVPProfileData,
 };

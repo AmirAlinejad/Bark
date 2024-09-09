@@ -54,6 +54,7 @@ import {
   handleImageUploadAndSend,
   handleCameraPress,
   handleDocumentUploadAndSend,
+  sendChatNotification,
   sendPushNotification,
 } from "../../functions/chatFunctions";
 import { getSetUserData } from "../../functions/profileFunctions";
@@ -188,7 +189,12 @@ export default function Chat({ route, navigation }) {
     const unsubscribe = onSnapshot(
       messagesQuery,
       (querySnapshot) => {
-        fetchMessages(querySnapshot, setMessages, setPinnedMessageCount);
+        fetchMessages(
+          querySnapshot,
+          setMessages,
+          setPinnedMessageCount,
+          scrollToBottom
+        );
       },
       (error) => {
         console.error("Error fetching messages: ", error);
@@ -273,7 +279,7 @@ export default function Chat({ route, navigation }) {
       // Do something when the screen is focused
       setTimeout(() => {
         scrollToBottom();
-      }, 500);
+      }, 10);
       return () => {
         // Do something when the screen is unfocused
       };
@@ -304,7 +310,7 @@ export default function Chat({ route, navigation }) {
     });
   };
 
-  // checks id user is not at the bottom of the chat
+  // checks if user is not at the bottom of the chat
   const isCloseToBottom = ({
     layoutMeasurement,
     contentOffset,
@@ -355,7 +361,7 @@ export default function Chat({ route, navigation }) {
     scrollToBottom();
 
     // List of threat words
-    const threatWords = ["bomb", "kill", "violence"]; // Add more threat words here if needed
+    const threatWords = ["bomb", "kill", "violence", "gun", "shoot"];
 
     // Check if there's either text, an image URL, or a gifUrl
     if (messageText.trim() != "" || tempImageUrl || gifUrl) {
@@ -491,23 +497,27 @@ export default function Chat({ route, navigation }) {
         // filter club members if admin chat
         if (chatName === "admin") {
           clubMembersArray = clubMembers.docs.filter(
-            (member) => member.data().privilege === "admin" || member.data().privilege === "owner"
+            (member) =>
+              member.data().privilege === "admin" ||
+              member.data().privilege === "owner"
           );
         }
 
         // loop through all members in the club
         for (const member of clubMembersArray) {
           if (!member.data().muted && member.id !== userData.id) {
-            // send the push notification
-            sendPushNotification(
-              member.data().expoPushToken,
-              notificationText,
-              userData.firstName,
-              userData.lastName,
-              clubName,
-              clubId,
-              chatName
-            );
+            if (member.data().expoPushToken) {
+              // send the push notification
+              sendChatNotification(
+                member.data().expoPushToken,
+                notificationText,
+                userData.firstName,
+                userData.lastName,
+                clubName,
+                clubId,
+                chatName
+              );
+            }
           }
 
           // increment unread messages in club member's data
@@ -612,7 +622,12 @@ export default function Chat({ route, navigation }) {
   };
 
   return (
-    <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+    <TouchableWithoutFeedback
+      onPress={() => {
+        Keyboard.dismiss();
+      }}
+      accessible={false}
+    >
       <View style={[styles.container, { backgroundColor: colors.background }]}>
         {/* Keyboard listener */}
         <KeyboardListener
@@ -890,7 +905,7 @@ export default function Chat({ route, navigation }) {
         {/* Profile Overlay */}
         <ProfileOverlay
           visible={overlayVisible}
-          setVisible={() => setOverlayVisible(false)}
+          setVisible={setOverlayVisible}
           userData={overlayUserData}
         />
       </View>

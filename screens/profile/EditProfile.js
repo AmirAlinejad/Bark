@@ -26,7 +26,6 @@ import { MAJORS } from "../../macros/macros";
 // backend
 import { doc, setDoc, updateDoc } from "firebase/firestore";
 import { firestore } from "../../backend/FirebaseConfig";
-import { update } from "firebase/database";
 
 const EditProfile = ({ route, navigation }) => {
   // get user data from previous screen
@@ -146,6 +145,12 @@ const EditProfile = ({ route, navigation }) => {
         updatedUserData
       );
 
+      const userClubData = {
+        firstName: form.firstName,
+        lastName: form.lastName,
+      };
+      if (profileImg) userClubData.profileImg = profileImg;
+
       // update club member data
       if (userData.clubs) {
         for (let i = 0; i < userData.clubs.length; i++) {
@@ -160,11 +165,7 @@ const EditProfile = ({ route, navigation }) => {
               clubId,
               userData.id
             ),
-            {
-              firstName: form.firstName,
-              lastName: form.lastName,
-              profileImg: profileImg,
-            }
+            userClubData
           );
         }
       }

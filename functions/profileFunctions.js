@@ -1,6 +1,6 @@
 import { auth } from "../backend/FirebaseConfig";
 import { getDoc, doc, deleteDoc } from "firebase/firestore";
-import { AsyncStorage } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { firestore } from "../backend/FirebaseConfig";
 import * as SecureStore from "expo-secure-store";
 import { deleteUser } from "firebase/auth";

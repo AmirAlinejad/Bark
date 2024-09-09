@@ -1,5 +1,9 @@
 import React from "react";
-import { View, StyleSheet, TouchableOpacity } from "react-native";
+import {
+  View,
+  StyleSheet,
+  TouchableOpacity,
+} from "react-native";
 // components
 import MessageItem from "./MessageItem";
 import CustomText from "../display/CustomText";
@@ -100,55 +104,59 @@ const ChatMessage = ({
           </View>
         </View>
       )}
-      <TouchableOpacity
-        onPress={() =>
-          handlePressMessage(
-            message.likes,
-            setLikedProfileImages,
-            setIsLikesModalVisible
-          )
-        }
-        onLongPress={() =>
-          handleLongPress(
-            message,
-            currentUserPrivilege,
-            setReplyingToMessage,
-            messageRef
-          )
-        }
+      <View
         style={[
           styles.messageContainer,
           { backgroundColor: getBackgroundColor() },
         ]}
       >
-        <MessageItem
-          item={message}
-          navigation={navigation}
-          setOverlayVisible={setOverlayVisible}
-          setOverlayUserData={setOverlayUserData}
-          userId={userId}
-          messageRef={messageRef}
-          setReplyingToMessage={setReplyingToMessage}
-          swipeable={message.voteOptions ? false : true}
-          onLongPress={() => {
+        <TouchableOpacity
+          style={{ flex: 1, justifyContent: "center" }}
+          onPress={() =>
+            handlePressMessage(
+              message.likes,
+              setLikedProfileImages,
+              setIsLikesModalVisible
+            )
+          }
+          onLongPress={() =>
             handleLongPress(
               message,
               currentUserPrivilege,
               setReplyingToMessage,
               messageRef
-            );
-          }}
-        />
-        {!message.voteOptions && (
-          <TouchableOpacity onPress={toggleLike} style={styles.likeButton}>
-            <Ionicons name={heartIcon} size={24} color={heartColor} />
-            <CustomText
-              style={[styles.likeCountText, { color: colors.textLight }]}
-              text={likeCount}
-            />
-          </TouchableOpacity>
-        )}
-      </TouchableOpacity>
+            )
+          }
+        >
+          <MessageItem
+            item={message}
+            navigation={navigation}
+            setOverlayVisible={setOverlayVisible}
+            setOverlayUserData={setOverlayUserData}
+            userId={userId}
+            messageRef={messageRef}
+            setReplyingToMessage={setReplyingToMessage}
+            swipeable={message.voteOptions ? false : true}
+            onLongPress={() => {
+              handleLongPress(
+                message,
+                currentUserPrivilege,
+                setReplyingToMessage,
+                messageRef
+              );
+            }}
+          />
+          {!message.voteOptions && (
+            <TouchableOpacity onPress={toggleLike} style={styles.likeButton}>
+              <Ionicons name={heartIcon} size={24} color={heartColor} />
+              <CustomText
+                style={[styles.likeCountText, { color: colors.textLight }]}
+                text={likeCount}
+              />
+            </TouchableOpacity>
+          )}
+        </TouchableOpacity>
+      </View>
     </View>
   );
 };
@@ -169,6 +177,7 @@ const styles = StyleSheet.create({
   messageContainer: {
     flexDirection: "row",
     alignItems: "center",
+    paddingLeft: 8,
   },
   likeButton: {
     flexDirection: "row",

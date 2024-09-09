@@ -19,7 +19,10 @@ import * as Linking from "expo-linking";
 // theme
 import { useTheme } from "@react-navigation/native";
 // backend
-import { getClubData } from "../../functions/clubFunctions";
+import { updateExpoPushTokenForUserClubs } from "../../functions/clubFunctions";
+import { getUserData } from "../../functions/profileFunctions";
+// context
+import { GlobalContext } from "../../App";
 // navigation
 import {
   goToAdminChatScreen,
@@ -146,6 +149,9 @@ const SplashScreen = ({ navigation }) => {
   //   };
   // }, []);
 
+  // get the global state
+  const globalState = React.useContext(GlobalContext);
+
   const { colors } = useTheme();
 
   state = {
@@ -222,6 +228,28 @@ const SplashScreen = ({ navigation }) => {
               user.email,
               user.password
             );
+
+            if (!response) {
+              navigation.navigate("Onboarding");
+              AsyncStorage.clear();
+              SecureStore.deleteItemAsync("user");
+              return;
+            }
+
+            // get expo push token
+            const userData = await getUserData();
+
+            const expoPushToken = globalState[0].expoPushToken;
+
+            // update user data with expo push token
+            if (expoPushToken && !userData.expoPushToken) {
+              userData.expoPushToken = expoPushToken;
+
+              // update user data
+              await SecureStore.setItemAsync("user", JSON.stringify(userData));
+
+              updateExpoPushTokenForUserClubs(userData.id, expoPushToken);
+            }
 
             // different cases for different screens
             if (screenName == "club") {

@@ -24,12 +24,13 @@ import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scrollview"
 
 const EditClubScreen = ({ route, navigation }) => {
   // get user data from previous screen
-  const { name, id, img, description, categories } = route.params;
+  const { name, id, img, description, categories, publicClub} = route.params;
 
   // state variables
   const [form, setForm] = useState({
     clubName: name,
     clubDescription: description,
+    publicClub: publicClub,
   });
   const [clubImg, setClubImg] = useState(img);
   const [loading, setLoading] = useState(false);
@@ -49,6 +50,12 @@ const EditClubScreen = ({ route, navigation }) => {
       title: "Club Description",
       placeholder: "Club Description",
     },
+    {
+      propName: "publicClub",
+      type: "boolean",
+      title: "Public Club",
+      notes: "You don't need to approve members for public clubs.",
+    }
   ];
 
   // edit club
@@ -71,7 +78,7 @@ const EditClubScreen = ({ route, navigation }) => {
       const newClubData = {
         clubName: form.clubName,
         clubDescription: form.clubDescription,
-        // publicClub: form.publicClubState,
+        publicClub: form.publicClub,
       };
       if (clubImg) newClubData.clubImg = clubImg;
 

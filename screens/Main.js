@@ -114,7 +114,7 @@ const Main = () => {
         options={headerProps}
       />
       <Stack.Screen
-        name="Map Picker"
+        name="Location"
         component={MapPicker}
         options={headerProps}
       />

@@ -100,7 +100,6 @@ const SignUp = ({ navigation }) => {
     const expoPushToken = state.expoPushToken;
 
     if (expoPushToken === undefined) {
-      setErrorMessage("Failed to get push token for push notification!");
       setLoading(false);
     }
 

@@ -16,6 +16,8 @@ import { doc, setDoc } from "firebase/firestore"; // firestore
 import { useTheme } from "@react-navigation/native";
 // scroll view
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
+// notifications
+import { sendPushNotification } from "../../functions/chatFunctions";
 
 const NewEvent = ({ route, navigation }) => {
   // get club name from previous screen
@@ -180,7 +182,43 @@ const NewEvent = ({ route, navigation }) => {
           }
         );
 
-        //addEventToGoogleCalendar(newEvent);
+        // schedule notifications
+        const notificationDate = new Date(form.date);
+        notificationDate.setHours(notificationDate.getHours() - 1);
+        const notificationDate2 = new Date(form.date);
+        notificationDate2.setHours(notificationDate2.getHours() - 24);
+
+        // send a push notification to every clubMember telling them to RSVP
+        const clubMembersRef = doc(
+          firestore,
+          "schools",
+          schoolKey,
+          "clubMemberData",
+          "clubs",
+          clubId
+        );
+        const clubMembersSnapshot = await clubMembersRef.get();
+        const clubMembersData = clubMembersSnapshot.data();
+
+        if (clubMembersData) {
+          const clubMembers = clubMembersData.members;
+
+          for (let i = 0; i < clubMembers.length; i++) {
+            const member = clubMembers[i];
+
+            console.log("member: ", member);
+
+            // send push notification
+            await sendPushNotification(
+              member.expoPushToken,
+              "New Event",
+              form.eventName,
+              "RSVP to this event!"
+            );
+          }
+        }
+          
+
       } catch (e) {
         console.error("Error adding document: ", e);
       }

@@ -11,7 +11,8 @@ import { handleImageUpload, handleDocumentUpload } from "./fileFunctions";
 const fetchMessages = async (
   querySnapshot,
   setMessages,
-  setPinnedMessageCount
+  setPinnedMessageCount,
+  scrollToBottom
 ) => {
   const fetchedMessages = querySnapshot.docs.map((doc) => {
     // if poll, get poll data
@@ -49,11 +50,19 @@ const fetchMessages = async (
 
   setMessages(fetchedMessages);
 
+  // Scroll to the bottom of the chat
+  if (scrollToBottom) {
+    setTimeout(() => {
+      scrollToBottom();
+    }, 2000);
+  }
+
   // Calculate and update the count of pinned messages.
-  if (setPinnedMessageCount)
+  if (setPinnedMessageCount) {
     setPinnedMessageCount(
       fetchedMessages.filter((message) => message.pinned).length
     );
+  }
 };
 
 const handleImageUploadAndSend = async (
@@ -275,7 +284,8 @@ const handleLongPress = async (
 };
 
 // vote in a poll
-const voteInPoll = async (messageRef, voteId, userId) => { // optimize by using batch
+const voteInPoll = async (messageRef, voteId, userId) => {
+  // optimize by using batch
   try {
     // get old votes
     const messageSnapshot = await getDoc(messageRef);
@@ -290,7 +300,7 @@ const voteInPoll = async (messageRef, voteId, userId) => { // optimize by using 
   }
 };
 
-async function sendPushNotification(
+async function sendChatNotification(
   expoPushToken,
   message,
   firstName,
@@ -321,6 +331,26 @@ async function sendPushNotification(
   });
 }
 
+async function sendPushNotification(expoPushToken, title, body, data) {
+  const notification = {
+    to: expoPushToken,
+    sound: "default",
+    title: title,
+    body: body,
+    data: data,
+  };
+
+  await fetch("https://exp.host/--/api/v2/push/send", {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+      "Accept-encoding": "gzip, deflate",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(notification),
+  });
+}
+
 export {
   fetchMessages,
   handleImageUploadAndSend,
@@ -331,5 +361,6 @@ export {
   handleLongPress,
   pinMessage,
   voteInPoll,
+  sendChatNotification,
   sendPushNotification,
 };

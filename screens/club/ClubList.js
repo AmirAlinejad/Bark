@@ -33,6 +33,7 @@ import {
 import { getClubCategoryData } from "../../functions/clubFunctions";
 // styles
 import { useTheme } from "@react-navigation/native";
+import Toast from "react-native-toast-message";
 
 const Stack = createNativeStackNavigator();
 
@@ -175,6 +176,14 @@ const ClubList = ({ navigation }) => {
       "Search for clubs!🔎",
       "Find a club that fits your interests."
     );
+
+    setTimeout(() => {
+      showToastIfNewUser(
+        "info",
+        "Want to create a club?",
+        "Click the circle button in the bottom right corner."
+      );
+    }, 5000);
 
     // get school key
     const getSetSchoolKey = async () => {

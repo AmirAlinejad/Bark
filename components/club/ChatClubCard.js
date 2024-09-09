@@ -149,7 +149,7 @@ const ChatClubCard = ({
                 <Ionicons
                   name="notifications-off-outline"
                   size={30}
-                  style={[styles.muteButton, { color: colors.text }]}
+                  style={[styles.muteButton, { color: colors.textLight }]}
                 />
               )}
             </View>

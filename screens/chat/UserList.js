@@ -16,7 +16,7 @@ import ToggleButton from "../../components/buttons/ToggleButton";
 import ProfileOverlay from "../../components/overlays/ProfileOverlay";
 import CustomButton from "../../components/buttons/CustomButton";
 // Firebase
-import { doc, updateDoc, deleteDoc } from "firebase/firestore";
+import { doc, updateDoc } from "firebase/firestore";
 import { firestore } from "../../backend/FirebaseConfig";
 // icons
 import Icon from "react-native-vector-icons/MaterialCommunityIcons"; // Ensure react-native-vector-icons is installed
@@ -312,7 +312,6 @@ const UserList = ({ route, navigation }) => {
           data={filteredMembers}
           renderItem={renderMember}
           keyExtractor={(item) => item.id}
-          style={{ paddingHorizontal: 0 }}
           scrollEnabled={false}
         />
       </ScrollView>

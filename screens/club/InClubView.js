@@ -11,6 +11,7 @@ import { useTheme } from "@react-navigation/native";
 // functions
 import {
   checkMembership,
+  getSetRequestsData,
   leaveClubConfirmed,
 } from "../../functions/clubFunctions";
 
@@ -18,6 +19,7 @@ const InClubView = ({ navigation, route }) => {
   const { clubData } = route.params;
   const [currentUserPrivilege, setCurrentUserPrivilege] = useState(""); // not used
   const [isLeaveClubModalVisible, setLeaveClubModalVisible] = useState(false);
+  const [ requests, setRequests ] = useState(null);
 
   const { colors } = useTheme();
 
@@ -29,7 +31,12 @@ const InClubView = ({ navigation, route }) => {
 
   // refresh states when you come back to this screen
   useEffect(() => {
-    // some way to get request data
+    async function fetchData() {
+      // get request data
+      getSetRequestsData(setRequests, clubData.clubId);
+    }
+
+    fetchData();
 
     // check membership
     checkMembership(clubData.clubId, setCurrentUserPrivilege);
@@ -44,6 +51,7 @@ const InClubView = ({ navigation, route }) => {
       publicClub: clubData.publicClub,
       description: clubData.clubDescription,
       categories: clubData.clubCategories,
+      publicClub: clubData.publicClub,
     });
   };
 
@@ -82,7 +90,7 @@ const InClubView = ({ navigation, route }) => {
         {
           id: 2,
           icon: "person-add-outline",
-          text: `Requests`,
+          text: `Requests (${requests ? requests.length : 0})`,
           onPress: onRequestsButtonPress,
           disabled:
             currentUserPrivilege !== "owner" &&

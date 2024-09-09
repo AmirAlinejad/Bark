@@ -14,6 +14,7 @@ import CustomText from "../../components/display/CustomText";
 import IconButton from "../../components/buttons/IconButton";
 import CircleButton from "../../components/buttons/CircleButton";
 import CustomButton from "../../components/buttons/CustomButton";
+import RSVPModal from "../../components/event/RSVPModal";
 // icons
 import { Ionicons } from "@expo/vector-icons";
 // functions
@@ -21,10 +22,11 @@ import { emailSplit } from "../../functions/backendFunctions";
 import {
   addEventToDefaultCalendar,
   getSetEventData,
+  getRSVPProfileData,
 } from "../../functions/eventFunctions";
 import { checkMembership } from "../../functions/clubFunctions";
 import { getSetUserData } from "../../functions/profileFunctions";
-import { reformatDate } from "../../functions/timeFunctions";
+import { reformatDate, getDayOfWeek } from "../../functions/timeFunctions";
 import { goToClubScreen } from "../../functions/navigationFunctions";
 // colors
 import { useTheme } from "@react-navigation/native";
@@ -32,9 +34,10 @@ import { useTheme } from "@react-navigation/native";
 import * as Clipboard from "expo-clipboard";
 // calendar
 import * as Calendar from "expo-calendar";
+import { set } from "firebase/database";
 
 const EventScreen = ({ route, navigation }) => {
-  const { eventId, fromScreen } = route.params;
+  const { eventId, fromScreen, showDate } = route.params;
 
   // event data
   const [event, setEvent] = useState(null);
@@ -45,23 +48,25 @@ const EventScreen = ({ route, navigation }) => {
   const [showText, setShowText] = useState(true);
   // loading
   const [loading, setLoading] = useState(true);
+  // rsvp modal
+  const [rsvpModalVisible, setRsvpModalVisible] = useState(false);
+  const [rsvpProfileData, setRsvpProfileData] = useState(null);
 
   const { colors } = useTheme();
 
   useLayoutEffect(() => {
     navigation.setOptions({
-      headerRight: () => (
-        <View style={{ flexDirection: "row" }}>
-          {/* QR code button */}
-
-          <IconButton
-            icon={"qr-code-outline"}
-            text=""
-            onPress={onQRCodeButtonPress}
-            color={colors.button}
-          />
-        </View>
-      ),
+      // headerRight: () => (
+      //   <View style={{ flexDirection: "row" }}>
+      //     {/* QR code button */}
+      //     <IconButton
+      //       icon={"qr-code-outline"}
+      //       text=""
+      //       onPress={onQRCodeButtonPress}
+      //       color={colors.button}
+      //     />
+      //   </View>
+      // ),
     });
   }, [navigation]);
 
@@ -90,6 +95,19 @@ const EventScreen = ({ route, navigation }) => {
 
     asyncFunc();
   }, []);
+
+  // get rsvp profile data once event data is loaded
+  useEffect(() => {
+    if (event != undefined) {
+      const asyncFunc = async () => {
+        await getRSVPProfileData(event.rsvps, setRsvpProfileData);
+      };
+
+      asyncFunc();
+    }
+  }, [event]);
+
+  console.log("rsvpProfileData event", rsvpProfileData);
 
   // check user privilege after event data is loaded
   useEffect(() => {
@@ -219,7 +237,11 @@ const EventScreen = ({ route, navigation }) => {
             <View style={{ height: gap }} />
             <CustomText
               style={{ ...styles.textNormal, color: colors.textLight }}
-              text={reformatDate(event.date)}
+              text={
+                showDate
+                  ? reformatDate(getDayOfWeek(showDate))
+                  : reformatDate(event.date)
+              }
             />
 
             {/* repeat */}
@@ -268,7 +290,10 @@ const EventScreen = ({ route, navigation }) => {
                 />
               </TouchableOpacity>
               <View style={{ flexDirection: "row", gap: 12, marginTop: 16 }}>
-                <Ionicons name="people" size={24} color={colors.textLight} />
+                <TouchableOpacity onPress={() => setRsvpModalVisible(true)}>
+                  <Ionicons name="people" size={28} color={colors.button} />
+                </TouchableOpacity>
+
                 <CustomText
                   style={{ ...styles.textNormal, color: colors.textLight }}
                   text={`${RSVPList.length} ${
@@ -298,7 +323,13 @@ const EventScreen = ({ route, navigation }) => {
 
           <View>
             {event.address ? (
-              <View style={{ flexDirection: "row" }}>
+              <View
+                style={{
+                  flexDirection: "row",
+                  marginRight: 40,
+                  alignItems: "center",
+                }}
+              >
                 <View>
                   <CustomText
                     style={{ ...styles.textNormal, color: colors.text }}
@@ -421,6 +452,12 @@ const EventScreen = ({ route, navigation }) => {
           />
         </View>
       )}
+
+      <RSVPModal
+        isVisible={rsvpModalVisible}
+        setVisible={setRsvpModalVisible}
+        rsvpProfileData={rsvpProfileData}
+      />
     </View>
   );
 };
