@@ -7,10 +7,7 @@ import CustomText from "../../components/display/CustomText";
 import IconOverlay from "../../components/overlays/IconOverlay";
 import Form from "../Form";
 // functions
-import {
-  emailSplit,
-  addEventToGoogleCalendar,
-} from "../../functions/backendFunctions";
+import { emailSplit } from "../../functions/backendFunctions";
 // backend
 import { firestore } from "../../backend/FirebaseConfig";
 // date time picker
@@ -19,6 +16,8 @@ import { doc, setDoc } from "firebase/firestore"; // firestore
 import { useTheme } from "@react-navigation/native";
 // scroll view
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
+// notifications
+import { sendPushNotification } from "../../functions/chatFunctions";
 
 const NewEvent = ({ route, navigation }) => {
   // get club name from previous screen
@@ -28,8 +27,11 @@ const NewEvent = ({ route, navigation }) => {
     eventName: event ? event.name : "",
     eventDescription: event ? event.description : "",
     date: event && event.date ? new Date(event.date) : new Date(),
-    // time: event && event.time ? new Date(event.time) : new Date(),
-    duration: event ? event.duration : "",
+    repeats: event ? event.repeats : "never",
+    duration:
+      event && event.duration
+        ? new Date(event.duration)
+        : new Date(0, 0, 0, 1, 0, 0),
     roomNumber: event ? event.roomNumber : "",
     instructions: event ? event.instructions : "",
     publicEvent: event ? event.publicEvent : true,
@@ -79,16 +81,15 @@ const NewEvent = ({ route, navigation }) => {
       type: "date",
       title: "Date",
     },
-    // {
-    //   propName: "time",
-    //   type: "time",
-    //   title: "Time",
-    // },
     {
       propName: "duration",
-      type: "text",
-      title: "Duration (mins)",
-      placeholder: "Duration",
+      type: "duration",
+      title: "Duration",
+    },
+    {
+      propName: "repeats",
+      type: "repeats",
+      title: "Repeats",
     },
     {
       propName: "roomNumber",
@@ -100,12 +101,13 @@ const NewEvent = ({ route, navigation }) => {
       propName: "instructions",
       type: "text",
       title: "Instructions",
-      placeholder: "Instructions",
+      placeholder: "e.g. up the stairs to the left",
     },
     {
       propName: "publicEvent",
       type: "boolean",
       title: "Public Event",
+      notes: "Public events are visible to all users.",
     },
     {
       propName: "address",
@@ -152,9 +154,9 @@ const NewEvent = ({ route, navigation }) => {
           date: form.date.toString(),
           // time: form.time.toTimeString(),
           publicEvent: form.publicEvent,
-          duration: form.duration,
+          duration: form.duration.toString(),
+          repeats: form.repeats,
         };
-        if (form.duration !== "") newEvent.duration = form.duration;
         //if (location) newEvent.location = location
         if (form.address !== "") newEvent.address = form.address;
         if (form.instructions != "") newEvent.instructions = form.instructions;
@@ -176,10 +178,47 @@ const NewEvent = ({ route, navigation }) => {
             // time: form.time.toTimeString(),
             categories: clubCategories,
             publicEvent: form.publicEvent,
+            repeats: form.repeats,
           }
         );
 
-        //addEventToGoogleCalendar(newEvent);
+        // schedule notifications
+        const notificationDate = new Date(form.date);
+        notificationDate.setHours(notificationDate.getHours() - 1);
+        const notificationDate2 = new Date(form.date);
+        notificationDate2.setHours(notificationDate2.getHours() - 24);
+
+        // send a push notification to every clubMember telling them to RSVP
+        const clubMembersRef = doc(
+          firestore,
+          "schools",
+          schoolKey,
+          "clubMemberData",
+          "clubs",
+          clubId
+        );
+        const clubMembersSnapshot = await clubMembersRef.get();
+        const clubMembersData = clubMembersSnapshot.data();
+
+        if (clubMembersData) {
+          const clubMembers = clubMembersData.members;
+
+          for (let i = 0; i < clubMembers.length; i++) {
+            const member = clubMembers[i];
+
+            console.log("member: ", member);
+
+            // send push notification
+            await sendPushNotification(
+              member.expoPushToken,
+              "New Event",
+              form.eventName,
+              "RSVP to this event!"
+            );
+          }
+        }
+          
+
       } catch (e) {
         console.error("Error adding document: ", e);
       }

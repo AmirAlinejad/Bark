@@ -1,9 +1,4 @@
-import React, {
-  useState,
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-} from "react";
+import React, { useState, useEffect, useLayoutEffect } from "react";
 import { View, StyleSheet, ScrollView } from "react-native";
 // modal
 import Modal from "react-native-modal";
@@ -15,18 +10,17 @@ import SettingsSection from "../../components/display/SettingsSection";
 import { useTheme } from "@react-navigation/native";
 // functions
 import {
-  getSetClubData,
   checkMembership,
+  getSetRequestsData,
   leaveClubConfirmed,
-} from "../../functions/backendFunctions";
+} from "../../functions/clubFunctions";
 
 const InClubView = ({ navigation, route }) => {
   const { clubData } = route.params;
   const [currentUserPrivilege, setCurrentUserPrivilege] = useState(""); // not used
   const [isLeaveClubModalVisible, setLeaveClubModalVisible] = useState(false);
+  const [ requests, setRequests ] = useState(null);
 
-  console.log(clubData);
-  
   const { colors } = useTheme();
 
   useLayoutEffect(() => {
@@ -37,7 +31,12 @@ const InClubView = ({ navigation, route }) => {
 
   // refresh states when you come back to this screen
   useEffect(() => {
-    // some way to get request data
+    async function fetchData() {
+      // get request data
+      getSetRequestsData(setRequests, clubData.clubId);
+    }
+
+    fetchData();
 
     // check membership
     checkMembership(clubData.clubId, setCurrentUserPrivilege);
@@ -52,6 +51,7 @@ const InClubView = ({ navigation, route }) => {
       publicClub: clubData.publicClub,
       description: clubData.clubDescription,
       categories: clubData.clubCategories,
+      publicClub: clubData.publicClub,
     });
   };
 
@@ -69,18 +69,18 @@ const InClubView = ({ navigation, route }) => {
   };
 
   // get number of requests
-  const getNumRequests = () => {
-    if (clubData.requests) {
-      return Object.keys(clubData.requests).length;
-    } else {
-      return 0;
-    }
-  };
+  // const getNumRequests = () => {
+  //   if (clubData.requests) {
+  //     return Object.keys(clubData.requests).length;
+  //   } else {
+  //     return 0;
+  //   }
+  // };
 
   const leaveClub = () => {
-    leaveClubConfirmed(clubId);
+    leaveClubConfirmed(clubData.clubId);
     toggleLeaveClubModal();
-    navigation.navigate("HomeScreen");
+    navigation.navigate("Home");
   };
 
   const setttingsData = [
@@ -90,9 +90,11 @@ const InClubView = ({ navigation, route }) => {
         {
           id: 2,
           icon: "person-add-outline",
-          text: `Requests (${getNumRequests()})`,
+          text: `Requests (${requests ? requests.length : 0})`,
           onPress: onRequestsButtonPress,
-          disabled: getNumRequests() === 0 || (currentUserPrivilege !== "admin" && currentUserPrivilege !== "owner"),
+          disabled:
+            currentUserPrivilege !== "owner" &&
+            currentUserPrivilege !== "admin",
         },
         {
           id: 3,
@@ -106,7 +108,7 @@ const InClubView = ({ navigation, route }) => {
   ];
 
   if (currentUserPrivilege === "owner" || currentUserPrivilege === "admin") {
-    setttingsData[0].data.push({
+    setttingsData[0].data.unshift({
       id: 1,
       icon: "create-outline",
       text: "Edit Club",
@@ -125,9 +127,9 @@ const InClubView = ({ navigation, route }) => {
       </ScrollView>
       {/* leave club modal */}
       <Modal isVisible={isLeaveClubModalVisible}>
-        <View style={styles.modalContainer}>
+        <View style={[styles.modalContainer, { backgroundColor: colors.card }]}>
           <CustomText
-            style={styles.modalText}
+            style={[styles.modalText, { color: colors.text }]}
             text="Are you sure you want to leave this club?"
           />
           <View style={styles.modalButtons}>
@@ -135,7 +137,7 @@ const InClubView = ({ navigation, route }) => {
             <CustomButton
               text="No"
               onPress={toggleLeaveClubModal}
-              color={colors.green}
+              color={colors.button}
             />
           </View>
         </View>

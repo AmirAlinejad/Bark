@@ -7,17 +7,16 @@ import CustomText from "../../components/display/CustomText";
 import ProfileImg from "../../components/display/ProfileImg";
 import IconButton from "../../components/buttons/IconButton";
 // functions
-import {
-  getSetUserData,
-  deleteAccount,
-} from "../../functions/backendFunctions";
+import { deleteAccount } from "../../functions/profileFunctions";
+import { getSetUserData } from "../../functions/profileFunctions";
 // firebase
-import { getAuth, signOut } from "firebase/auth";
+import { signOut } from "firebase/auth";
 // colors
 import { useTheme } from "@react-navigation/native";
 // stack
 import { createStackNavigator } from "@react-navigation/stack";
 import SettingsSection from "../../components/display/SettingsSection";
+import { FIREBASE_AUTH } from "../../backend/FirebaseConfig";
 
 const Stack = createStackNavigator();
 
@@ -97,8 +96,7 @@ const Profile = ({ navigation }) => {
 
   // log out
   const logOut = () => {
-    const auth = getAuth();
-    signOut(auth)
+    signOut(FIREBASE_AUTH)
       .then(() => {
         navigation.navigate("SignIn");
       })
@@ -110,7 +108,7 @@ const Profile = ({ navigation }) => {
   const gradYear = userData?.graduationYear
     ? userData.graduationYear
     : "Add Year";
-  const major = userData?.major ? userData.major : "📚Add Major";
+  const major = userData?.major ? userData.major : "📚 Add Major";
 
   return (
     <Stack.Navigator>
@@ -141,14 +139,14 @@ const Profile = ({ navigation }) => {
                 <View style={styles.detailsView}>
                   <TouchableOpacity onPress={goToEditProfile}>
                     <CustomText
-                      text={"🎓" + gradYear}
+                      text={"🎓 " + gradYear}
                       style={[styles.detailsText, { color: colors.textLight }]}
                     />
                   </TouchableOpacity>
                   <View style={{ width: 25 }} />
                   <TouchableOpacity onPress={goToEditProfile}>
                     <CustomText
-                      text={major}
+                      text={major.slice(0, 2) + " " + major.slice(2)}
                       style={[styles.detailsText, { color: colors.textLight }]}
                     />
                   </TouchableOpacity>

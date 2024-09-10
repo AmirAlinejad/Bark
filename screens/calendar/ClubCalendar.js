@@ -14,14 +14,11 @@ import ToggleButton from "../../components/buttons/ToggleButton";
 import CustomText from "../../components/display/CustomText";
 import FilterList from "../../components/input/FilterList";
 import CustomSlider from "../../components/input/CustomSlider";
-import IconButton from "../../components/buttons/IconButton";
 // calendar
 import { LocaleConfig, Calendar } from "react-native-calendars";
 // functions
-import {
-  getSetClubCalendarData,
-  getSetUserData,
-} from "../../functions/backendFunctions";
+import { getSetClubCalendarData } from "../../functions/eventFunctions";
+import { getSetUserData } from "../../functions/profileFunctions";
 import { formatDate, formatStartEndTime } from "../../functions/timeFunctions";
 // modal
 import SwipeUpDownModal from "react-native-swipe-modal-up-down";
@@ -147,32 +144,30 @@ const ClubCalendar = ({ route, navigation }) => {
     }
   }, [userData]);
 
-  // toggle overlay
-  const toggleFilter = () => {
-    setShowFilter(!showFilter);
-  };
-
   // select a specific date
   const selectSpecificDate = (date) => {
+    if (date.dateString == selectedDate) {
+      setSpecificDateSelected(false);
+      setSelectedDate(new Date().toISOString().slice(0, 10));
+      return;
+    }
     setSelectedDate(date.dateString);
     setSpecificDateSelected(true);
   };
 
   // filter for events
   const filterFunct = (event) => {
-    // // if not same month as calendar
-    // console.log("event month: ", new Date(event.date).getMonth());
-    // console.log("calendar month: ", currenMonth);
-    // if (new Date(event.date).getMonth() != currenMonth) {
-    //   return false;
-    // }
+    // if not same month as calendar
+    if (new Date(event.date).getMonth() != currenMonth) {
+      return false;
+    }
 
-    // // filter by specific date
-    // if (specificDateSelected) {
-    //   if (formatDate(event.date) != selectedDate) {
-    //     return false;
-    //   }
-    // }
+    // filter by specific date
+    if (specificDateSelected) {
+      if (formatDate(event.date) != selectedDate) {
+        return false;
+      }
+    }
 
     // // filter by calendar setting
     // if (calendarSetting == "newClubs") {
@@ -252,77 +247,149 @@ const ClubCalendar = ({ route, navigation }) => {
 
   // filtered events (filter when data changes)
   useEffect(() => {
-    if (eventData) {
-      const filteredEvents = eventData.filter(filterFunct);
+    let repeatedEvents = [];
+    eventData.forEach((event) => {
+      if (event.repeats == "Weekly") {
+        let date = new Date(event.date);
+        let endDate = new Date(event.date);
 
-      setFilteredEvents(filteredEvents);
+        // set end date to 6 months from now
+        endDate.setMonth(endDate.getMonth() + 6);
 
-      // mark dates on calendar (try to make this more efficient)
-      let markedDates = { ...markedDates };
-      filteredEvents.forEach((event) => {
-        // reformat date to form 'YYYY-MM-DD'
-        const formattedDate = formatDate(event.date);
+        // add event to repeatedEvents for each day
+        while (date <= endDate) {
+          repeatedEvents = [
+            ...repeatedEvents,
+            {
+              ...event,
+              date: date.toString(),
+            },
+          ];
 
-        // add dates to marked dates (calendar)
-        if (markedDates[formattedDate] == null) {
-          markedDates[formattedDate] = {
-            marked: true,
-          };
+          // increment date by 7 days
+          date.setDate(date.getDate() + 7);
         }
+      } else if (event.repeats == "Monthly") {
+        let date = new Date(event.date);
+        let endDate = new Date(event.date);
 
-        // get dot colors for this event from club categories
-        let dotColors = [];
+        // set end date to 6 months from now
+        endDate.setMonth(endDate.getMonth() + 6);
 
-        const thisEventClubCategories = event.categories;
-        dotColors = thisEventClubCategories.map((category) => {
-          return {
-            key: category,
-            color: CLUBCATEGORIES.find((item) => item.value == category).color,
-          };
-        });
+        // add event to repeatedEvents for each day
+        while (date <= endDate) {
+          repeatedEvents = [
+            ...repeatedEvents,
+            {
+              ...event,
+              date: date.toString(),
+            },
+          ];
 
-        // add dots with dot color to marked dates if not already there
-        if (markedDates[formattedDate].dots == null) {
-          // add all dot colors
-          markedDates[formattedDate].dots = dotColors.map((dotColor) => {
-            return {
-              key: dotColor.key,
-              color: dotColor.color,
-              selectedDotColor: dotColor.color,
-            };
-          });
-        } else {
-          // if dots already there
-          dotColors.forEach((dotColor) => {
-            // if dot color not already there
-            if (
-              !markedDates[formattedDate].dots.some(
-                (item) => item.color == dotColor.color
-              )
-            ) {
-              // add dot color
-              markedDates[formattedDate].dots.push({
-                key: dotColor.key,
-                color: dotColor.color,
-                selectedDotColor: dotColor.color,
-              });
-            }
-          });
+          // increment date by 1 month
+          date.setMonth(date.getMonth() + 1);
         }
-      });
-      // add specific date if selected
-      if (specificDateSelected) {
-        markedDates = {
-          [selectedDate]: {
-            selected: true,
-            selectedColor: colors.bark,
-            dotColor: colors.bark,
-          },
+      } else if (event.repeats == "Daily") {
+        console.log("daily event");
+        let date = new Date(event.date);
+        let endDate = new Date(event.date);
+
+        // set end date to 1 month from now
+        endDate.setMonth(endDate.getMonth() + 1);
+
+        // add event to repeatedEvents for each day
+        while (date <= endDate) {
+          repeatedEvents = [
+            ...repeatedEvents,
+            {
+              ...event,
+              date: date.toString(),
+            },
+          ];
+
+          // increment date by 1 day
+          date.setDate(date.getDate() + 1);
+        }
+      } else {
+        repeatedEvents = [...repeatedEvents, event];
+      }
+    });
+
+    const filteredEvents = repeatedEvents.filter(filterFunct);
+
+    // mark dates on calendar (try to make this more efficient)
+    let markedDates = { ...markedDates };
+    filteredEvents.forEach((event) => {
+      // reformat date to form 'YYYY-MM-DD'
+      const formattedDate = formatDate(event.date);
+
+      // add dates to marked dates (calendar)
+      if (markedDates[formattedDate] == null) {
+        markedDates[formattedDate] = {
+          marked: true,
         };
       }
 
-      setMarkedDates(markedDates);
+      // get dot colors for this event from club categories
+      let dotColors = [];
+
+      const thisEventClubCategories = event.categories;
+      dotColors = thisEventClubCategories.map((category) => {
+        return {
+          key: category,
+          color: CLUBCATEGORIES.find((item) => item.value == category).color,
+        };
+      });
+
+      // remove duplicate dot colors
+      dotColors = dotColors.filter(
+        (v, i, a) => a.findIndex((t) => t.color === v.color) === i
+      );
+
+      // add dots with dot color to marked dates if not already there
+      if (markedDates[formattedDate].dots == null) {
+        // add all dot colors
+        markedDates[formattedDate].dots = dotColors.map((dotColor) => {
+          return {
+            key: dotColor.key,
+            color: dotColor.color,
+            selectedDotColor: dotColor.color,
+          };
+        });
+      } else {
+        // if dots already there
+        dotColors.forEach((dotColor) => {
+          // if dot color not already there
+          if (
+            !markedDates[formattedDate].dots.some(
+              (item) => item.color == dotColor.color
+            )
+          ) {
+            // add dot color
+            markedDates[formattedDate].dots.push({
+              key: dotColor.key,
+              color: dotColor.color,
+              selectedDotColor: dotColor.color,
+            });
+          }
+        });
+      }
+    });
+
+    setFilteredEvents(filteredEvents);
+
+    // add specific date if selected
+    if (specificDateSelected) {
+      markedDates = {
+        [selectedDate]: {
+          selected: true,
+          selectedColor: colors.bark,
+          dotColor: colors.bark,
+        },
+      };
     }
+
+    setMarkedDates(markedDates);
   }, [
     eventData,
     calendarSetting,
@@ -370,6 +437,7 @@ const ClubCalendar = ({ route, navigation }) => {
             <UpcomingEvents
               filteredEvents={filteredEvents}
               navigation={navigation}
+              calendar={true}
             />
           </View>
         </View>

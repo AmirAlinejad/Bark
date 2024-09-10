@@ -7,10 +7,10 @@ import {
   TouchableOpacity,
 } from "react-native";
 import { Image } from "expo-image";
+// navigation
+import { useFocusEffect } from "@react-navigation/native";
 // assets
-import Logo from "../../assets/logo.png";
-// async storage
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import Logo from "../../assets/brand/logo.png";
 // my components
 import CustomText from "../../components/display/CustomText";
 import CustomInput from "../../components//input/CustomInput";
@@ -24,14 +24,15 @@ import {
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 // firebase
 import { doc, setDoc } from "firebase/firestore";
-import { FIREBASE_AUTH, firestore } from "../../backend/FirebaseConfig";
+import { firestore, FIREBASE_AUTH } from "../../backend/FirebaseConfig";
 // theme
 import { useTheme } from "@react-navigation/native";
 // global context
 import { GlobalContext } from "../../App";
+// ionicons
+import { Ionicons } from "@expo/vector-icons";
 
 const SignUp = ({ navigation }) => {
-
   // global context
   const [state, setState] = useContext(GlobalContext);
 
@@ -43,12 +44,11 @@ const SignUp = ({ navigation }) => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
+  const [signUpSaying, setSignUpSaying] = useState("");
   // loading and error handling
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   // firebase
-  const auth = FIREBASE_AUTH;
-
   const { colors } = useTheme();
 
   // password visibility
@@ -61,13 +61,21 @@ const SignUp = ({ navigation }) => {
     navigation.navigate("SignIn");
   };
 
-  console.log(state);
-
   // sign up
   const onSignUpPressed = async (e) => {
     setLoading(true);
     setErrorMessage("");
     e.preventDefault();
+
+    if (
+      password.length < 8 ||
+      !/[A-Z]/.test(password) ||
+      !/[!@#$%^&*]/.test(password)
+    ) {
+      setErrorMessage("Password invalid, please enter a new password");
+      setLoading(false);
+      return;
+    }
 
     if (!userName || !email || !password || !confirmPassword) {
       setErrorMessage("Please fill in all fields");
@@ -88,23 +96,20 @@ const SignUp = ({ navigation }) => {
     }
 
     const expoPushToken = state.expoPushToken;
-    console.log(state);
 
     if (expoPushToken === undefined) {
-      setErrorMessage("Failed to get push token for push notification!");
       setLoading(false);
-      return;
     }
 
     try {
       // create user with email and password
       const response = await createUserWithEmailAndPassword(
-        auth,
+        FIREBASE_AUTH,
         email,
         password
       );
-      // send email verification
-      await sendEmailVerification(response.user);
+
+
       // update user profile in auth
       const emailSplit = email.split("@")[1].split(".")[0];
 
@@ -127,17 +132,55 @@ const SignUp = ({ navigation }) => {
         }
       );
 
-      // clear async storage
-      await AsyncStorage.clear();
-
       // navigate to verify school
       navigation.navigate("VerifySchool");
+
+      // send email verification
+      await sendEmailVerification(FIREBASE_AUTH.currentUser);
     } catch (error) {
       console.log(error);
       setErrorMessage("Signup failed: " + error.message);
     } finally {
       setLoading(false);
     }
+  };
+
+  const signUpSayings = [
+    "Nice to meet you.",
+    "Welcome to Bark!",
+    "Let's get started!",
+    "We're excited to have you!",
+  ];
+
+  useFocusEffect(
+    React.useCallback(() => {
+      setSignUpSaying(
+        signUpSayings[Math.floor(Math.random() * signUpSayings.length)]
+      );
+    }, [])
+  );
+
+  const renderCheckMark = (bool, text) => {
+    return (
+      <View style={{ flexDirection: "row" }}>
+        <View
+          style={[
+            styles.checkMark,
+            { backgroundColor: bool ? colors.green : colors.gray },
+          ]}
+        >
+          <Ionicons
+            name={bool ? "checkmark" : "checkmark"}
+            size={20}
+            color={colors.white}
+          />
+        </View>
+        <CustomText
+          style={{ marginLeft: 10, marginTop: 4, color: colors.textLight }}
+          text={text}
+        />
+      </View>
+    );
   };
 
   return (
@@ -153,12 +196,12 @@ const SignUp = ({ navigation }) => {
         <View style={styles.signInContainer}>
           <CustomText
             style={[styles.title, { color: colors.text }]}
-            text="Nice to meet you."
+            text={signUpSaying}
             font="bold"
           />
 
           <CustomInput
-            placeholder="School Email"
+            placeholder="School Email (.edu)"
             value={email}
             setValue={setEmail}
           />
@@ -169,6 +212,23 @@ const SignUp = ({ navigation }) => {
             secureTextEntry={passwordVisible}
             onEyeIconPress={togglePasswordVisibility}
           />
+
+          {
+            renderCheckMark(password.length >= 8, "At least 8 characters") // TODO: add password validation
+          }
+          {
+            renderCheckMark(
+              /[A-Z]/.test(password),
+              "At least 1 uppercase letter"
+            ) // TODO: add password validation
+          }
+          {
+            renderCheckMark(
+              /[!@#$%^&*]/.test(password),
+              "At least 1 special character"
+            ) // TODO: add password validation
+          }
+          <View style={{ height: 10 }} />
           <CustomInput
             placeholder="Confirm Password"
             value={confirmPassword}
@@ -263,6 +323,14 @@ const styles = StyleSheet.create({
   errorMessage: {
     color: "red",
     marginBottom: 10,
+  },
+  checkMark: {
+    width: 25,
+    height: 25,
+    borderRadius: 15,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 8,
   },
 });
 

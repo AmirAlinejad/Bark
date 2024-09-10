@@ -11,19 +11,17 @@ import Ionicon from "react-native-vector-icons/Ionicons";
 import { useTheme } from "@react-navigation/native";
 
 const RequestCard = ({ item, onPressAccept, onPressDecline }) => {
-  console.log("item", item);
-
   const { colors } = useTheme();
 
   return (
     <View style={styles.container}>
-      <ProfileImg profileImg={item.userPhoto} width={50} />
+      <ProfileImg profileImg={item.profileImg} width={50} />
       <View style={styles.cardContent}>
         <View style={{ flex: 1, marginLeft: 20 }}>
           <CustomText
             style={styles.memberName}
             font="bold"
-            text={item.userFirstName + " " + item.userLastName}
+            text={item.firstName + " " + item.lastName}
           />
           <CustomText
             style={[styles.memberPrivilege, { color: colors.textLight }]}

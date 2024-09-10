@@ -1,24 +1,20 @@
 // screen for club admins to view and accept/reject requests
 import React, { useState, useEffect } from "react";
 import { View, StyleSheet, FlatList, Dimensions } from "react-native";
-// backend
-import { doc, getDoc } from "firebase/firestore";
-import { firestore } from "../../backend/FirebaseConfig";
 // icons
 import { Ionicons } from "@expo/vector-icons";
 // functions
 import {
+  getSetRequestsData,
   acceptRequest,
   declineRequest,
-  getSetRequestsData,
-} from "../../functions/backendFunctions";
+} from "../../functions/clubFunctions";
 // my components
-import Header from "../../components/display/Header";
 import RequestCard from "../../components/club/RequestCard";
 import CustomText from "../../components/display/CustomText";
 // styles
 import { useTheme } from "@react-navigation/native";
-import { set } from "firebase/database";
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scrollview";
 
 const Requests = ({ route, navigation }) => {
   // clean up styles!!!
@@ -34,30 +30,40 @@ const Requests = ({ route, navigation }) => {
 
   // accept request
   const onAcceptRequest = async (request) => {
-    await acceptRequest(clubId, clubName, request.userId);
-    getSetRequestsData(setRequests, clubId);
+    await acceptRequest(clubId, request.userId);
+    
+    // take user out of requests
+    setRequests((prevRequests) => {
+      return prevRequests.filter((req) => req.userId !== request.userId);
+    });
   };
 
   // decline request
   const onDeclineRequest = async (request) => {
     await declineRequest(clubId, request.userId);
-    getSetRequestsData(setRequests, clubId);
+    
+    // take user out of requests
+    setRequests((prevRequests) => {
+      return prevRequests.filter((req) => req.userId !== request.userId);
+    });
   };
 
   return (
-    <View style={[ styles.container, { backgroundColor: colors.background } ]}>
-      <Header text={"Requests"} back navigation={navigation} />
-
-      {/* Show if no requests */}
-      {requests.length === 0 && (
-        <View
-          style={{
-            position: "absolute",
-            left: Dimensions.get("window").width / 2 - 105,
-            top: 350,
-          }}
-        >
-          <View style={{ justifyContent: "center", alignItems: "center" }}>
+    <View style={styles.container}>
+      <KeyboardAwareScrollView
+        extraHeight={200}
+        contentInsetAdjustmentBehavior="automatic"
+      >
+        {/* Show if no requests */}
+        {requests.length === 0 && (
+          <View
+            style={{
+              justifyContent: "center",
+              alignItems: "center",
+              flex: 1,
+              height: Dimensions.get("window").height - 250,
+            }}
+          >
             <Ionicons name="mail" size={100} color={colors.gray} />
             <CustomText
               text="No requests to display."
@@ -65,22 +71,22 @@ const Requests = ({ route, navigation }) => {
               style={{ fontSize: 20, color: colors.textLight }}
             />
           </View>
-        </View>
-      )}
-
-      <FlatList
-        data={requests}
-        renderItem={(item) => (
-          <RequestCard // move accept/decline to request card
-            item={item.item}
-            onPressAccept={() => onAcceptRequest(item.item)}
-            onPressDecline={() => onDeclineRequest(item.item)}
-          />
         )}
-        keyExtractor={(item) => item.id}
-        style={styles.requestsContainer}
-        contentContainerStyle={styles.requestsContainer}
-      />
+
+        <FlatList
+          data={requests}
+          renderItem={(item) => (
+            <RequestCard // move accept/decline to request card
+              item={item.item}
+              onPressAccept={() => onAcceptRequest(item.item)}
+              onPressDecline={() => onDeclineRequest(item.item)}
+            />
+          )}
+          keyExtractor={(item) => item.id}
+          style={styles.requestsContainer}
+          contentContainerStyle={styles.requestsContainer}
+        />
+      </KeyboardAwareScrollView>
     </View>
   );
 };
@@ -90,7 +96,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   requestsContainer: {
-    margin: 10,
+    margin: 0,
   },
 });
 

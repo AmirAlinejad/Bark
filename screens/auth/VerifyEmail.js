@@ -1,9 +1,13 @@
 import React, { useEffect, useState } from "react";
-import { View, StyleSheet, ActivityIndicator } from "react-native";
+import {
+  View,
+  StyleSheet,
+  ActivityIndicator,
+  TouchableOpacity,
+} from "react-native";
 // my components
 import CustomText from "../../components/display/CustomText";
 import CustomButton from "../../components/buttons/CustomButton";
-import Header from "../../components/display/Header";
 // icons
 import Ionicons from "react-native-vector-icons/Ionicons";
 // firebase
@@ -51,7 +55,7 @@ const VerifyEmail = ({ navigation }) => {
         alert("Verification email sent. Check your inbox.");
       } catch (error) {
         console.error("Failed to send verification email", error);
-        alert("Failed to resend verification email. Please try again later.");
+        alert("Email verification has already been sent.");
       } finally {
         setIsSending(false);
       }
@@ -79,6 +83,17 @@ const VerifyEmail = ({ navigation }) => {
         ) : (
           <CustomButton text="Resend" onPress={resendVerificationEmail} />
         )}
+
+        <CustomText
+          style={{ ...styles.text, marginBottom: 0, marginTop: 20, color: colors.textLight }}
+          text="Already verified?"
+        />
+        <TouchableOpacity onPress={goToSignIn}>
+          <CustomText
+            style={{ ...styles.text, color: colors.primary }}
+            text="Sign In"
+          />
+        </TouchableOpacity>
       </View>
     </View>
   );
@@ -99,6 +114,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
     fontSize: 18,
     marginBottom: 20,
+    marginHorizontal: 20,
   },
 });
 

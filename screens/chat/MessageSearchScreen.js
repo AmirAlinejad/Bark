@@ -3,7 +3,6 @@ import {
   View,
   FlatList,
   StyleSheet,
-  Alert,
   TouchableOpacity,
   ScrollView,
 } from "react-native";
@@ -17,20 +16,13 @@ import {
 } from "firebase/firestore";
 import { firestore } from "../../backend/FirebaseConfig"; // Update this path according to your project structure
 // functions
-import { fetchMessages } from "../../functions/backendFunctions";
+import { fetchMessages } from "../../functions/chatFunctions"; // Update this path according to your project structure
 // icons
 import { Ionicons } from "@expo/vector-icons";
 // my components
-import Header from "../../components/display/Header";
 import MessageItem from "../../components/chat/MessageItem";
-import SearchBar from "../../components/input/SearchBar";
 import ProfileOverlay from "../../components/overlays/ProfileOverlay";
 import CustomText from "../../components/display/CustomText";
-import CircleButton from "../../components/buttons/CircleButton";
-import CustomButton from "../../components/buttons/CustomButton";
-
-// icons
-import { MaterialCommunityIcons } from "@expo/vector-icons";
 // styles
 import { useTheme } from "@react-navigation/native";
 // gesture handler
@@ -46,8 +38,6 @@ const MessageSearchScreen = ({ route, navigation }) => {
   // overlay
   const [overlayVisible, setOverlayVisible] = useState(false);
   const [overlayUserData, setOverlayUserData] = useState({});
-  // loading
-  const [loading, setLoading] = useState(true);
 
   const { colors } = useTheme();
 
@@ -114,6 +104,7 @@ const MessageSearchScreen = ({ route, navigation }) => {
   }, [searchPinned]);
 
   const filteredMessages = messages.filter((message) =>
+    !message.text ||
     message.text?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 

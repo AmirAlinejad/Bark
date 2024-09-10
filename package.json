@@ -23,6 +23,7 @@
     "@react-navigation/native-stack": "^6.9.26",
     "@react-navigation/stack": "^6.3.29",
     "expo": "^51.0.21",
+    "expo-calendar": "~13.0.5",
     "expo-clipboard": "~6.0.3",
     "expo-constants": "~16.0.1",
     "expo-device": "~6.0.2",
@@ -32,16 +33,19 @@
     "expo-linear-gradient": "~13.0.2",
     "expo-linking": "~6.3.1",
     "expo-notifications": "~0.28.1",
+    "expo-secure-store": "~13.0.2",
     "expo-status-bar": "~1.12.1",
-    "firebase": "^10.12.4",
+    "firebase": "^10.13.0",
     "ics": "^3.7.6",
     "react": "18.2.0",
     "react-google-calendar-api": "^2.3.0",
     "react-native": "0.74.1",
+    "react-native-animated-bar": "^0.2.0",
     "react-native-calendar-events": "^2.2.0",
     "react-native-calendars": "^1.1304.1",
     "react-native-date-picker": "^5.0.0",
     "react-native-dropdown-select-list": "^2.0.5",
+    "react-native-encrypted-storage": "^4.0.3",
     "react-native-fade": "^2.1.1",
     "react-native-geocoding": "^0.5.0",
     "react-native-gesture-handler": "~2.16.1",
@@ -62,8 +66,7 @@
     "react-native-screens": "3.31.1",
     "react-native-svg": "^15.3.0",
     "react-native-swipe-modal-up-down": "^1.1.0",
-    "react-native-toast-message": "^2.2.0",
-    "expo-calendar": "~13.0.5"
+    "react-native-toast-message": "^2.2.0"
   },
   "devDependencies": {
     "@babel/core": "^7.24.0"

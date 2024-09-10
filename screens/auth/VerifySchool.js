@@ -5,7 +5,6 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 // my components
 import CustomText from "../../components/display/CustomText";
 import CustomButton from "../../components/buttons/CustomButton";
-import Header from "../../components/display/Header";
 // functions
 import { getSetSchoolData } from "../../functions/backendFunctions";
 // colors
@@ -18,7 +17,7 @@ const VerifySchool = ({ navigation }) => {
 
   const [schoolData, setSchoolData] = useState(null);
   // loading and error handling
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   const storeSchool = async () => {
     try {
@@ -35,12 +34,14 @@ const VerifySchool = ({ navigation }) => {
 
   useEffect(() => {
     // set school data
-    getSetSchoolData(setSchoolData, setLoading);
+    setLoading(true);
+    getSetSchoolData(setSchoolData);
+    setLoading(false);
   }, []);
 
   const openHelpEmail = () => {
     Linking.openURL(
-      "mailto:help.bark.mobile@gmail.com?subject=New%20School%20in%20Bark!&body=Please%20provide%20your%20school%20name%20and%20any%20other%20relevant%20details."
+      "mailto: help.bark.mobile.com" + "?subject=New School Request"
     );
   };
 
@@ -66,12 +67,12 @@ const VerifySchool = ({ navigation }) => {
           ) : (
             <View style={styles.content}>
               <CustomText
-                style={styles.text}
+                style={[styles.text, { fontSize: 30 }]}
                 text="We couldn't verify your school. Please check your email and try again."
               />
               <CustomText
                 style={styles.text}
-                text="If your school is new to Bark!, please email us and we'd be happy to add it!"
+                text="If your school is new to Bark, please email us and we'd be happy to add it!"
               />
               <CustomButton text="Email Us" onPress={openHelpEmail} />
               <CustomButton text="Continue" onPress={confirmSchool} />

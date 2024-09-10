@@ -1,18 +1,22 @@
 import React, { useState, useLayoutEffect, useEffect } from "react";
-import { View, StyleSheet, ScrollView, Alert } from "react-native";
-// fade
-import Fade from "react-native-fade";
+import {
+  View,
+  StyleSheet,
+  ScrollView,
+  Alert,
+  ActivityIndicator,
+} from "react-native";
 // functions
 import {
-  requestToJoinClub,
-  checkMembership,
   getSetClubData,
-  getSetClubCalendarData,
-  emailSplit,
-} from "../../functions/backendFunctions";
+  checkMembership,
+  requestToJoinClub,
+} from "../../functions/clubFunctions";
+import { getSetClubCalendarData } from "../../functions/eventFunctions";
+import { emailSplit } from "../../functions/backendFunctions";
 import {
-  goToChatScreen,
   goToAdminChatScreen,
+  goToChatScreen,
 } from "../../functions/navigationFunctions";
 // my components
 import UpcomingEvents from "../../components/event/UpcomingEvents";
@@ -28,14 +32,21 @@ import { CLUBCATEGORIES } from "../../macros/macros";
 // colors
 import { useTheme } from "@react-navigation/native";
 import SettingsSection from "../../components/display/SettingsSection";
+// icons
+import { Ionicons } from "@expo/vector-icons";
+// toast
+import Toast from "react-native-toast-message";
 
 const ClubScreen = ({ route, navigation }) => {
   //  get club data
   const { clubId } = route.params; // just use clubId to get club data
   // membership
   const [currentUserPrivilege, setCurrentUserPrivilege] = useState("none");
+  const [membershipChecked, setMembershipChecked] = useState(false);
   // club data
   const [clubData, setClubData] = useState(null);
+  // requests
+  const [requests, setRequests] = useState(null);
   // event data
   const [eventData, setEventData] = useState([]);
   // fade text
@@ -80,7 +91,13 @@ const ClubScreen = ({ route, navigation }) => {
       await getSetClubData(clubId, setClubData);
       await getSetClubCalendarData(clubId, setEventData);
 
-      checkMembership(clubId, setCurrentUserPrivilege, setIsRequestSent);
+      await checkMembership(
+        clubId,
+        setCurrentUserPrivilege,
+        setIsRequestSent,
+        setMembershipChecked
+      );
+
       setLoading(false);
     };
 
@@ -102,6 +119,24 @@ const ClubScreen = ({ route, navigation }) => {
     });
   };
 
+  // go to requests screen
+  const onRequestsButtonPress = () => {
+    navigation.navigate("Requests", {
+      clubId: clubData.clubId,
+      clubName: clubData.clubName,
+    });
+  };
+
+  // go to chat screen
+  const onChatButtonPress = () => {
+    goToChatScreen(
+      clubData.clubName,
+      clubData.clubId,
+      clubData.clubImg,
+      navigation
+    );
+  };
+
   // go to QR code screen
   const onQRCodeButtonPress = () => {
     navigation.navigate("QR Code", {
@@ -110,22 +145,23 @@ const ClubScreen = ({ route, navigation }) => {
   };
 
   // request to join club
-  const onRequestButtonPress = () => {
+  const onRequestButtonPress = async () => {
     if (isRequestSent) {
       Alert.alert("Request already sent.");
       return;
     }
     // change modal
-    requestToJoinClub(clubId, clubData.clubName, clubData.publicClub);
+    await requestToJoinClub(clubId, clubData.clubName, clubData.publicClub);
     if (clubData.publicClub) {
       setJoinClubModalVisible(true);
 
-      // start timer for checking membership
-      const timer = setTimeout(() => {
+      // start timer for checking membership 1 second after
+      setTimeout(() => {
         checkMembership(clubId, setCurrentUserPrivilege, setIsRequestSent);
       }, 1000);
     } else {
       setRequestClubModalVisible(true);
+      setIsRequestSent(true);
     }
   };
 
@@ -133,8 +169,6 @@ const ClubScreen = ({ route, navigation }) => {
   const gotoUserList = () => {
     navigation.navigate("UserList", {
       clubId: clubId,
-      members: clubData.clubMembers,
-      clubName: clubData.clubName,
     });
   };
 
@@ -189,6 +223,11 @@ const ClubScreen = ({ route, navigation }) => {
       }
     }
 
+    // filter past events
+    if (new Date(event.date) < new Date()) {
+      return false;
+    }
+
     return true;
   };
 
@@ -204,6 +243,15 @@ const ClubScreen = ({ route, navigation }) => {
           onPress: gotoUserList,
         },
         {
+          id: "6",
+          icon: "person-add-outline",
+          text: `Requests (${requests ? requests.length : 0})`,
+          onPress: onRequestsButtonPress,
+          disabled:
+            currentUserPrivilege !== "owner" &&
+            currentUserPrivilege !== "admin",
+        },
+        {
           id: "2",
           icon: "search-outline",
           text: "Search Messages",
@@ -214,6 +262,12 @@ const ClubScreen = ({ route, navigation }) => {
           icon: "images-outline",
           text: "Image Gallery",
           onPress: gotoImageGallery,
+        },
+        {
+          id: "0",
+          icon: "chatbubble-ellipses-outline",
+          text: "Chat",
+          onPress: onChatButtonPress,
         },
         {
           id: "4",
@@ -233,8 +287,6 @@ const ClubScreen = ({ route, navigation }) => {
       ],
     },
   ];
-
-  console.log("clubData", clubData);
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -271,6 +323,30 @@ const ClubScreen = ({ route, navigation }) => {
                   })}
               </View>
 
+              {/* club members */}
+
+              {clubData.clubMembers && (
+                <View
+                  style={{
+                    flexDirection: "row",
+                    justifyContent: "center",
+                    marginVertical: 4,
+                  }}
+                >
+                  <Ionicons name="people" size={24} color={colors.textLight} />
+                  <CustomText
+                    style={[
+                      styles.clubDescription,
+                      {
+                        marginHorizontal: 5,
+                        color: colors.textLight,
+                      },
+                    ]}
+                    text={clubData.clubMembers}
+                  />
+                </View>
+              )}
+
               {/* description */}
               <CustomText
                 style={[styles.clubDescription, { color: colors.textLight }]}
@@ -278,53 +354,84 @@ const ClubScreen = ({ route, navigation }) => {
                 numberOfLines={5}
               />
 
+              {/* loading */}
+              {loading && (
+                <View style={{ marginTop: 200 }}>
+                  <ActivityIndicator size="large" color={colors.textLight} />
+                </View>
+              )}
+
               {/* join club button */}
-              {currentUserPrivilege === "none" && !loading && (
+              {membershipChecked &&
+                currentUserPrivilege === "none" &&
+                !isRequestSent &&
+                !loading && (
+                  <View style={{ marginBottom: 10 }}>
+                    <CustomButton
+                      text="Join the club!"
+                      onPress={onRequestButtonPress}
+                    />
+                  </View>
+                )}
+
+              {/* request sent */}
+              {isRequestSent && !loading && (
                 <View style={{ marginBottom: 10 }}>
-                  <CustomButton
-                    text="Join the club!"
-                    onPress={onRequestButtonPress}
+                  <CustomText
+                    style={{ color: colors.textLight }}
+                    text="Request sent."
                   />
                 </View>
               )}
             </View>
 
-            {currentUserPrivilege !== "none" && (
+            {currentUserPrivilege !== "none" && !loading && (
               <View style={styles.clubButtons}>
                 <SettingsSection data={settingsData} loading={loading} />
               </View>
             )}
 
-            <View style={{ paddingHorizontal: 16 }}>
-              <View
-                style={{ alignSelf: "center", marginBottom: 8, marginTop: 16 }}
-              >
-                <CustomText
-                  font="bold"
-                  style={{ fontSize: 24, marginBottom: 20, color: colors.text }}
-                  text="Upcoming Events"
+            {currentUserPrivilege !== "none" && !loading && (
+              <View style={{ paddingHorizontal: 16 }}>
+                <View
+                  style={{
+                    alignSelf: "center",
+                    marginBottom: 8,
+                    marginTop: 16,
+                  }}
+                >
+                  <CustomText
+                    font="bold"
+                    style={{
+                      fontSize: 24,
+                      marginBottom: 20,
+                      color: colors.text,
+                    }}
+                    text="Upcoming Events"
+                  />
+                </View>
+                <UpcomingEvents
+                  filteredEvents={filteredEvents}
+                  screenName={"ClubScreen"}
+                  navigation={navigation}
+                  calendar={false}
+                />
+
+                {/* extra space at the bottom of the screen */}
+                <View style={{ height: 50 }} />
+
+                <View
+                  style={{
+                    position: "absolute",
+                    bottom: -600,
+                    left: 0,
+                    right: 0,
+                    backgroundColor: colors.background,
+                    height: 600,
+                  }}
                 />
               </View>
-              <UpcomingEvents
-                filteredEvents={filteredEvents}
-                screenName={"ClubScreen"}
-                navigation={navigation}
-              />
-
-              {/* extra space at the bottom of the screen */}
-              <View style={{ height: 50 }} />
-
-              <View
-                style={{
-                  position: "absolute",
-                  bottom: -600,
-                  left: 0,
-                  right: 0,
-                  backgroundColor: colors.background,
-                  height: 600,
-                }}
-              />
-            </View>
+            )}
           </View>
         </ScrollView>
       )}
@@ -406,6 +513,7 @@ const styles = StyleSheet.create({
   },
   clubDescription: {
     textAlign: "center",
+    fontSize: 16,
     marginHorizontal: 40,
     marginBottom: 10,
   },

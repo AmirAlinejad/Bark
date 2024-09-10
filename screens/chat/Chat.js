@@ -8,7 +8,6 @@ import React, {
 import {
   TouchableOpacity,
   View,
-  Text,
   TextInput,
   FlatList,
   StyleSheet,
@@ -18,6 +17,8 @@ import {
   Platform,
   Dimensions,
   RefreshControl,
+  Animated,
+  Easing,
 } from "react-native";
 // keyboard listener
 import KeyboardListener from "react-native-keyboard-listener";
@@ -35,7 +36,7 @@ import {
   limit,
   doc,
 } from "firebase/firestore";
-import { auth, firestore } from "../../backend/FirebaseConfig";
+import { firestore } from "../../backend/FirebaseConfig";
 // icons
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import Ionicons from "react-native-vector-icons/Ionicons";
@@ -45,7 +46,6 @@ import { Image } from "expo-image";
 import BottomSheetModal from "../../components/chat/BottomSheetModal";
 import ChatMessage from "../../components/chat/ChatMessage";
 import LikesModal from "../../components/chat/LikesModal";
-import Header from "../../components/display/Header";
 import ProfileOverlay from "../../components/overlays/ProfileOverlay";
 import CustomText from "../../components/display/CustomText";
 import ReplyPreview from "../../components/chat/ReplyPreview";
@@ -53,47 +53,22 @@ import IconButton from "../../components/buttons/IconButton";
 import ClubImg from "../../components/club/ClubImg";
 // functions
 import {
-  checkMembership,
-  fetchMessages,
-  handleCameraPress,
   handleImageUploadAndSend,
-  getSetUserData,
+  handleCameraPress,
   handleDocumentUploadAndSend,
-} from "../../functions/backendFunctions";
-import { deleteImageFromStorage } from "../../functions/chatFunctions";
+  sendChatNotification,
+} from "../../functions/chatFunctions";
+import { getSetUserData } from "../../functions/profileFunctions";
+import { fetchMessages } from "../../functions/chatFunctions";
+import { checkMembership } from "../../functions/clubFunctions";
+import { deleteImageFromStorage } from "../../functions/fileFunctions";
 import { isSameDay } from "../../functions/timeFunctions";
 import { goToClubScreen } from "../../functions/navigationFunctions";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 // colors
-import { useTheme } from "@react-navigation/native";
-
-async function sendPushNotification(
-  expoPushToken,
-  message,
-  firstName,
-  lastName,
-  clubName
-) {
-  const text = message ? message : "An image was sent.";
-
-  const notification = {
-    to: expoPushToken,
-    sound: "default",
-    title: clubName,
-    body: `${firstName} ${lastName}: ${text}`,
-    data: { someData: "goes here" },
-  };
-
-  await fetch("https://exp.host/--/api/v2/push/send", {
-    method: "POST",
-    headers: {
-      Accept: "application/json",
-      "Accept-encoding": "gzip, deflate",
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(notification),
-  });
-}
+import { useFocusEffect, useTheme } from "@react-navigation/native";
+// auth
+import { getAuth } from "firebase/auth";
 
 export default function Chat({ route, navigation }) {
   // keyboard state
@@ -102,8 +77,6 @@ export default function Chat({ route, navigation }) {
   // Define state for refreshing the messages
   const [fetchLimit, setFetchLimit] = useState(20);
   const [refreshing, setRefreshing] = useState(false);
-
-  console.log(route.params);
 
   // Define states for message text, messages, image URL, and pinned message count
   const [messageText, setMessageText] = useState("");
@@ -114,6 +87,7 @@ export default function Chat({ route, navigation }) {
   const [isAtBottom, setIsAtBottom] = useState(true); // Initially assume the user is at the bottom
   const [likedMessages, setLikedMessages] = useState(new Set());
   const [gifUrl, setGifUrl] = useState(null); // Define gifUrl state
+  const [showSendButton, setShowSendButton] = useState(false); // Define showSendButton state
 
   // Define states for the liked messages modal
   const [isLikesModalVisible, setIsLikesModalVisible] = useState(false);
@@ -142,6 +116,7 @@ export default function Chat({ route, navigation }) {
 
   const { colors } = useTheme();
 
+  // header options
   useLayoutEffect(() => {
     navigation.setOptions({
       headerLargeTitle: false,
@@ -156,11 +131,17 @@ export default function Chat({ route, navigation }) {
             </View>
             <CustomText
               text={
-                clubName.length > 20
-                  ? clubName.substring(0, 20) + "..."
+                clubName.length > 30
+                  ? clubName.substring(0, 30) + "..."
                   : clubName
               }
-              style={[styles.clubNameText, { color: colors.text }]}
+              style={[
+                styles.clubNameText,
+                {
+                  color: colors.text,
+                  fontSize: clubName.length > 12 ? 16 : 20,
+                },
+              ]}
               font="bold"
             />
           </View>
@@ -177,7 +158,7 @@ export default function Chat({ route, navigation }) {
     });
   }, [navigation]);
 
-  // Define functions to handle modal open and close0
+  // Define functions to handle modal open and close
   const openModal = () => {
     setIsModalVisible(true);
 
@@ -210,7 +191,12 @@ export default function Chat({ route, navigation }) {
     const unsubscribe = onSnapshot(
       messagesQuery,
       (querySnapshot) => {
-        fetchMessages(querySnapshot, setMessages, setPinnedMessageCount);
+        fetchMessages(
+          querySnapshot,
+          setMessages,
+          setPinnedMessageCount,
+          scrollToBottom
+        );
       },
       (error) => {
         console.error("Error fetching messages: ", error);
@@ -221,25 +207,35 @@ export default function Chat({ route, navigation }) {
     getSetUserData(setUserData);
 
     // Check the user's membership status
-    checkMembership(clubId, setCurrentUserPrivilege);
+    checkMembership(clubId, setCurrentUserPrivilege, () => {});
 
     // Cleanup subscription on component unmount
     return () => unsubscribe();
   }, [fetchLimit]);
 
+  const clearUnreadMessages = async () => {
+    const auth = getAuth();
+    const user = auth.currentUser;
+    if (!user) {
+      return;
+    }
+
+    const clubMemberRef = doc(
+      firestore,
+      "schools",
+      schoolKey,
+      "clubMemberData",
+      "clubs",
+      clubId,
+      user.uid
+    );
+    updateDoc(clubMemberRef, { unreadMessages: 0 });
+  };
+
   // clear unread messages once user data is fetched
   useEffect(() => {
     if (userData) {
-      const clubMemberRef = doc(
-        firestore,
-        "schools",
-        schoolKey,
-        "clubMemberData",
-        "clubs",
-        clubId,
-        userData.id
-      );
-      updateDoc(clubMemberRef, { unreadMessages: 0 });
+      clearUnreadMessages();
     }
   }, [userData]);
 
@@ -278,17 +274,33 @@ export default function Chat({ route, navigation }) {
     };
 
     fetchLikedMessages();
-
-    setTimeout(() => {
-      // scroll to bottom unanimated
-      flatListRef.current.scrollToEnd({ animated: false });
-    }, 500);
   }, [messages]);
+
+  useFocusEffect(
+    useCallback(() => {
+      // Do something when the screen is focused
+      setTimeout(() => {
+        scrollToBottom();
+      }, 10);
+      return () => {
+        // Do something when the screen is unfocused
+      };
+    }, [])
+  );
 
   // Use the route params to set the selected GIF URL
   useEffect(() => {
     setGifUrl(route.params.gif);
   }, [route.params]);
+
+  // clear unread messages once you leave page
+  useEffect(() => {
+    const unsubscribe = navigation.addListener("blur", () => {
+      clearUnreadMessages();
+    });
+
+    return unsubscribe;
+  }, []);
 
   // Function to navigate to the message search screen
   const navigateToMessageSearchScreen = (pin) => {
@@ -300,7 +312,7 @@ export default function Chat({ route, navigation }) {
     });
   };
 
-  // checks id user is not at the bottom of the chat
+  // checks if user is not at the bottom of the chat
   const isCloseToBottom = ({
     layoutMeasurement,
     contentOffset,
@@ -348,8 +360,10 @@ export default function Chat({ route, navigation }) {
     setGifUrl(null); // Reset the gifUrl after sending the message
     setReplyingToMessage(null);
 
+    scrollToBottom();
+
     // List of threat words
-    const threatWords = ["bomb", "kill", "violence"]; // Add more threat words here if needed
+    const threatWords = ["bomb", "kill", "violence", "gun", "shoot"];
 
     // Check if there's either text, an image URL, or a gifUrl
     if (messageText.trim() != "" || tempImageUrl || gifUrl) {
@@ -438,8 +452,30 @@ export default function Chat({ route, navigation }) {
           message
         );
 
+        // add message to club data
+        if (chatName === "chat") {
+          const clubRef = doc(
+            firestore,
+            "schools",
+            schoolKey,
+            "clubData",
+            clubId
+          );
+
+          await updateDoc(clubRef, { mostRecentMessage: message });
+        }
+
         // say "sent an image" if no text
-        let notificationText = messageText.trim();
+        let notificationText = replyingToMessage ? "Replied to - " : "";
+        if (replyingToMessage) {
+          notificationText +=
+            replyingToMessage.user.first +
+            " " +
+            replyingToMessage.user.last +
+            ": ";
+        }
+
+        notificationText += messageText.trim();
         if (messageText.trim() === "") {
           if (imageUrl) {
             notificationText = "sent an image.";
@@ -458,17 +494,32 @@ export default function Chat({ route, navigation }) {
           clubId
         );
         const clubMembers = await getDocs(clubMembersCollection);
+
+        let clubMembersArray = clubMembers.docs;
+        // filter club members if admin chat
+        if (chatName === "admin") {
+          clubMembersArray = clubMembers.docs.filter(
+            (member) =>
+              member.data().privilege === "admin" ||
+              member.data().privilege === "owner"
+          );
+        }
+
         // loop through all members in the club
-        for (const member of clubMembers.docs) {
+        for (const member of clubMembersArray) {
           if (!member.data().muted && member.id !== userData.id) {
-            // send the push notification
-            sendPushNotification(
-              member.data().expoPushToken,
-              notificationText,
-              userData.firstName,
-              userData.lastName,
-              clubName
-            );
+            if (member.data().expoPushToken) {
+              // send the push notification
+              sendChatNotification(
+                member.data().expoPushToken,
+                notificationText,
+                userData.firstName,
+                userData.lastName,
+                clubName,
+                clubId,
+                chatName
+              );
+            }
           }
 
           // increment unread messages in club member's data
@@ -486,6 +537,9 @@ export default function Chat({ route, navigation }) {
           const unreadMessages = memberData.unreadMessages + 1;
 
           await updateDoc(memberRef, { unreadMessages });
+
+          // clear unread messages if user is at the bottom
+          clearUnreadMessages();
         }
       } catch (error) {
         console.error("Error sending message:", error);
@@ -515,23 +569,6 @@ export default function Chat({ route, navigation }) {
       setRefreshing(false);
     }, 1000);
   }, []);
-
-  // go to home screen and clear unread messages
-  const goToHomeScreen = () => {
-    navigation.navigate("HomeScreen");
-
-    // Clear unread messages
-    const clubMemberRef = doc(
-      firestore,
-      "schools",
-      schoolKey,
-      "clubMemberData",
-      "clubs",
-      clubId,
-      userData.id
-    );
-    updateDoc(clubMemberRef, { unreadMessages: 0 });
-  };
 
   // go to message search screen
   const goToMessageSearchScreen = () => {
@@ -586,8 +623,52 @@ export default function Chat({ route, navigation }) {
     );
   };
 
+  // animate size of send button
+  const sendButtonSize = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.timing(sendButtonSize, {
+      toValue: showSendButton ? 1 : 0,
+      duration: 200,
+      easing: Easing.linear,
+      useNativeDriver: false,
+    }).start();
+  }, [showSendButton]);
+
+  // send button style
+  const sendButtonStyle = {
+    transform: [
+      {
+        scale: sendButtonSize.interpolate({
+          inputRange: [0, 1],
+          outputRange: [0, 1],
+        }),
+      },
+      {
+        rotate: sendButtonSize.interpolate({
+          inputRange: [0, 1],
+          outputRange: ["-90deg", "0deg"],
+        }),
+      },
+    ],
+  };
+
+  // update send button visibility
+  useEffect(() => {
+    if (messageText || tempImageUrl || gifUrl) {
+      setShowSendButton(true);
+    } else {
+      setShowSendButton(false);
+    }
+  }, [messageText, tempImageUrl, gifUrl]);
+
   return (
-    <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+    <TouchableWithoutFeedback
+      onPress={() => {
+        Keyboard.dismiss();
+      }}
+      accessible={false}
+    >
       <View style={[styles.container, { backgroundColor: colors.background }]}>
         {/* Keyboard listener */}
         <KeyboardListener
@@ -650,8 +731,8 @@ export default function Chat({ route, navigation }) {
           <View
             style={{
               position: "absolute",
-              left: Dimensions.get("window").width / 2 - 75,
-              top: 350,
+              left: Dimensions.get("window").width / 2 - 110,
+              top: 360,
             }}
           >
             <View style={{ justifyContent: "center", alignItems: "center" }}>
@@ -660,6 +741,10 @@ export default function Chat({ route, navigation }) {
                 text="Start chatting!"
                 font="bold"
                 style={{ fontSize: 20, color: colors.textLight }}
+              />
+              <CustomText
+                text="Send a message to get started."
+                style={{ fontSize: 16, color: colors.textLight }}
               />
             </View>
           </View>
@@ -722,7 +807,11 @@ export default function Chat({ route, navigation }) {
                 style={styles.toolbarButton}
                 onPress={openModal}
               >
-                <Ionicons name="add" size={30} color={colors.textLight} />
+                <Ionicons
+                  name="chevron-up-outline"
+                  size={30}
+                  color={colors.textLight}
+                />
               </TouchableOpacity>
 
               {/* Modal for toolbar buttons*/}
@@ -765,7 +854,17 @@ export default function Chat({ route, navigation }) {
                   "chats",
                   chatName
                 )}
+                clubMemberRef={collection(
+                  firestore,
+                  "schools",
+                  schoolKey,
+                  "clubMemberData",
+                  "clubs",
+                  clubId
+                )}
+                clearUnreadMessages={clearUnreadMessages}
                 userData={userData}
+                clubName={clubName}
               />
 
               {/* Container for TextInput and Image Preview */}
@@ -825,17 +924,27 @@ export default function Chat({ route, navigation }) {
               </View>
 
               {/* Send Button */}
-              <TouchableOpacity onPress={sendMessage} style={styles.sendButton}>
-                <Ionicons
-                  name="send"
-                  size={24}
-                  color={
-                    tempImageUrl || gifUrl || messageText
-                      ? colors.button
-                      : colors.gray
-                  }
-                />
-              </TouchableOpacity>
+              <Animated.View
+                style={{
+                  ...sendButtonStyle,
+                  opacity: sendButtonSize,
+                }}
+              >
+                <TouchableOpacity
+                  onPress={sendMessage}
+                  style={styles.sendButton}
+                >
+                  <Ionicons
+                    name="send"
+                    size={24}
+                    color={
+                      tempImageUrl || gifUrl || messageText
+                        ? colors.button
+                        : colors.button
+                    }
+                  />
+                </TouchableOpacity>
+              </Animated.View>
             </View>
           </View>
 
@@ -851,7 +960,7 @@ export default function Chat({ route, navigation }) {
         {/* Profile Overlay */}
         <ProfileOverlay
           visible={overlayVisible}
-          setVisible={() => setOverlayVisible(false)}
+          setVisible={setOverlayVisible}
           userData={overlayUserData}
         />
       </View>
@@ -959,7 +1068,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 5,
+    marginLeft: 20,
     flex: 1,
+    maxWidth: 160,
   },
 
   // admin chat banner

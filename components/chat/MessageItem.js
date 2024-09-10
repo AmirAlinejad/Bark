@@ -1,4 +1,4 @@
-import React, { useRef } from "react";
+import React, { useRef, useEffect } from "react";
 import {
   View,
   StyleSheet,
@@ -7,11 +7,8 @@ import {
   Animated,
 } from "react-native";
 // functions
-import {
-  pinMessage,
-  updateProfileData,
-  voteInPoll,
-} from "../../functions/backendFunctions";
+import { updateProfileData } from "../../functions/profileFunctions";
+import { pinMessage, voteInPoll } from "../../functions/chatFunctions";
 // my components
 import ProfileImg from "../display/ProfileImg";
 import CustomText from "../display/CustomText";
@@ -105,6 +102,14 @@ const MessageItem = ({
       }
     });
     return max;
+  };
+
+  const totalVotes = () => {
+    let total = 0;
+    votesArray().forEach((element) => {
+      total += element;
+    });
+    return total;
   };
 
   const swipeableRef = useRef(null);
@@ -261,7 +266,7 @@ const MessageItem = ({
             >
               <CustomText
                 style={[styles.pollQuestion, { color: colors.text }]}
-                text={item.question}  
+                text={item.question}
                 font="bold"
               />
               {item.voteOptions.map((option, index) => (
@@ -277,7 +282,12 @@ const MessageItem = ({
                       text={`(${votesArray()[option.id]})  `}
                     />
 
-                    <View style={styles.pollGraph}>
+                    <View
+                      style={[
+                        styles.pollGraph,
+               
+                      ]}
+                    >
                       <LinearGradient // Background Linear Gradient
                         colors={[colors.purple, colors.button]}
                         locations={[0, 1]}
@@ -286,7 +296,7 @@ const MessageItem = ({
                         style={{
                           position: "absolute",
                           width: `${
-                            100 * (votesArray()[option.id] / mostVotes())
+                            100 * (votesArray()[option.id] / totalVotes() || 0)
                           }%`,
                           height: 30,
                           borderRadius: 8,
@@ -417,13 +427,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "rgba(0, 0, 0, 0.1)",
-    borderRadius: 8,
-  },
-  pollGraphBar: {
-    width: 200,
-    height: 30,
-    backgroundColor: "black",
-    maskImage: "linear-gradient(to right, rgba(0,0,0,0), rgba(0,0,0,1))",
     borderRadius: 8,
   },
   pollOptionButton: {

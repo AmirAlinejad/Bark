@@ -7,7 +7,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 // storage
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as SecureStore from "expo-secure-store";
 // keyboard avoiding view
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 // my components
@@ -16,16 +16,15 @@ import CustomButton from "../../components/buttons/CustomButton";
 import ProfileImg from "../../components/display/ProfileImg";
 import Form from "../Form";
 // backend functions
-import {
-  emailSplit,
-  handleImageUploadAndSend,
-} from "../../functions/backendFunctions";
+import { emailSplit } from "../../functions/backendFunctions";
+// image picking
+import { handleImageUploadAndSend } from "../../functions/chatFunctions"; // weird path, but it works
 // colors
 import { useTheme } from "@react-navigation/native";
 // macros
 import { MAJORS } from "../../macros/macros";
 // backend
-import { doc, setDoc } from "firebase/firestore";
+import { doc, setDoc, updateDoc } from "firebase/firestore";
 import { firestore } from "../../backend/FirebaseConfig";
 
 const EditProfile = ({ route, navigation }) => {
@@ -36,7 +35,6 @@ const EditProfile = ({ route, navigation }) => {
   const [form, setForm] = useState({
     firstName: userData.firstName,
     lastName: userData.lastName,
-    phone: userData.phone,
     graduationYear: userData.graduationYear,
     major: userData.major,
   });
@@ -60,12 +58,6 @@ const EditProfile = ({ route, navigation }) => {
       type: "text",
       title: "Last Name",
       placeholder: "Last Name",
-    },
-    {
-      propName: "phone",
-      type: "phone",
-      title: "Phone Number",
-      placeholder: "Phone Number",
     },
     {
       propName: "graduationYear",
@@ -153,8 +145,33 @@ const EditProfile = ({ route, navigation }) => {
         updatedUserData
       );
 
+      const userClubData = {
+        firstName: form.firstName,
+        lastName: form.lastName,
+      };
+      if (profileImg) userClubData.profileImg = profileImg;
+
+      // update club member data
+      if (userData.clubs) {
+        for (let i = 0; i < userData.clubs.length; i++) {
+          const clubId = userData.clubs[i];
+          await updateDoc(
+            doc(
+              firestore,
+              "schools",
+              schoolKey,
+              "clubMemberData",
+              "clubs",
+              clubId,
+              userData.id
+            ),
+            userClubData
+          );
+        }
+      }
+
       // update async storage
-      await AsyncStorage.setItem("user", JSON.stringify(updatedUserData));
+      await SecureStore.setItemAsync("user", JSON.stringify(updatedUserData));
 
       navigation.goBack();
     } catch (error) {

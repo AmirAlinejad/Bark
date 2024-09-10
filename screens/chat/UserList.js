@@ -3,39 +3,34 @@ import {
   View,
   StyleSheet,
   FlatList,
-  Text,
   TouchableOpacity,
   Alert,
   ScrollView,
-  Animated,
 } from "react-native";
-// storage
-import AsyncStorage from "@react-native-async-storage/async-storage";
 // modal
 import Modal from "react-native-modal";
 // my components
-import Header from "../../components/display/Header";
-import SearchBar from "../../components/input/SearchBar";
 import ProfileImg from "../../components/display/ProfileImg";
 import CustomText from "../../components/display/CustomText";
 import ToggleButton from "../../components/buttons/ToggleButton";
 import ProfileOverlay from "../../components/overlays/ProfileOverlay";
 import CustomButton from "../../components/buttons/CustomButton";
 // Firebase
-import { doc, getDoc, updateDoc, deleteDoc } from "firebase/firestore";
-import { db, firestore } from "../../backend/FirebaseConfig";
+import { doc, updateDoc } from "firebase/firestore";
+import { firestore } from "../../backend/FirebaseConfig";
 // icons
 import Icon from "react-native-vector-icons/MaterialCommunityIcons"; // Ensure react-native-vector-icons is installed
 // functions
 import {
-  emailSplit,
-  checkMembership,
   fetchClubMembers,
-} from "../../functions/backendFunctions";
+  checkMembership,
+  leaveClubConfirmed,
+} from "../../functions/clubFunctions";
+import { emailSplit } from "../../functions/backendFunctions";
 // styles
 import { useTheme } from "@react-navigation/native";
-// icons
-import { Ionicons } from "@expo/vector-icons";
+// auth
+import { auth } from "../../backend/FirebaseConfig";
 
 const UserList = ({ route, navigation }) => {
   const { clubId } = route.params;
@@ -43,7 +38,7 @@ const UserList = ({ route, navigation }) => {
   const [clubMembers, setClubMembers] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedPrivilege, setSelectedPrivilege] = useState("all");
-  const [currentUserId, setCurrentUserId] = useState(null);
+  const [currentUserId, setCurrentUserId] = useState("none");
   const [currentUserPrivilege, setCurrentUserPrivilege] = useState("");
   const [filteredMembers, setFilteredMembers] = useState([]);
   // overlay
@@ -74,9 +69,6 @@ const UserList = ({ route, navigation }) => {
 
     const asyncFunc = async () => {
       // get current user id from async storage
-      const user = await AsyncStorage.getItem("user");
-
-      setCurrentUserId(user.uid);
       checkMembership(clubId, setCurrentUserPrivilege);
       setLoading(false);
     };
@@ -112,10 +104,11 @@ const UserList = ({ route, navigation }) => {
 
   // sets buttons for editing members
   const actionButtonPressed = (member) => {
-    console.log(member);
+    const user = auth.currentUser;
+    const id = user.uid;
     const buttons = [];
     // Ensure actions cannot be performed on the owner or the current user
-    if (member.privilege !== "owner" && member.id !== currentUserId) {
+    if (member.privilege !== "owner" && member.id !== id) {
       if (
         currentUserPrivilege === "owner" ||
         currentUserPrivilege === "admin"
@@ -226,19 +219,11 @@ const UserList = ({ route, navigation }) => {
 
   const removeMemberConfirmed = async (memberId) => {
     // Assuming memberId is the ID of the member being removed.
-    const schoolKey = await emailSplit();
-    const memberDocRef = doc(
-      firestore,
-      "schools",
-      schoolKey,
-      "clubMemberData",
-      "clubs",
-      clubId,
-      memberId
-    );
-    await deleteDoc(memberDocRef);
+    leaveClubConfirmed(clubId, memberId);
 
-    fetchClubMembers(clubId, setClubMembers);
+    setTimeout(() => {
+      fetchClubMembers(clubId, setClubMembers);
+    }, 2000);
     Alert.alert(
       "Removal Success",
       "Member has been successfully removed from the club."
@@ -246,7 +231,6 @@ const UserList = ({ route, navigation }) => {
   };
 
   const renderMember = ({ item }) => {
-    console.log(item);
     return (
       <View style={styles.memberContainer}>
         <View style={styles.memberInfo}>
@@ -279,7 +263,10 @@ const UserList = ({ route, navigation }) => {
             </View>
 
             <CustomText
-              style={[styles.memberPrivilege, { marginTop: 12, color: colors.textLight }]}
+              style={[
+                styles.memberPrivilege,
+                { marginTop: 12, color: colors.textLight },
+              ]}
               text={item.privilege}
             />
           </View>
@@ -290,7 +277,7 @@ const UserList = ({ route, navigation }) => {
           onPress={() => actionButtonPressed(item)}
           style={{ marginRight: 5 }}
         >
-          <Icon name="dots-vertical" size={24} color="black" />
+          <Icon name="dots-vertical" size={24} color={colors.textLight} />
         </TouchableOpacity>
         {/* )} */}
       </View>
@@ -325,7 +312,6 @@ const UserList = ({ route, navigation }) => {
           data={filteredMembers}
           renderItem={renderMember}
           keyExtractor={(item) => item.id}
-          style={{ paddingHorizontal: 0 }}
           scrollEnabled={false}
         />
       </ScrollView>
@@ -338,7 +324,7 @@ const UserList = ({ route, navigation }) => {
       />
 
       <Modal isVisible={removeMember !== null}>
-        <View style={styles.modalContainer}>
+        <View style={[styles.modalContainer, { backgroundColor: colors.card }]}>
           <CustomText
             style={{ ...styles.modalText, color: colors.text }}
             text="Are you sure you want to remove this user from the club?"

@@ -1,4 +1,4 @@
-import React, { useState, } from "react";
+import React, { useState } from "react";
 // react native components
 import { View, StyleSheet } from "react-native";
 // my components
@@ -48,7 +48,6 @@ const MapPicker = ({ route, navigation }) => {
   const onLocationSelected = (data, details = null) => {
     // 'details' is provided when fetchDetails = true
     setAddress(data.description);
-    console.log("description: ".data.description);
 
     /*// geo code the address
     Geocoder.from(data.description)
@@ -121,7 +120,6 @@ const MapPicker = ({ route, navigation }) => {
           },
         }}
         onPress={(data, details = null) => {
-          console.log(data, details);
           setAddress(data.description);
         }}
         query={{
@@ -129,7 +127,7 @@ const MapPicker = ({ route, navigation }) => {
           language: "en",
         }}
       />
-      
+
       <View style={styles.submitButton}>
         <CustomButton text="Submit" onPress={onSubmitPressed} />
       </View>

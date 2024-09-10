@@ -3,7 +3,6 @@ import { View, StyleSheet, Alert, TouchableOpacity } from "react-native";
 // custom components
 import CustomInput from "../../components/input/CustomInput";
 import CustomButton from "../../components/buttons/CustomButton";
-import Header from "../../components/display/Header";
 // auth functions
 import { sendPasswordResetEmail, getAuth } from "firebase/auth";
 import { useTheme } from "@react-navigation/native";

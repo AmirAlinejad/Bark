@@ -1,21 +1,23 @@
 import React, { useState, useEffect } from "react";
 // react native components
-import { View, StyleSheet, ScrollView, FlatList } from "react-native";
+import {
+  View,
+  StyleSheet,
+  ScrollView,
+  FlatList,
+  ActivityIndicator,
+} from "react-native";
 // mask view
 import MaskedView from "@react-native-masked-view/masked-view";
 import { LinearGradient } from "expo-linear-gradient";
 // use focus effect
-import { useFocusEffect, useNavigation } from "@react-navigation/native";
+import { useFocusEffect, useIsFocused } from "@react-navigation/native";
 // stack navigator
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 // async storage
 import AsyncStorage from "@react-native-async-storage/async-storage";
-// fade
-import Fade from "react-native-fade";
 // my components
 import ClubCategory from "../../components/club/ClubCategory";
-import Header from "../../components/display/Header";
-import SearchBar from "../../components/input/SearchBar";
 import ToggleButton from "../../components/buttons/ToggleButton";
 import CircleButton from "../../components/buttons/CircleButton";
 import CustomText from "../../components/display/CustomText";
@@ -25,12 +27,12 @@ import Ionicon from "react-native-vector-icons/Ionicons";
 import { CLUBCATEGORIES } from "../../macros/macros";
 // functions
 import {
-  getClubCategoryData,
   emailSplit,
+  showToastIfNewUser,
 } from "../../functions/backendFunctions";
+import { getClubCategoryData } from "../../functions/clubFunctions";
 // styles
 import { useTheme } from "@react-navigation/native";
-// toast
 import Toast from "react-native-toast-message";
 
 const Stack = createNativeStackNavigator();
@@ -47,14 +49,12 @@ const ClubList = ({ navigation }) => {
   const [loading, setLoading] = useState(true);
   // school key to pass to club category screen
   const [schoolKey, setSchoolKey] = useState("");
+  // screen timer
+  const [timer, setTimer] = useState(0);
+  // search timer
+  const [searchTimer, setSearchTimer] = useState(0);
 
   const { colors } = useTheme();
-
-  // useLayoutEffect(() => {
-  //   navigation.setOptions({
-  //
-  //   });
-  // }, [navigation]);
 
   // go to add club screen
   const onAddClubPress = () => {
@@ -62,8 +62,6 @@ const ClubList = ({ navigation }) => {
   };
 
   const asyncFunc = async () => {
-    setLoading(true);
-
     // get data for each club category
     let data = {};
     for (let i = 0; i < CLUBCATEGORIES.length; i++) {
@@ -71,13 +69,40 @@ const ClubList = ({ navigation }) => {
       const clubData = await getClubCategoryData(category);
 
       data[category] = clubData;
+      setClubData((prevData) => {
+        return { ...prevData, [category]: clubData };
+      });
     }
-    console.log(data);
 
-    // update async storage
-    await AsyncStorage.setItem("clubSearchData", JSON.stringify(data));
+    // store data in async storage
+    try {
+      await AsyncStorage.setItem("clubSearchData", JSON.stringify(data));
+    } catch (error) {
+      console.error("Error setting club search data:", error);
+    }
+    setLoading(false);
+  };
 
-    setClubData(data);
+  const loadSearchData = async () => {
+    setLoading(true);
+
+    if (searchText.length == 0) {
+      setLoading(false);
+      return;
+    }
+
+    // get data for each club category
+    let data = {};
+    for (let i = 0; i < CLUBCATEGORIES.length; i++) {
+      const category = CLUBCATEGORIES[i].value;
+      const clubData = await getClubCategoryData(category, searchText);
+
+      data[category] = clubData;
+      setClubData((prevData) => {
+        return { ...prevData, [category]: clubData };
+      });
+    }
+
     setLoading(false);
   };
 
@@ -86,30 +111,86 @@ const ClubList = ({ navigation }) => {
     const clubSearchData = await AsyncStorage.getItem("clubSearchData");
     if (clubSearchData) {
       setClubData(JSON.parse(clubSearchData));
+      setLoading(false);
     }
   };
+
+  // increment timer if user stays on screen
+  const focused = useIsFocused();
+
+  useEffect(() => {
+    if (focused) {
+      const time = 10;
+      const interval = setInterval(() => {
+        if (timer < time) {
+          setTimer(timer + 1);
+        }
+      }, 1000);
+
+      // if (timer == time) {
+      //   Toast.show({
+      //     type: "info",
+      //     text1: "Can't find a club?",
+      //     text2: "Try refreshing the page!",
+      //     visibilityTime: 3000,
+      //   });
+      //   setTimer(timer + 1);
+      // }
+
+      return () => clearInterval(interval);
+    }
+  }, [focused, timer]);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (searchTimer > 0) {
+        setSearchTimer(searchTimer - 1);
+      }
+    }, 1000);
+
+    if (searchTimer == 0) {
+      loadSearchData();
+    }
+
+    return () => clearInterval(interval);
+  }, [searchTimer]);
 
   // get data from firebase
   useFocusEffect(
     React.useCallback(() => {
-      // get school key
-      const getSetSchoolKey = async () => {
-        const schoolkey = await emailSplit();
-        setSchoolKey(schoolkey);
-      };
-      getSetSchoolKey();
-      
+      setTimer(0);
+
       loadClubSearchData(); // get data from async storage
-      asyncFunc(); // get actual data from firebase (takes longer)
+
+      asyncFunc(); // get data from firebase
+
+      return () => {
+        setShowText(false);
+      };
     }, [])
   );
 
-  // fade out text after 2 seconds
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setShowText(false);
-    }, 2000);
-    return () => clearTimeout(timer);
+    showToastIfNewUser(
+      "info",
+      "Search for clubs!🔎",
+      "Find a club that fits your interests."
+    );
+
+    setTimeout(() => {
+      showToastIfNewUser(
+        "info",
+        "Want to create a club?",
+        "Click the circle button in the bottom right corner."
+      );
+    }, 5000);
+
+    // get school key
+    const getSetSchoolKey = async () => {
+      const schoolkey = await emailSplit();
+      setSchoolKey(schoolkey);
+    };
+    getSetSchoolKey();
   }, []);
 
   // filter for clubs
@@ -139,7 +220,7 @@ const ClubList = ({ navigation }) => {
 
       if (filteredData.length > 0) {
         sortedClubs.push({
-          categoryName: emoji + category,
+          categoryName: emoji + " " + category,
           data: filteredData,
         });
       }
@@ -164,13 +245,15 @@ const ClubList = ({ navigation }) => {
       <Stack.Screen
         name="ClubList"
         options={{
-          headerTitle: "Search Clubs",
+          headerTitle: "🔎 Search Clubs",
           headerLargeTitle: true,
           headerShadowVisible: false,
           headerSearchBarOptions: {
             placeholder: "Search Clubs",
             onChangeText: (event) => {
               setSearchText(event.nativeEvent.text);
+
+              setSearchTimer(1);
             },
             hideWhenScrolling: false,
             textColor: colors.text,
@@ -186,6 +269,11 @@ const ClubList = ({ navigation }) => {
           headerStyle: {
             backgroundColor: colors.background,
           },
+          // headerRight: () => (
+          //   <TouchableOpacity onPress={asyncFunc}>
+          //     <Ionicon name="refresh" size={30} color={colors.button} />
+          //   </TouchableOpacity>
+          // ),
         }}
       >
         {() => (
@@ -194,10 +282,6 @@ const ClubList = ({ navigation }) => {
               style={styles.container}
               contentInsetAdjustmentBehavior="automatic"
             >
-              {/* <View style={styles.searchBarView}>
-              <SearchBar placeholder='Search' value={searchText} setValue={setSearchText}/>
-            </View> */}
-
               <View style={styles.upperContent}>
                 <MaskedView
                   maskElement={
@@ -240,64 +324,77 @@ const ClubList = ({ navigation }) => {
                   />
                 </MaskedView>
               </View>
-
               <View style={styles.separator} />
-
-              <View style={styles.lowerContent}>
-                {
-                  // if no clubs found
-                  sortedClubs.length === 0 ? (
-                    <View style={styles.noClubsView}>
-                      <Ionicon
-                        name="megaphone"
-                        size={100}
-                        color={colors.gray}
-                      />
-                      <CustomText
-                        style={[
-                          styles.noClubsText,
-                          { color: colors.textLight },
-                        ]}
-                        text="No clubs found."
-                        font="bold"
-                      />
-                    </View>
-                  ) : (
-                    // create a club category component for each category
-                    <View
-                      style={styles.clubCategoriesView}
-                      contentContainerStyle={styles.clubCategoriesContent}
-                      nestedScrollEnabled={true}
-                    >
-                      {sortedClubs?.map((category, index) => {
-                        if (
-                          category.data.length != 0 &&
-                          (categoriesSelected.length == 0 ||
-                            categoriesSelected.includes(
-                              category.categoryName.slice(2)
-                            ))
-                        ) {
-                          return (
-                            <View key={index} style={styles.categoryView}>
-                              <ClubCategory
-                                name={
-                                  category.categoryName.slice(0, 2) +
-                                  " " +
-                                  category.categoryName.slice(2)
-                                }
-                                data={category.data}
-                                schoolKey={schoolKey}
-                                navigation={navigation}
-                              />
-                            </View>
-                          );
-                        }
-                      })}
-                    </View>
-                  )
-                }
-              </View>
-
+              {loading ? (
+                <View style={styles.noClubsView}>
+                  <View style={{ height: 30 }} />
+                  <ActivityIndicator size="large" color={colors.gray} />
+                  <CustomText
+                    style={[styles.noClubsText, { color: colors.textLight }]}
+                    text="Loading clubs..."
+                    font="bold"
+                  />
+                </View>
+              ) : (
+                <View style={styles.lowerContent}>
+                  {
+                    // if no clubs found
+                    sortedClubs.length === 0 ? (
+                      <View style={styles.noClubsView}>
+                        <Ionicon
+                          name="people-circle"
+                          size={100}
+                          color={colors.gray}
+                        />
+                        <CustomText
+                          style={[
+                            styles.noClubsText,
+                            { color: colors.textLight },
+                          ]}
+                          text="No clubs found."
+                          font="bold"
+                        />
+                        <CustomText
+                          style={{ color: colors.textLight, fontSize: 16 }}
+                          text="Try refreshing the page"
+                        />
+                        <CustomText
+                          style={{ color: colors.textLight, fontSize: 16 }}
+                          text="or search for a different club."
+                        />
+                      </View>
+                    ) : (
+                      // create a club category component for each category
+                      <View
+                        style={styles.clubCategoriesView}
+                        contentContainerStyle={styles.clubCategoriesContent}
+                        nestedScrollEnabled={true}
+                      >
+                        {sortedClubs?.map((category, index) => {
+                          if (
+                            category.data.length != 0 &&
+                            (categoriesSelected.length == 0 ||
+                              categoriesSelected.includes(
+                                category.categoryName.slice(3)
+                              ))
+                          ) {
+                            return (
+                              <View key={index} style={styles.categoryView}>
+                                <ClubCategory
+                                  name={category.categoryName}
+                                  data={category.data}
+                                  schoolKey={schoolKey}
+                                  navigation={navigation}
+                                />
+                              </View>
+                            );
+                          }
+                        })}
+                      </View>
+                    )
+                  }
+                </View>
+              )}
               <View style={styles.fadeView}>
                 {/* <Fade visible={showText}>
                   <CustomText

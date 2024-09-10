@@ -6,27 +6,27 @@ import {
   ScrollView,
   Alert,
 } from "react-native";
-// fade
-import Fade from "react-native-fade";
 // backend
-import { doc, refEqual, updateDoc } from "firebase/firestore";
+import { doc, updateDoc } from "firebase/firestore";
 import { firestore } from "../../backend/FirebaseConfig";
 // my components
 import CustomText from "../../components/display/CustomText";
 import IconButton from "../../components/buttons/IconButton";
 import CircleButton from "../../components/buttons/CircleButton";
 import CustomButton from "../../components/buttons/CustomButton";
+import RSVPModal from "../../components/event/RSVPModal";
 // icons
 import { Ionicons } from "@expo/vector-icons";
 // functions
+import { emailSplit } from "../../functions/backendFunctions";
 import {
-  emailSplit,
-  checkMembership,
-  getSetEventData,
-  getSetUserData,
   addEventToDefaultCalendar,
-} from "../../functions/backendFunctions";
-import { timeToString, reformatDate } from "../../functions/timeFunctions";
+  getSetEventData,
+  getRSVPProfileData,
+} from "../../functions/eventFunctions";
+import { checkMembership } from "../../functions/clubFunctions";
+import { getSetUserData } from "../../functions/profileFunctions";
+import { reformatDate, getDayOfWeek } from "../../functions/timeFunctions";
 import { goToClubScreen } from "../../functions/navigationFunctions";
 // colors
 import { useTheme } from "@react-navigation/native";
@@ -34,10 +34,10 @@ import { useTheme } from "@react-navigation/native";
 import * as Clipboard from "expo-clipboard";
 // calendar
 import * as Calendar from "expo-calendar";
-import { I } from "@expo/html-elements";
+import { set } from "firebase/database";
 
 const EventScreen = ({ route, navigation }) => {
-  const { eventId, fromScreen } = route.params;
+  const { eventId, fromScreen, showDate } = route.params;
 
   // event data
   const [event, setEvent] = useState(null);
@@ -48,23 +48,25 @@ const EventScreen = ({ route, navigation }) => {
   const [showText, setShowText] = useState(true);
   // loading
   const [loading, setLoading] = useState(true);
+  // rsvp modal
+  const [rsvpModalVisible, setRsvpModalVisible] = useState(false);
+  const [rsvpProfileData, setRsvpProfileData] = useState(null);
 
   const { colors } = useTheme();
 
   useLayoutEffect(() => {
     navigation.setOptions({
-      headerRight: () => (
-        <View style={{ flexDirection: "row" }}>
-          {/* QR code button */}
-
-          <IconButton
-            icon={"qr-code-outline"}
-            text=""
-            onPress={onQRCodeButtonPress}
-            color={colors.button}
-          />
-        </View>
-      ),
+      // headerRight: () => (
+      //   <View style={{ flexDirection: "row" }}>
+      //     {/* QR code button */}
+      //     <IconButton
+      //       icon={"qr-code-outline"}
+      //       text=""
+      //       onPress={onQRCodeButtonPress}
+      //       color={colors.button}
+      //     />
+      //   </View>
+      // ),
     });
   }, [navigation]);
 
@@ -77,37 +79,56 @@ const EventScreen = ({ route, navigation }) => {
   // get event data
   useEffect(() => {
     const asyncFunc = async () => {
-      console.log("getting event data for", eventId);
       await getSetEventData(eventId, setEvent, setRSVPList);
 
       // get user id
       getSetUserData(setUserData);
 
       const { status } = await Calendar.requestCalendarPermissionsAsync();
-      if (status === "granted") {
-        const calendars = await Calendar.getCalendarsAsync(
-          Calendar.EntityTypes.EVENT
+      if (!status == "granted") {
+        Alert.alert(
+          "Calendar Permissions",
+          "Please enable calendar permissions in your settings."
         );
-        console.log("Here are all your calendars:");
-        console.log({ calendars });
       }
     };
 
     asyncFunc();
   }, []);
 
-  console.log("rsvp list", RSVPList);
-  console.log("event", event);
+  // get rsvp profile data once event data is loaded
+  useEffect(() => {
+    if (event != undefined) {
+      const asyncFunc = async () => {
+        await getRSVPProfileData(event.rsvps, setRsvpProfileData);
+      };
+
+      asyncFunc();
+    }
+  }, [event]);
+
+  console.log("rsvpProfileData event", rsvpProfileData);
 
   // check user privilege after event data is loaded
   useEffect(() => {
     if (event != undefined) {
       const asyncFunc = async () => {
-        await checkMembership(event.clubId, setCurrentUserPrivilege);
+        await checkMembership(event.clubId, setCurrentUserPrivilege, () => {});
       };
 
       asyncFunc();
     }
+  }, [event]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (!event) {
+        Alert.alert("Event not found.");
+        navigation.goBack();
+        return;
+      }
+    }, 1000);
+    return () => clearTimeout(timer);
   }, [event]);
 
   // fade out text after 2 seconds
@@ -120,8 +141,6 @@ const EventScreen = ({ route, navigation }) => {
 
   // edit event button
   const onEditButtonPress = () => {
-    console.log("editing event", event);
-    console.log("date", new Date(event.date));
     const editingEvent = {
       ...event,
     };
@@ -144,6 +163,7 @@ const EventScreen = ({ route, navigation }) => {
       duration: event.duration,
       instructions: event.instructions,
       roomNumber: event.roomNumber,
+      repeats: event.repeats,
     };
 
     navigation.navigate("NewEvent", {
@@ -174,7 +194,6 @@ const EventScreen = ({ route, navigation }) => {
       newRSVPList = [...RSVPList, userData.id];
     }
 
-    console.log("new rsvp list", newRSVPList);
     setRSVPList(newRSVPList);
 
     // update backend
@@ -191,6 +210,14 @@ const EventScreen = ({ route, navigation }) => {
   };
 
   const gap = 20;
+
+  // convert duration to hours
+  const durationToHours = (duration) => {
+    const newDuration = new Date(duration);
+    const hours = newDuration.getHours();
+    const minutes = newDuration.getMinutes();
+    return `${hours} hr ${minutes} min`;
+  };
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
@@ -210,49 +237,63 @@ const EventScreen = ({ route, navigation }) => {
             <View style={{ height: gap }} />
             <CustomText
               style={{ ...styles.textNormal, color: colors.textLight }}
-              text={reformatDate(event.date)}
+              text={
+                showDate
+                  ? reformatDate(getDayOfWeek(showDate))
+                  : reformatDate(event.date)
+              }
             />
 
-            <View style={{ height: 8 }} />
+            {/* repeat */}
+            {event.repeats !== "never" && event.repeats !== "Never" && (
+              <View style={{ marginTop: 8 }}>
+                <CustomText
+                  style={{ ...styles.textSmall, color: colors.textLight }}
+                  text={`(Repeats ${event.repeats})`}
+                />
+              </View>
+            )}
 
             <View style={styles.eventButtons}>
-              <View style={{ paddingTop: 20, paddingLeft: 20 }}>
-                <IconButton
-                  icon="calendar"
-                  color={colors.button}
-                  onPress={() => {
-                    Alert.alert(
-                      "Add to Calendar",
-                      "Would you like to add this event to your phone's calendar?",
-                      [
-                        {
-                          text: "Cancel",
-                          onPress: () => console.log("Cancel Pressed"),
-                          style: "cancel",
+              <TouchableOpacity
+                style={{ paddingTop: 20, paddingLeft: 20 }}
+                onPress={() => {
+                  Alert.alert(
+                    "Add to Calendar",
+                    "Would you like to add this event to your phone's calendar?",
+                    [
+                      {
+                        text: "Cancel",
+                        onPress: () => console.log("Cancel Pressed"),
+                        style: "cancel",
+                      },
+                      {
+                        text: "OK",
+                        onPress: async () => {
+                          await addEventToDefaultCalendar(event);
+                          Alert.alert(
+                            "Event added to calendar",
+                            "The event has been added to your phone's calendar."
+                          );
                         },
-                        {
-                          text: "OK",
-                          onPress: async () => {
-                            await addEventToDefaultCalendar(event);
-                            Alert.alert(
-                              "Event added to calendar",
-                              "The event has been added to your phone's calendar."
-                            );
-                          },
-                        },
-                      ]
-                    );
-                  }}
-                />
+                      },
+                    ]
+                  );
+                }}
+              >
+                <Ionicons name="calendar" size={24} color={colors.button} />
                 <Ionicons
                   name="add"
                   size={24}
                   color={colors.button}
                   style={{ position: "absolute", top: 5, left: 5 }}
                 />
-              </View>
+              </TouchableOpacity>
               <View style={{ flexDirection: "row", gap: 12, marginTop: 16 }}>
-                <Ionicons name="people" size={24} color={colors.textLight} />
+                <TouchableOpacity onPress={() => setRsvpModalVisible(true)}>
+                  <Ionicons name="people" size={28} color={colors.button} />
+                </TouchableOpacity>
+
                 <CustomText
                   style={{ ...styles.textNormal, color: colors.textLight }}
                   text={`${RSVPList.length} ${
@@ -282,7 +323,13 @@ const EventScreen = ({ route, navigation }) => {
 
           <View>
             {event.address ? (
-              <View style={{ flexDirection: "row" }}>
+              <View
+                style={{
+                  flexDirection: "row",
+                  marginRight: 40,
+                  alignItems: "center",
+                }}
+              >
                 <View>
                   <CustomText
                     style={{ ...styles.textNormal, color: colors.text }}
@@ -321,12 +368,12 @@ const EventScreen = ({ route, navigation }) => {
             )}
           </View>
 
-          {/* duration */}
-          {event.duration && (
+          {/* room number */}
+          {event.roomNumber && (
             <View style={{ marginTop: gap }}>
               <CustomText
                 style={{ ...styles.textNormal, color: colors.text }}
-                text={`Duration: ${event.duration} min`}
+                text={`Room: ${event.roomNumber}`}
               />
             </View>
           )}
@@ -341,12 +388,13 @@ const EventScreen = ({ route, navigation }) => {
             </View>
           )}
 
-          {/* room number */}
-          {event.room && (
+          {/* duration */}
+          {event.duration && (
             <View style={{ marginTop: gap }}>
               <CustomText
                 style={{ ...styles.textNormal, color: colors.text }}
-                text={`Room: ${event.roomNumber}`}
+                text={durationToHours(event.duration)}
+                font={"bold"}
               />
             </View>
           )}
@@ -404,6 +452,12 @@ const EventScreen = ({ route, navigation }) => {
           />
         </View>
       )}
+
+      <RSVPModal
+        isVisible={rsvpModalVisible}
+        setVisible={setRsvpModalVisible}
+        rsvpProfileData={rsvpProfileData}
+      />
     </View>
   );
 };

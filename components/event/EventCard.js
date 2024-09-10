@@ -15,6 +15,7 @@ const EventCard = ({
   id,
   name,
   date,
+  showDate,
   icon,
   iconColor,
   screenName,
@@ -28,6 +29,7 @@ const EventCard = ({
     navigation.navigate("EventScreen", {
       eventId: id,
       fromScreen: screenName ? screenName : null,
+      showDate: showDate,
     });
   };
 
@@ -40,7 +42,7 @@ const EventCard = ({
 
         <View style={styles.cardText}>
           <CustomText
-            style={[styles.textNormal, {color: colors.text}]}
+            style={[styles.textNormal, { color: colors.text }]}
             text={name}
             font="bold"
             numberOfLines={1}

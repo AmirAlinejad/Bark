@@ -1,15 +1,16 @@
-import React, { useState } from "react";
-// storage
+import React, { useState, useContext } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-// auth
-import { auth } from "../../backend/FirebaseConfig";
+import * as SecureStore from "expo-secure-store";
+// navigation
+import { useFocusEffect } from "@react-navigation/native";
 // react native components
 import { View, StyleSheet, TouchableOpacity } from "react-native";
+// firebase
+import { FIREBASE_AUTH } from "../../backend/FirebaseConfig";
 // assets
-import Logo from "../../assets/logo.png";
-// firestore
-import { firestore } from "../../backend/FirebaseConfig";
-import { doc, getDoc } from "firebase/firestore";
+import Logo from "../../assets/brand/logo.png";
+// functions
+import { getUserData } from "../../functions/profileFunctions";
 // my components
 import CustomText from "../../components/display/CustomText";
 import CustomInput from "../../components//input/CustomInput";
@@ -29,6 +30,7 @@ const SignIn = ({ route, navigation }) => {
   const [email, setEmail] = useState(route.params?.email || "");
   const [password, setPassword] = useState("");
   const [passwordVisible, setPasswordVisible] = useState(true);
+  const [signInSaying, setSignInSaying] = useState("");
   // loading and error handling
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
@@ -71,34 +73,46 @@ const SignIn = ({ route, navigation }) => {
 
     // try to submit the sign-in request
     try {
-      const response = await signInWithEmailAndPassword(auth, email, password);
+      const response = await signInWithEmailAndPassword(
+        FIREBASE_AUTH,
+        email,
+        password
+      );
 
-      // make sure email is verified
-      if (!response.user.emailVerified) {
-        setErrorMessage("Please verify your email before signing in.");
+      console.log("response: ", response);
+
+      if (!response) {
+        setErrorMessage("Sign-in failed. Please try again.");
         setLoading(false);
         return;
       }
 
-      // Navigate to the home screen
-      navigation.navigate("Main");
+      // make sure email is verified
+      if (!response.user.emailVerified) {
+        setErrorMessage("Please verify your email before signing in.");
+        alert("Please verify your email before signing in.");
+        navigation.navigate("VerifyEmail");
+        setLoading(false);
+        return;
+      }
 
       const schoolKey = response.user.email.split("@")[1].split(".")[0];
-
-      // get user data from firestore
-      const userData = await getDoc(
-        doc(firestore, "schools", schoolKey, "userData", response.user.uid)
-      );
-      console.log("user data from firestore: ", userData.data());
-
-      // set user data in async storage
-      await AsyncStorage.setItem("user", JSON.stringify(userData.data()));
 
       // set school key in async storage
       await AsyncStorage.setItem("schoolKey", schoolKey);
 
+      const userData = await getUserData();
+
+      console.log("userData: ", userData);
+
+      // save to async storage
+      await SecureStore.setItemAsync("user", JSON.stringify(userData));
+
+      // Navigate to the home screen
+      navigation.navigate("Main");
+
       // show welcome toast
-      if (userData.data().clubs.length == 0) {
+      if (userData.clubs.length == 0) {
         Toast.show({
           type: "info",
           text1: "Welcome to Bark! 🎉",
@@ -123,6 +137,21 @@ const SignIn = ({ route, navigation }) => {
     navigation.navigate("SignUp");
   };
 
+  const signInSayings = [
+    "Welcome back!",
+    "Nice to see you again!",
+    "We missed you!",
+    "Glad you're back!",
+  ];
+
+  useFocusEffect(
+    React.useCallback(() => {
+      setSignInSaying(
+        signInSayings[Math.floor(Math.random() * signInSayings.length)]
+      );
+    }, [])
+  );
+
   return (
     <View style={[styles.container, { color: colors.background }]}>
       <KeyboardAwareScrollView
@@ -141,7 +170,7 @@ const SignIn = ({ route, navigation }) => {
         <View style={styles.signInContainer}>
           <CustomText
             style={[styles.title, { color: colors.text }]}
-            text="Welcome back!"
+            text={signInSaying}
             font="bold"
           />
 

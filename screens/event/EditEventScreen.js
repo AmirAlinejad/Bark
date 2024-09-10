@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 // react native components
-import { View, StyleSheet, TouchableOpacity, TextInput } from "react-native";
+import { View, StyleSheet } from "react-native";
 // my components
 import CustomText from "../../components/display/CustomText";
 import CustomButton from "../../components/buttons/CustomButton";
@@ -12,12 +12,8 @@ import Modal from "react-native-modal";
 import { doc, setDoc } from "firebase/firestore";
 import { firestore } from "../../backend/FirebaseConfig";
 // functions
-import {
-  emailSplit,
-  deleteEvent,
-  updateEventInGoogleCalendar,
-  deleteEventFromGoogleCalendar,
-} from "../../functions/backendFunctions";
+import { emailSplit } from "../../functions/backendFunctions";
+import { deleteEvent } from "../../functions/eventFunctions";
 // icons
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 // styles
@@ -34,7 +30,8 @@ const EditEventScreen = ({ route, navigation }) => {
     eventDescription: event ? event.description : "",
     date: event && event.date ? new Date(event.date) : new Date(),
     // time: event && event.time ? new Date(event.time) : new Date(),
-    duration: event ? event.duration : 0,
+    duration: event ? event.duration : new Date(),
+    repeats: event ? event.repeats : "never",
     roomNumber: event ? event.roomNumber : "",
     instructions: event ? event.instructions : "",
     publicEvent: event ? event.publicEvent : true,
@@ -73,20 +70,19 @@ const EditEventScreen = ({ route, navigation }) => {
       type: "date",
       title: "Date",
     },
-    // {
-    //   propName: "time",
-    //   type: "time",
-    //   title: "Time",
-    // },
     {
       propName: "duration",
-      type: "text",
-      title: "Duration (mins)",
-      placeholder: "Duration",
+      type: "duration",
+      title: "Duration",
+    },
+    {
+      propName: "repeats",
+      type: "repeats",
+      title: "Repeats",
     },
     {
       propName: "roomNumber",
-      type: "text",
+      type: "number",
       title: "Room Number",
       placeholder: "Room Number",
     },
@@ -100,6 +96,7 @@ const EditEventScreen = ({ route, navigation }) => {
       propName: "publicEvent",
       type: "boolean",
       title: "Public Event",
+      notes: "Public events are visible to all users.",
     },
     {
       propName: "address",
@@ -114,9 +111,6 @@ const EditEventScreen = ({ route, navigation }) => {
   const onEditEventSubmitted = async (e) => {
     setLoading(true);
     e.preventDefault();
-
-    console.log("editing event", event);
-    console.log("form: ", form);
 
     // check if any fields are empty
     if (!form.eventName || !form.eventDescription) {
@@ -136,9 +130,10 @@ const EditEventScreen = ({ route, navigation }) => {
         name: form.eventName,
         description: form.eventDescription,
         date: form.date.toString(),
+        duration: form.duration.toString(),
         publicEvent: form.publicEvent,
+        repeats: form.repeats,
       };
-      if (form.duration) updatedEvent.duration = form.duration;
       if (form.address) updatedEvent.address = form.address;
       if (form.roomNumber) updatedEvent.roomNumber = form.roomNumber;
       if (form.instructions) updatedEvent.instructions = form.instructions;
@@ -169,13 +164,13 @@ const EditEventScreen = ({ route, navigation }) => {
         date: form.date.toString(),
         categories: event.categories,
         publicEvent: form.publicEvent,
+        repeats: form.repeats,
       };
 
       await setDoc(calendarDataDoc, updatedCalendarData);
 
-      // updateEventInGoogleCalendar(updatedEvent);
-
-      navigation.navigate("Home Screen"); // make go back to event screen eventually
+      navigation.goBack();
+      navigation.goBack();
     } catch (error) {
       console.log(error);
       alert("Edit Event failed: " + error.message);
@@ -210,7 +205,6 @@ const EditEventScreen = ({ route, navigation }) => {
   // delete event
   const deleteThisEvent = async () => {
     deleteEvent(event.id);
-    deleteEventFromGoogleCalendar(event);
     navigation.navigate("Home Screen");
   };
 
@@ -268,7 +262,7 @@ const EditEventScreen = ({ route, navigation }) => {
             <CustomButton
               text="No"
               onPress={() => setModalVisible(false)}
-              color={colors.green}
+              color={colors.button}
             />
           </View>
         </View>
