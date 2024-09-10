@@ -2,7 +2,7 @@
 import React, { useEffect } from "react";
 import { View, StyleSheet, Animated, Easing } from "react-native";
 // auth
-import { auth } from "../../backend/FirebaseConfig";
+import { FIREBASE_AUTH } from "../../backend/FirebaseConfig";
 import { signInWithEmailAndPassword } from "firebase/auth";
 // storage
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -224,7 +224,7 @@ const SplashScreen = ({ navigation }) => {
           // does not need auth right now but eventually will save email and password in async storage (update permissions in firebase)
           try {
             const response = await signInWithEmailAndPassword(
-              auth,
+              FIREBASE_AUTH,
               user.email,
               user.password
             );

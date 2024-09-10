@@ -3,10 +3,10 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as SecureStore from "expo-secure-store";
 // navigation
 import { useFocusEffect } from "@react-navigation/native";
-// auth
-import { auth } from "../../backend/FirebaseConfig";
 // react native components
 import { View, StyleSheet, TouchableOpacity } from "react-native";
+// firebase
+import { FIREBASE_AUTH } from "../../backend/FirebaseConfig";
 // assets
 import Logo from "../../assets/brand/logo.png";
 // functions
@@ -73,7 +73,11 @@ const SignIn = ({ route, navigation }) => {
 
     // try to submit the sign-in request
     try {
-      const response = await signInWithEmailAndPassword(auth, email, password);
+      const response = await signInWithEmailAndPassword(
+        FIREBASE_AUTH,
+        email,
+        password
+      );
 
       console.log("response: ", response);
 
@@ -98,6 +102,11 @@ const SignIn = ({ route, navigation }) => {
       await AsyncStorage.setItem("schoolKey", schoolKey);
 
       const userData = await getUserData();
+
+      console.log("userData: ", userData);
+
+      // save to async storage
+      await SecureStore.setItemAsync("user", JSON.stringify(userData));
 
       // Navigate to the home screen
       navigation.navigate("Main");

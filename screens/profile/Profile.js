@@ -10,12 +10,13 @@ import IconButton from "../../components/buttons/IconButton";
 import { deleteAccount } from "../../functions/profileFunctions";
 import { getSetUserData } from "../../functions/profileFunctions";
 // firebase
-import { getAuth, signOut } from "firebase/auth";
+import { signOut } from "firebase/auth";
 // colors
 import { useTheme } from "@react-navigation/native";
 // stack
 import { createStackNavigator } from "@react-navigation/stack";
 import SettingsSection from "../../components/display/SettingsSection";
+import { FIREBASE_AUTH } from "../../backend/FirebaseConfig";
 
 const Stack = createStackNavigator();
 
@@ -95,8 +96,7 @@ const Profile = ({ navigation }) => {
 
   // log out
   const logOut = () => {
-    const auth = getAuth();
-    signOut(auth)
+    signOut(FIREBASE_AUTH)
       .then(() => {
         navigation.navigate("SignIn");
       })

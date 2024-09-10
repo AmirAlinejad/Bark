@@ -1,8 +1,10 @@
-import React from "react";
+import React, { useEffect } from "react";
 import {
   View,
   StyleSheet,
   TouchableOpacity,
+  Animated,
+  Easing,
 } from "react-native";
 // components
 import MessageItem from "./MessageItem";
@@ -72,6 +74,30 @@ const ChatMessage = ({
       // If error, revert the optimistic update
       setLikedMessages(likedMessages); // revert to previous state
     }
+  };
+
+  // animate like button
+  const animatedValue = new Animated.Value(1);
+  useEffect(() => {
+    if (isLikedByUser) {
+      Animated.timing(animatedValue, {
+        toValue: 1.2,
+        duration: 200,
+        easing: Easing.linear,
+        useNativeDriver: true,
+      }).start(() => {
+        Animated.timing(animatedValue, {
+          toValue: 1,
+          duration: 200,
+          easing: Easing.linear,
+          useNativeDriver: true,
+        }).start();
+      });
+    }
+  }, [isLikedByUser]);
+
+  const likeMessageStyle = {
+    transform: [{ scale: animatedValue }],
   };
 
   // get background color based on pinned and user id
@@ -148,7 +174,9 @@ const ChatMessage = ({
           />
           {!message.voteOptions && (
             <TouchableOpacity onPress={toggleLike} style={styles.likeButton}>
-              <Ionicons name={heartIcon} size={24} color={heartColor} />
+              <Animated.View style={likeMessageStyle}>
+                <Ionicons name={heartIcon} size={24} color={heartColor} />
+              </Animated.View>
               <CustomText
                 style={[styles.likeCountText, { color: colors.textLight }]}
                 text={likeCount}

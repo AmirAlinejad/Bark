@@ -12,13 +12,12 @@ import {
   deleteDoc,
   orderBy,
 } from "firebase/firestore";
-import { firestore } from "../backend/FirebaseConfig";
+import { FIREBASE_AUTH, firestore } from "../backend/FirebaseConfig";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Alert } from "react-native";
 import { getProfileData, getUserData } from "./profileFunctions";
 import { sendPushNotification } from "./chatFunctions";
 import { emailSplit } from "./backendFunctions";
-import { auth } from "../backend/FirebaseConfig";
 
 const fetchClubMembers = async (clubId, setClubMembers) => {
   const schoolKey = await emailSplit();
@@ -108,6 +107,8 @@ const getSetMyClubsData = async (setter, setMutedClubs, setLoading) => {
   // get user from async storage
   const userData = await getUserData();
 
+  console.log("User data:", userData);
+
   // get user clubs from firestore to ensure data is up to date
   const userDocRef = doc(
     firestore,
@@ -120,6 +121,7 @@ const getSetMyClubsData = async (setter, setMutedClubs, setLoading) => {
 
   if (!userDocSnapshot.exists()) {
     console.log("User not found.");
+    setLoading(false);
     return;
   }
 
@@ -211,16 +213,20 @@ const getSetMyClubsData = async (setter, setMutedClubs, setLoading) => {
 
   await SecureStore.setItemAsync("user", JSON.stringify(userData));
 
+  const updatesData = {
+    clubs: clubIds,
+  };
+
   // filter clubs created by user
-  const clubsCreated = userData.clubsCreated.filter((club) =>
-    clubIds.includes(club)
-  );
+  let clubsCreated = userFirestoreData.clubsCreated;
+
+  if (clubsCreated) {
+    clubsCreated = clubsCreated.filter((club) => clubIds.includes(club));
+    updatesData.clubsCreated = clubsCreated;
+  }
 
   // update user data in firestore
-  await updateDoc(userDocRef, {
-    clubs: clubIds,
-    clubsCreated: clubsCreated,
-  });
+  await updateDoc(userDocRef, updatesData);
 
   if (setMutedClubs) {
     setMutedClubs(mutedClubs);
@@ -236,7 +242,8 @@ const joinClub = async (id, privilege, userId) => {
     let userIdToUse;
     if (!userId) {
       // get user id from async storage
-      userIdToUse = auth.currentUser.uid;
+      console.log("User id:", FIREBASE_AUTH.currentUser.uid);
+      userIdToUse = FIREBASE_AUTH.currentUser.uid;
     } else {
       userIdToUse = userId;
     }
@@ -480,7 +487,8 @@ const leaveClubConfirmed = async (clubId, user) => {
     let userId;
     let userData;
     if (!user) {
-      userId = auth.currentUser.uid;
+      userId = FIREBASE_AUTH.currentUser.uid;
+      console.log("User id:", userId);
       userData = await getProfileData(userId);
     } else {
       userId = user;
@@ -704,7 +712,7 @@ const checkMembership = async (
   setMembershipChecked
 ) => {
   // get user id from auth
-  const userId = auth.currentUser.uid;
+  const userId = FIREBASE_AUTH.currentUser.uid;
 
   const schoolKey = await emailSplit();
 

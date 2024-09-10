@@ -1,6 +1,3 @@
-import React from 'react';
-import { StyleSheet } from 'react-native';
-
 export const title = {
     marginTop: 10,
     fontSize: 28,

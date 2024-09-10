@@ -1,4 +1,3 @@
-import { getAuth } from "firebase/auth";
 // storage
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as SecureStore from "expo-secure-store";
@@ -6,6 +5,7 @@ import * as SecureStore from "expo-secure-store";
 import { SCHOOLS } from "../macros/macros";
 // toast
 import Toast from "react-native-toast-message";
+import { FIREBASE_AUTH } from "../backend/FirebaseConfig";
 
 const emailSplit = async () => {
   // try async storage first
@@ -19,8 +19,7 @@ const emailSplit = async () => {
   }
 
   // if not there, get from auth
-  const auth = getAuth();
-  const user = auth.currentUser;
+  const user = FIREBASE_AUTH.currentUser;
   const schoolKey = user.email.split("@")[1].split(".")[0];
 
   // save to async storage

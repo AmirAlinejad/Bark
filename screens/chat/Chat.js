@@ -17,6 +17,8 @@ import {
   Platform,
   Dimensions,
   RefreshControl,
+  Animated,
+  Easing,
 } from "react-native";
 // keyboard listener
 import KeyboardListener from "react-native-keyboard-listener";
@@ -55,7 +57,6 @@ import {
   handleCameraPress,
   handleDocumentUploadAndSend,
   sendChatNotification,
-  sendPushNotification,
 } from "../../functions/chatFunctions";
 import { getSetUserData } from "../../functions/profileFunctions";
 import { fetchMessages } from "../../functions/chatFunctions";
@@ -86,6 +87,7 @@ export default function Chat({ route, navigation }) {
   const [isAtBottom, setIsAtBottom] = useState(true); // Initially assume the user is at the bottom
   const [likedMessages, setLikedMessages] = useState(new Set());
   const [gifUrl, setGifUrl] = useState(null); // Define gifUrl state
+  const [showSendButton, setShowSendButton] = useState(false); // Define showSendButton state
 
   // Define states for the liked messages modal
   const [isLikesModalVisible, setIsLikesModalVisible] = useState(false);
@@ -621,6 +623,45 @@ export default function Chat({ route, navigation }) {
     );
   };
 
+  // animate size of send button
+  const sendButtonSize = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.timing(sendButtonSize, {
+      toValue: showSendButton ? 1 : 0,
+      duration: 200,
+      easing: Easing.linear,
+      useNativeDriver: false,
+    }).start();
+  }, [showSendButton]);
+
+  // send button style
+  const sendButtonStyle = {
+    transform: [
+      {
+        scale: sendButtonSize.interpolate({
+          inputRange: [0, 1],
+          outputRange: [0, 1],
+        }),
+      },
+      {
+        rotate: sendButtonSize.interpolate({
+          inputRange: [0, 1],
+          outputRange: ["-90deg", "0deg"],
+        }),
+      },
+    ],
+  };
+
+  // update send button visibility
+  useEffect(() => {
+    if (messageText || tempImageUrl || gifUrl) {
+      setShowSendButton(true);
+    } else {
+      setShowSendButton(false);
+    }
+  }, [messageText, tempImageUrl, gifUrl]);
+
   return (
     <TouchableWithoutFeedback
       onPress={() => {
@@ -766,7 +807,11 @@ export default function Chat({ route, navigation }) {
                 style={styles.toolbarButton}
                 onPress={openModal}
               >
-                <Ionicons name="add" size={30} color={colors.textLight} />
+                <Ionicons
+                  name="chevron-up-outline"
+                  size={30}
+                  color={colors.textLight}
+                />
               </TouchableOpacity>
 
               {/* Modal for toolbar buttons*/}
@@ -879,17 +924,27 @@ export default function Chat({ route, navigation }) {
               </View>
 
               {/* Send Button */}
-              <TouchableOpacity onPress={sendMessage} style={styles.sendButton}>
-                <Ionicons
-                  name="send"
-                  size={24}
-                  color={
-                    tempImageUrl || gifUrl || messageText
-                      ? colors.button
-                      : colors.gray
-                  }
-                />
-              </TouchableOpacity>
+              <Animated.View
+                style={{
+                  ...sendButtonStyle,
+                  opacity: sendButtonSize,
+                }}
+              >
+                <TouchableOpacity
+                  onPress={sendMessage}
+                  style={styles.sendButton}
+                >
+                  <Ionicons
+                    name="send"
+                    size={24}
+                    color={
+                      tempImageUrl || gifUrl || messageText
+                        ? colors.button
+                        : colors.button
+                    }
+                  />
+                </TouchableOpacity>
+              </Animated.View>
             </View>
           </View>
 

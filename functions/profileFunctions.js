@@ -1,7 +1,6 @@
-import { auth } from "../backend/FirebaseConfig";
 import { getDoc, doc, deleteDoc } from "firebase/firestore";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { firestore } from "../backend/FirebaseConfig";
+import { FIREBASE_AUTH, firestore } from "../backend/FirebaseConfig";
 import * as SecureStore from "expo-secure-store";
 import { deleteUser } from "firebase/auth";
 import { Alert } from "react-native";
@@ -15,12 +14,12 @@ const getSetUserData = async (setter) => {
     if (userData) {
       setter(JSON.parse(userData));
     } else {
-      if (!auth.currentUser) {
+      if (!FIREBASE_AUTH.currentUser) {
         Alert.alert("Error getting user auth:", "User not found");
         return;
       }
 
-      const user = auth.currentUser;
+      const user = FIREBASE_AUTH.currentUser;
       const schoolKey = await emailSplit();
       const userDocRef = doc(
         firestore,
@@ -49,12 +48,12 @@ const getUserData = async () => {
     if (userData) {
       return JSON.parse(userData);
     } else {
-      if (!auth.currentUser) {
+      if (!FIREBASE_AUTH.currentUser) {
         Alert.alert("Error getting user auth:", "User not found");
         return;
       }
 
-      const user = auth.currentUser;
+      const user = FIREBASE_AUTH.currentUser;
       const schoolKey = await emailSplit();
       const userDocRef = doc(
         firestore,
@@ -117,9 +116,8 @@ const updateProfileData = async (userId, setter) => {
 
 const deleteAccount = async () => {
   // get user id from async storage
-  const userData = await SecureStore.getItemAsync("user");
-  const user = JSON.parse(userData);
-  const id = user.id;
+  const auth = FIREBASE_AUTH.currentUser;
+  const id = auth.uid;
 
   // get user's clubs from firestore
   const schoolKey = await emailSplit();
@@ -148,7 +146,7 @@ const deleteAccount = async () => {
   await deleteDoc(userDocRef);
 
   // delete user from auth
-  const authUser = auth.currentUser;
+  const authUser = FIREBASE_AUTH.currentUser;
   deleteUser(authUser)
     .then(() => {})
     .catch((error) => {

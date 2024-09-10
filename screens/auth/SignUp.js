@@ -24,7 +24,7 @@ import {
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 // firebase
 import { doc, setDoc } from "firebase/firestore";
-import { FIREBASE_AUTH, firestore } from "../../backend/FirebaseConfig";
+import { firestore, FIREBASE_AUTH } from "../../backend/FirebaseConfig";
 // theme
 import { useTheme } from "@react-navigation/native";
 // global context
@@ -49,8 +49,6 @@ const SignUp = ({ navigation }) => {
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   // firebase
-  const auth = FIREBASE_AUTH;
-
   const { colors } = useTheme();
 
   // password visibility
@@ -106,10 +104,11 @@ const SignUp = ({ navigation }) => {
     try {
       // create user with email and password
       const response = await createUserWithEmailAndPassword(
-        auth,
+        FIREBASE_AUTH,
         email,
         password
       );
+
 
       // update user profile in auth
       const emailSplit = email.split("@")[1].split(".")[0];
@@ -137,7 +136,7 @@ const SignUp = ({ navigation }) => {
       navigation.navigate("VerifySchool");
 
       // send email verification
-      await sendEmailVerification(response.user);
+      await sendEmailVerification(FIREBASE_AUTH.currentUser);
     } catch (error) {
       console.log(error);
       setErrorMessage("Signup failed: " + error.message);
