@@ -8,7 +8,7 @@ import Ionicons from "react-native-vector-icons/Ionicons";
 // colors
 import { useTheme } from "@react-navigation/native";
 
-const CustomButton = ({ onPress, text, color, textColor, icon, width }) => {
+const CustomButton = ({ onPress, text, color, textColor, icon, width, height, inverted }) => {
   const { colors } = useTheme();
   const backgroundColor = color ? color : colors.button;
 
@@ -17,7 +17,7 @@ const CustomButton = ({ onPress, text, color, textColor, icon, width }) => {
       onPress={onPress}
       style={[
         styles.container,
-        { backgroundColor: backgroundColor, width: width ? width : "auto" },
+        { backgroundColor: backgroundColor, width: width ? width : "auto", height: height ? height : "auto" },
       ]}
     >
       {icon && (

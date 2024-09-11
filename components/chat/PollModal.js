@@ -14,13 +14,11 @@ import { Ionicons } from "@expo/vector-icons";
 // colors
 import { useTheme } from "@react-navigation/native";
 
-const LikesModal = ({ isVisible, onClose, profiles }) => {
+const PollModal = ({ isVisible, onClose, profiles }) => {
   const { colors } = useTheme();
 
   // convert set of profile images to array
   const profilesArray = Array.from(profiles);
-
-  console.log(profilesArray);
 
   return (
     <Modal
@@ -38,13 +36,16 @@ const LikesModal = ({ isVisible, onClose, profiles }) => {
                 <View style={styles.userDetails}>
                   <ProfileImg profileImg={item.profileImg} width={50} />
                   <Ionicons
-                    name="heart"
+                    name="ticket"
                     size={20}
-                    color={colors.red}
+                    color={colors.button}
                     style={styles.heartIcon}
                   />
                 </View>
-                <CustomText text={item.firstName + " " + item.lastName[0]} style={{ marginTop: 8, fontSize: 16 }} />
+                <CustomText
+                  text={item.firstName + " " + item.lastName[0]}
+                  style={{ marginTop: 8, fontSize: 16 }}
+                />
               </View>
             )}
             keyExtractor={(item, index) => index.toString()}
@@ -106,4 +107,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default LikesModal;
+export default PollModal;

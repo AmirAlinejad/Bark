@@ -9,6 +9,8 @@ import EventScreen from "./event/EventScreen";
 import EditEventScreen from "./event/EditEventScreen";
 import NewEvent from "./event/NewEvent";
 import MapPicker from "./event/MapPicker";
+import AttendanceScreen from "./event/AttendanceScreen";
+import AttendeesScreen from "./event/AttendeesScreen";
 
 import Chat from "./chat/Chat";
 import ImageGalleryScreen from "./chat/ImageGalleryScreen";
@@ -116,6 +118,16 @@ const Main = () => {
       <Stack.Screen
         name="Location"
         component={MapPicker}
+        options={headerProps}
+      />
+      <Stack.Screen
+        name="Attendance"
+        component={AttendanceScreen}
+        options={headerProps}
+      />
+      <Stack.Screen
+        name="Attendees"
+        component={AttendeesScreen}
         options={headerProps}
       />
       <Stack.Screen

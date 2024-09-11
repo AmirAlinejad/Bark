@@ -175,12 +175,12 @@ const handleDocumentUploadAndSend = async (
 
 const handlePressMessage = (
   likes,
-  setLikedProfileImages,
+  setLikedProfiles,
   setIsLikesModalVisible
 ) => {
   // if no likes, return
   if (!likes || likes.length === 0) {
-    setLikedProfileImages(new Set());
+    setLikedProfiles(new Set());
     return;
   }
 
@@ -188,8 +188,7 @@ const handlePressMessage = (
   const setLikesUserDataById = async () => {
     const schoolKey = await emailSplit();
 
-    let userNames = new Set();
-    let profilePics = new Set();
+    let profiles = new Set();
     for (let i = 0; i < likes.length; i++) {
       let userId = likes[i];
       const userDocRef = doc(
@@ -203,16 +202,16 @@ const handlePressMessage = (
 
       if (userDocSnapshot.exists()) {
         const userData = userDocSnapshot.data();
-        userNames.add(userData.userName);
-        if (userData.profileImg) {
-          profilePics.add(userData.profileImg);
-        } else {
-          profilePics.add(null);
-        }
+        profiles.add({
+          id: userId,
+          firstName: userData.firstName,
+          lastName: userData.lastName,
+          profileImg: userData.profileImg,
+        });
       }
     }
 
-    setLikedProfileImages(profilePics);
+    setLikedProfiles(profiles);
   };
 
   setLikesUserDataById();

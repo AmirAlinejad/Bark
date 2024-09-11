@@ -29,8 +29,10 @@ const ChatMessage = ({
   likedMessages,
   setLikedMessages,
   currentUserPrivilege,
-  setLikedProfileImages,
+  setLikedProfiles,
   setIsLikesModalVisible,
+  setPollProfiles,
+  setIsPollModalVisible,
   setReplyingToMessage,
   setOverlayVisible,
   setOverlayUserData,
@@ -141,7 +143,7 @@ const ChatMessage = ({
           onPress={() =>
             handlePressMessage(
               message.likes,
-              setLikedProfileImages,
+              setLikedProfiles,
               setIsLikesModalVisible
             )
           }
@@ -163,6 +165,8 @@ const ChatMessage = ({
             messageRef={messageRef}
             setReplyingToMessage={setReplyingToMessage}
             swipeable={message.voteOptions ? false : true}
+            setPollProfiles={setPollProfiles}
+            setIsPollModalVisible={setIsPollModalVisible}
             onLongPress={() => {
               handleLongPress(
                 message,

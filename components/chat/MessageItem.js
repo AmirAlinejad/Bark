@@ -9,6 +9,10 @@ import {
 // functions
 import { updateProfileData } from "../../functions/profileFunctions";
 import { pinMessage, voteInPoll } from "../../functions/chatFunctions";
+import { emailSplit } from "../../functions/backendFunctions";
+// firebase
+import { doc, getDoc, deleteDoc } from "firebase/firestore";
+import { firestore } from "../../backend/FirebaseConfig";
 // my components
 import ProfileImg from "../display/ProfileImg";
 import CustomText from "../display/CustomText";
@@ -35,6 +39,8 @@ const MessageItem = ({
   messageRef,
   setReplyingToMessage,
   swipeable,
+  setPollProfiles,
+  setIsPollModalVisible,
   onLongPress,
 }) => {
   const { colors } = useTheme();
@@ -159,6 +165,53 @@ const MessageItem = ({
     );
   };
 
+  // press poll option
+  const handlePresPoll = () => {
+    // if no votes, return
+    if (!item.voters) {
+      return;
+    }
+
+    // get user names and profile pictures based on ids from firestore
+    const setPollProfileDataById = async () => {
+      const schoolKey = await emailSplit();
+
+      let profiles = new Set();
+
+      for (let i = 0; i < item.voters.length; i++) {
+        let userId = item.voters[i];
+        const userDocRef = doc(
+          firestore,
+          "schools",
+          schoolKey,
+          "userData",
+          userId
+        );
+        const userDocSnapshot = await getDoc(userDocRef);
+
+        if (userDocSnapshot.exists()) {
+          const userData = userDocSnapshot.data();
+          profiles.add({
+            id: userId,
+            firstName: userData.firstName,
+            lastName: userData.lastName,
+            profileImg: userData.profileImg,
+          });
+        }
+      }
+
+      setPollProfiles(profiles);
+    };
+
+    setPollProfileDataById();
+    setIsPollModalVisible(true);
+  };
+
+  // Function to delete a message
+  const deleteMessage = async (messageRef) => {
+    await deleteDoc(messageRef);
+  };
+
   return (
     <Swipeable
       ref={swipeableRef}
@@ -261,8 +314,9 @@ const MessageItem = ({
           )}
           {/* Poll */}
           {item.voteOptions && (
-            <View
-              style={[styles.pollContainer, { backgroundColor: colors.gray }]}
+            <TouchableOpacity
+              onPress={handlePresPoll}
+              style={[styles.pollContainer, { borderColor: colors.gray }]}
             >
               <CustomText
                 style={[styles.pollQuestion, { color: colors.text }]}
@@ -283,10 +337,8 @@ const MessageItem = ({
                     />
 
                     <View
-                      style={[
-                        styles.pollGraph,
-               
-                      ]}
+                      style={[styles.pollGraph]}
+                      
                     >
                       <LinearGradient // Background Linear Gradient
                         colors={[colors.purple, colors.button]}
@@ -312,13 +364,14 @@ const MessageItem = ({
                             voteInPoll(messageRef, option.id, userId)
                           }
                           color={colors.button}
+                          height={40}
                         />
                       </View>
                     )}
                   </View>
                 </View>
               ))}
-            </View>
+            </TouchableOpacity>
           )}
           {/* Display view image text */}
           <CustomText
@@ -400,13 +453,14 @@ const styles = StyleSheet.create({
 
   // Poll styles
   pollContainer: {
-    backgroundColor: "rgba(0, 0, 0, 0.1)",
     flex: 1,
+    borderWidth: 1,
     paddingHorizontal: 16,
     borderRadius: 15,
     marginBottom: 5,
     marginRight: 16,
     paddingBottom: 10,
+    marginTop: 5,
   },
   pollQuestion: {
     marginBottom: 12,

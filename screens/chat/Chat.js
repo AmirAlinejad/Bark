@@ -46,6 +46,7 @@ import { Image } from "expo-image";
 import BottomSheetModal from "../../components/chat/BottomSheetModal";
 import ChatMessage from "../../components/chat/ChatMessage";
 import LikesModal from "../../components/chat/LikesModal";
+import PollModal from "../../components/chat/PollModal";
 import ProfileOverlay from "../../components/overlays/ProfileOverlay";
 import CustomText from "../../components/display/CustomText";
 import ReplyPreview from "../../components/chat/ReplyPreview";
@@ -91,8 +92,11 @@ export default function Chat({ route, navigation }) {
 
   // Define states for the liked messages modal
   const [isLikesModalVisible, setIsLikesModalVisible] = useState(false);
-  //const [likedUsernames, setLikedUsernames] = useState(new Set()); // user ids instead of usernames
-  const [likedProfileImages, setLikedProfileImages] = useState(new Set());
+  const [likedProfiles, setLikedProfiles] = useState(new Set());
+
+  // Define states for the poll modal
+  const [isPollModalVisible, setIsPollModalVisible] = useState(false);
+  const [pollProfiles, setPollProfiles] = useState(new Set());
 
   // replying state
   const [replyingToMessage, setReplyingToMessage] = useState(null);
@@ -610,9 +614,10 @@ export default function Chat({ route, navigation }) {
         isLikedByUser={isLikedByUser}
         setLikedMessages={setLikedMessages}
         currentUserPrivilege={currentUserPrivilege}
-        //setLikedUsernames={setLikedUsernames}
-        setLikedProfileImages={setLikedProfileImages}
+        setLikedProfiles={setLikedProfiles}
         setIsLikesModalVisible={setIsLikesModalVisible}
+        setPollProfiles={setPollProfiles}
+        setIsPollModalVisible={setIsPollModalVisible}
         setReplyingToMessage={setReplyingToMessage}
         setOverlayUserData={setOverlayUserData}
         setOverlayVisible={setOverlayVisible}
@@ -773,8 +778,14 @@ export default function Chat({ route, navigation }) {
         <LikesModal
           isVisible={isLikesModalVisible}
           onClose={() => setIsLikesModalVisible(false)}
-          //userNames={likedUsernames} // This prop now contains ids instead of usernames
-          profileImages={likedProfileImages}
+          profiles={likedProfiles}
+        />
+
+        {/* Poll Bottom Modal */}
+        <PollModal
+          isVisible={isPollModalVisible}
+          onClose={() => setIsPollModalVisible(false)}
+          profiles={pollProfiles}
         />
 
         {/* Toolbar */}

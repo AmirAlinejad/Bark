@@ -11,7 +11,7 @@ import { emailSplit } from "../../functions/backendFunctions";
 // backend
 import { firestore } from "../../backend/FirebaseConfig";
 // date time picker
-import { doc, setDoc } from "firebase/firestore"; // firestore
+import { doc, setDoc, collection, getDocs } from "firebase/firestore";
 // styles
 import { useTheme } from "@react-navigation/native";
 // scroll view
@@ -189,7 +189,7 @@ const NewEvent = ({ route, navigation }) => {
         notificationDate2.setHours(notificationDate2.getHours() - 24);
 
         // send a push notification to every clubMember telling them to RSVP
-        const clubMembersRef = doc(
+        const clubMembersRef = collection(
           firestore,
           "schools",
           schoolKey,
@@ -197,28 +197,23 @@ const NewEvent = ({ route, navigation }) => {
           "clubs",
           clubId
         );
-        const clubMembersSnapshot = await clubMembersRef.get();
-        const clubMembersData = clubMembersSnapshot.data();
+        const clubMembers = await getDocs(clubMembersRef);
 
-        if (clubMembersData) {
-          const clubMembers = clubMembersData.members;
+        const clubMembersArray = clubMembers.docs;
 
-          for (let i = 0; i < clubMembers.length; i++) {
-            const member = clubMembers[i];
-
-            console.log("member: ", member);
-
-            // send push notification
-            await sendPushNotification(
-              member.expoPushToken,
-              "New Event",
-              form.eventName,
-              "RSVP to this event!"
-            );
+        for (const member of clubMembersArray) {
+          if (!member.data().muted) {
+            if (member.data().expoPushToken) {
+              // send push notification
+              await sendPushNotification(
+                member.data().expoPushToken,
+                "New Event",
+                form.eventName,
+                "RSVP to this event!"
+              );
+            }
           }
         }
-          
-
       } catch (e) {
         console.error("Error adding document: ", e);
       }

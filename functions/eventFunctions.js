@@ -73,7 +73,7 @@ const getClubCalendarData = async (clubId, setter) => {
   return setter(eventsSnapshot.docs.map((doc) => doc.data()));
 };
 
-const getSetEventData = async (eventId, setter, setRSVPList) => {
+const getSetEventData = async (eventId, setter, setRSVPList, goBack) => {
   const schoolKey = await emailSplit();
   const eventDocRef = doc(
     firestore,
@@ -90,6 +90,13 @@ const getSetEventData = async (eventId, setter, setRSVPList) => {
   }
 
   const event = eventDocSnapshot.data();
+
+  if (event === undefined) {
+    if (goBack) {
+      goBack();
+      return;
+    }
+  }
 
   // get RSVP list
   setRSVPList(event.rsvps ? event.rsvps : []);
@@ -215,6 +222,11 @@ const addEventToDefaultCalendar = async (event) => {
 
 const getRSVPProfileData = async (rsvpList, setter) => {
   let rsvpProfileData = [];
+  if (!rsvpList) {
+    setter(rsvpProfileData);
+    return;
+  }
+
   for (let i = 0; i < rsvpList.length; i++) {
     const profileData = await getProfileData(rsvpList[i]);
     const profileObj = {

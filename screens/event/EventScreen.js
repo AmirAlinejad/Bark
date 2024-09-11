@@ -76,10 +76,18 @@ const EventScreen = ({ route, navigation }) => {
     setAddressCopied(true);
   };
 
+  const goBack = () => {
+    if (!event) {
+      Alert.alert("Event not found.");
+      navigation.goBack();
+      return;
+    }
+  };
+
   // get event data
   useEffect(() => {
     const asyncFunc = async () => {
-      await getSetEventData(eventId, setEvent, setRSVPList);
+      await getSetEventData(eventId, setEvent, setRSVPList, goBack);
 
       // get user id
       getSetUserData(setUserData);
@@ -107,8 +115,6 @@ const EventScreen = ({ route, navigation }) => {
     }
   }, [event]);
 
-  console.log("rsvpProfileData event", rsvpProfileData);
-
   // check user privilege after event data is loaded
   useEffect(() => {
     if (event != undefined) {
@@ -118,17 +124,6 @@ const EventScreen = ({ route, navigation }) => {
 
       asyncFunc();
     }
-  }, [event]);
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (!event) {
-        Alert.alert("Event not found.");
-        navigation.goBack();
-        return;
-      }
-    }, 1000);
-    return () => clearTimeout(timer);
   }, [event]);
 
   // fade out text after 2 seconds
@@ -173,6 +168,8 @@ const EventScreen = ({ route, navigation }) => {
       clubName: event.clubName,
     });
   };
+
+  // go to attendance screen
 
   // split address into street and city
   const splitAddress = (address) => {
