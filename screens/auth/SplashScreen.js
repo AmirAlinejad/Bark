@@ -260,7 +260,7 @@ const SplashScreen = ({ navigation }) => {
               navigation.navigate("Main", { screen: "HomeScreen" });
               navigation.navigate("Main", {
                 screen: "ClubScreen",
-                params: { clubId: clubId, goToHomeScreen: true },
+                params: { clubId: clubId },
               });
             } else if (screenName == "event") {
               const { queryParams } = Linking.parse(URL);
@@ -270,17 +270,17 @@ const SplashScreen = ({ navigation }) => {
               navigation.navigate("Main", { screen: "HomeScreen" });
               navigation.navigate("Main", {
                 screen: "EventScreen",
-                params: { eventId: eventId, goToHomeScreen: true },
+                params: { eventId: eventId },
               });
-            } else if (screenName == "chat") {
+            } else if (screenName == "attendance") {
               const { queryParams } = Linking.parse(URL);
-              const chatId = queryParams.chatId;
+              const eventId = queryParams.eventId;
 
-              // navigate to the chat screen
+              // navigate to the event screen
               navigation.navigate("Main", { screen: "HomeScreen" });
               navigation.navigate("Main", {
-                screen: "Chat",
-                params: { chatId: chatId },
+                screen: "AttendanceScreen",
+                params: { eventId: eventId },
               });
             } else if (screenName == "chat") {
               const { queryParams } = Linking.parse(URL);

@@ -28,7 +28,7 @@ const PollModal = ({ isVisible, onClose, profiles }) => {
       onRequestClose={onClose}
     >
       <TouchableOpacity style={styles.modalOverlay} activeOpacity={1}>
-        <View style={styles.modalContent}>
+        <View style={[ styles.modalContent, { backgroundColor: colors.card }]}>
           <FlatList
             data={profilesArray}
             renderItem={({ item, index }) => (
@@ -44,7 +44,7 @@ const PollModal = ({ isVisible, onClose, profiles }) => {
                 </View>
                 <CustomText
                   text={item.firstName + " " + item.lastName[0]}
-                  style={{ marginTop: 8, fontSize: 16 }}
+                  style={{ marginTop: 8, fontSize: 16, color: colors.text }}
                 />
               </View>
             )}

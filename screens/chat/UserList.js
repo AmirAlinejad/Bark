@@ -17,7 +17,7 @@ import ProfileOverlay from "../../components/overlays/ProfileOverlay";
 import CustomButton from "../../components/buttons/CustomButton";
 // Firebase
 import { doc, updateDoc } from "firebase/firestore";
-import { firestore } from "../../backend/FirebaseConfig";
+import { FIREBASE_AUTH, firestore } from "../../backend/FirebaseConfig";
 // icons
 import Icon from "react-native-vector-icons/MaterialCommunityIcons"; // Ensure react-native-vector-icons is installed
 // functions
@@ -29,8 +29,6 @@ import {
 import { emailSplit } from "../../functions/backendFunctions";
 // styles
 import { useTheme } from "@react-navigation/native";
-// auth
-import { auth } from "../../backend/FirebaseConfig";
 
 const UserList = ({ route, navigation }) => {
   const { clubId } = route.params;
@@ -104,7 +102,7 @@ const UserList = ({ route, navigation }) => {
 
   // sets buttons for editing members
   const actionButtonPressed = (member) => {
-    const user = auth.currentUser;
+    const user = FIREBASE_AUTH.currentUser;
     const id = user.uid;
     const buttons = [];
     // Ensure actions cannot be performed on the owner or the current user
@@ -287,8 +285,6 @@ const UserList = ({ route, navigation }) => {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView
-        style={{ flex: 1 }}
-        contentContainerStyle={styles.container}
         contentInsetAdjustmentBehavior="automatic"
       >
         <View style={styles.upperContent}>

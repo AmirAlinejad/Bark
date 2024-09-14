@@ -8,7 +8,7 @@ import {
   deleteDoc,
   updateDoc,
 } from "firebase/firestore";
-import { firestore } from "../backend/FirebaseConfig";
+import { FIREBASE_AUTH, firestore } from "../backend/FirebaseConfig";
 import { emailSplit } from "./backendFunctions";
 import { getProfileData } from "./profileFunctions";
 import * as Calendar from "expo-calendar";
@@ -120,9 +120,8 @@ const deleteEvent = async (eventId) => {
 const attendEvent = async (eventId) => {
   const schoolKey = await emailSplit();
 
-  // get user id from async storage
-
-  const userId = user.id;
+  // get user id from auth
+  const userId = FIREBASE_AUTH.currentUser.uid;
 
   // get event data
   const eventDocRef = doc(
@@ -164,8 +163,6 @@ const getSetEventAttendance = async (eventId, setter) => {
 
 // get attendees' data
 const getAttendeesData = async (attendees, setter) => {
-  const schoolKey = await emailSplit();
-
   let attendeesData = [];
   // for every user id in the attendance list, get user data
   for (let i = 0; i < attendees.length; i++) {

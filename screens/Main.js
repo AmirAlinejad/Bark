@@ -138,7 +138,7 @@ const Main = () => {
       <Stack.Screen
         name="ImageGalleryScreen"
         component={ImageGalleryScreen}
-        options={headerProps}
+        options={{ ...headerProps, gestureEnabled: true }}
       />
       <Stack.Screen
         name="ImageViewerScreen"
@@ -148,17 +148,17 @@ const Main = () => {
       <Stack.Screen
         name="InClubView"
         component={InClubView}
-        options={headerProps}
+        options={{ ...headerProps, gestureEnabled: true }}
       />
       <Stack.Screen
         name="MessageSearchScreen"
         component={MessageSearchScreen}
-        options={headerProps}
+        options={{ ...headerProps, gestureEnabled: true }}
       />
       <Stack.Screen
         name="UserList"
         component={UserList}
-        options={headerProps}
+        options={{ ...headerProps, gestureEnabled: true }}
       />
       <Stack.Screen name="NewClub" component={NewClub} options={headerProps} />
       <Stack.Screen

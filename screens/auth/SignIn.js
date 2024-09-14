@@ -112,7 +112,7 @@ const SignIn = ({ route, navigation }) => {
       navigation.navigate("Main");
 
       // show welcome toast
-      if (userData.clubs.length == 0) {
+      if (!userData.clubs || userData.clubs.length == 0) {
         Toast.show({
           type: "info",
           text1: "Welcome to Bark! 🎉",

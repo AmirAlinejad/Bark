@@ -11,6 +11,7 @@ import {
   getSetClubData,
   checkMembership,
   requestToJoinClub,
+  getSetRequestsData,
 } from "../../functions/clubFunctions";
 import { getSetClubCalendarData } from "../../functions/eventFunctions";
 import { emailSplit } from "../../functions/backendFunctions";
@@ -90,6 +91,7 @@ const ClubScreen = ({ route, navigation }) => {
 
       await getSetClubData(clubId, setClubData);
       await getSetClubCalendarData(clubId, setEventData);
+      await getSetRequestsData(setRequests, clubId);
 
       await checkMembership(
         clubId,

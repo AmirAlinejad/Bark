@@ -204,7 +204,10 @@ const MessageItem = ({
     };
 
     setPollProfileDataById();
-    setIsPollModalVisible(true);
+
+    if (item.voters.length > 0) {
+      setIsPollModalVisible(true);
+    }
   };
 
   // Function to delete a message
@@ -336,10 +339,7 @@ const MessageItem = ({
                       text={`(${votesArray()[option.id]})  `}
                     />
 
-                    <View
-                      style={[styles.pollGraph]}
-                      
-                    >
+                    <View style={[styles.pollGraph]}>
                       <LinearGradient // Background Linear Gradient
                         colors={[colors.purple, colors.button]}
                         locations={[0, 1]}

@@ -170,6 +170,11 @@ const EventScreen = ({ route, navigation }) => {
   };
 
   // go to attendance screen
+  const onAttendanceButtonPress = () => {
+    navigation.navigate("Attendance", {
+      eventId: eventId,
+    });
+  };
 
   // split address into street and city
   const splitAddress = (address) => {
@@ -287,7 +292,13 @@ const EventScreen = ({ route, navigation }) => {
                 />
               </TouchableOpacity>
               <View style={{ flexDirection: "row", gap: 12, marginTop: 16 }}>
-                <TouchableOpacity onPress={() => setRsvpModalVisible(true)}>
+                <TouchableOpacity
+                  onPress={() => {
+                    if (rsvpProfileData.length > 0) {
+                      setRsvpModalVisible(true);
+                    }
+                  }}
+                >
                   <Ionicons name="people" size={28} color={colors.button} />
                 </TouchableOpacity>
 
@@ -441,9 +452,10 @@ const EventScreen = ({ route, navigation }) => {
             position={{ bottom: 0, right: 0 }}
             size={60}
           />
+          
           <CircleButton
-            icon="copy-outline"
-            onPress={onDuplicateButtonPress}
+            icon="megaphone-outline"
+            onPress={onAttendanceButtonPress}
             position={{ bottom: 72, right: 0 }}
             size={60}
           />
