@@ -7,34 +7,54 @@ import CustomText from "../../components/display/CustomText";
 import IconOverlay from "../../components/overlays/IconOverlay";
 import CustomInput from "../../components/input/CustomInput";
 // functions
-import { addAttendee } from "../../functions/eventFunctions";
+import { attendEvent } from "../../functions/eventFunctions";
 // styles
 import { useTheme } from "@react-navigation/native";
 
 const AttendeesScreen = ({ route, navigation }) => {
   const { colors } = useTheme();
-  const [loading, setLoading] = useState;
+  const [loading, setLoading] = useState(false);
   const [showOverlay, setShowOverlay] = useState(false);
   const [message, setMessage] = useState("");
   const { eventId } = route.params;
 
   return (
     <View style={styles.container}>
-      <CustomText text="Write a short message to confirm your attendance" />
+      <CustomText
+        text="Thanks for attending!"
+        font="bold"
+        style={{
+          marginBottom: 20,
+          textAlign: "center",
+          fontSize: 24,
+          color: colors.text,
+        }}
+      />
+      <CustomText
+        text="Write a short message to say you were here."
+        style={{
+          marginBottom: 20,
+          textAlign: "center",
+          fontSize: 16,
+          color: colors.text,
+        }}
+      />
       <CustomInput
-        placeholder="Message"
+        placeholder="Message (15 characters)"
         value={message}
-        onChangeText={(text) => setMessage(text)}
+        setValue={(text) => setMessage(text)}
+        multiline={false}
+        maxLength={15}
       />
       {!loading && (
         <CustomButton
-          title="Confirm Attendance"
+          text="Confirm Attendance"
           onPress={() => {
             const async = async () => {
               setLoading(true);
 
               // add attendee to event
-              await addAttendee(eventId);
+              await attendEvent(eventId, message);
 
               setLoading(false);
               setShowOverlay(true);

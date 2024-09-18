@@ -18,6 +18,8 @@ import * as Clipboard from "expo-clipboard";
 import { useTheme } from "@react-navigation/native";
 // logo
 import logo from "../assets/brand/QRCodeLogo.png";
+// icons
+import { Ionicons } from "react-native-vector-icons";
 
 const QRCodeScreen = ({ route, navigation }) => {
   useLayoutEffect(() => {
@@ -107,10 +109,15 @@ const QRCodeScreen = ({ route, navigation }) => {
               alignItems: "center",
             }}
           >
+            <Ionicons
+              name="checkmark-circle"
+              size={50}
+              color={colors.textLight}
+            />
             <CustomText
               text="Link copied to clipboard!"
               font="bold"
-              style={[styles.text, { fontSize: 24, color: colors.text }]}
+              style={[styles.text, { fontSize: 24, color: colors.textLight }]}
             />
           </Animated.View>
         )}

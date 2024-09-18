@@ -117,7 +117,7 @@ const deleteEvent = async (eventId) => {
 };
 
 // add user to attendance for an event
-const attendEvent = async (eventId) => {
+const attendEvent = async (eventId, message) => {
   const schoolKey = await emailSplit();
 
   // get user id from auth
@@ -128,7 +128,7 @@ const attendEvent = async (eventId) => {
     firestore,
     "schools",
     schoolKey,
-    "eventAttendance",
+    "eventData",
     eventId
   );
   const eventDocSnapshot = await getDoc(eventDocRef);
@@ -154,7 +154,7 @@ const getSetEventAttendance = async (eventId, setter) => {
     firestore,
     "schools",
     schoolKey,
-    "eventAttendance",
+    "eventData",
     eventId
   );
   const eventDocSnapshot = await getDoc(eventDocRef);
@@ -174,6 +174,8 @@ const getAttendeesData = async (attendees, setter) => {
       attendeesData = [...attendeesData, profileData];
     }
   }
+
+  console.log("attendeesData: ", attendeesData);
 
   setter(attendeesData);
 };

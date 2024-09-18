@@ -228,7 +228,7 @@ const BottomSheetModal = ({
 
   // Add option
   const onAddOption = () => {
-    if (newVoteOptionText) {
+    if (newVoteOptionText && voteOptions.length < 8) {
       setVoteOptions([
         ...voteOptions,
         { id: voteOptions.length.toString(), text: newVoteOptionText },

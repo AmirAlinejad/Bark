@@ -27,6 +27,7 @@ import {
   leaveClubConfirmed,
 } from "../../functions/clubFunctions";
 import { emailSplit } from "../../functions/backendFunctions";
+import { getProfileData } from "../../functions/profileFunctions";
 // styles
 import { useTheme } from "@react-navigation/native";
 
@@ -233,9 +234,15 @@ const UserList = ({ route, navigation }) => {
       <View style={styles.memberContainer}>
         <View style={styles.memberInfo}>
           <TouchableOpacity
-            onPress={() => {
+            onPress={async () => {
+              // get user data for the overlay
+              const userData = await getProfileData(item.id);
+
+              console.log("userData: ", userData);
+
+              // Set the user data for the overlay
+              setOverlayUserData(userData);
               setOverlayVisible(true);
-              setOverlayUserData(item);
             }}
             style={styles.avatarContainer}
           >
@@ -284,9 +291,7 @@ const UserList = ({ route, navigation }) => {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <ScrollView
-        contentInsetAdjustmentBehavior="automatic"
-      >
+      <ScrollView contentInsetAdjustmentBehavior="automatic">
         <View style={styles.upperContent}>
           <View style={styles.filterContainer}>
             {["all", "member", "admin", "owner"].map((privilege) => (

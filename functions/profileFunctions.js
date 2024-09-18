@@ -83,7 +83,6 @@ const getProfileData = async (userId) => {
     const userDocSnapshot = await getDoc(userDocRef);
 
     if (!userDocSnapshot.exists()) {
-      Alert.alert("Error getting user data:", "User data not found");
       return;
     }
 

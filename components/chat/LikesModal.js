@@ -29,7 +29,7 @@ const LikesModal = ({ isVisible, onClose, profiles }) => {
       transparent={true}
       onRequestClose={onClose}
     >
-      <TouchableOpacity style={styles.modalOverlay} activeOpacity={1}>
+      <View style={styles.modalOverlay}>
         <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
           <FlatList
             data={profilesArray}
@@ -53,6 +53,12 @@ const LikesModal = ({ isVisible, onClose, profiles }) => {
             keyExtractor={(item, index) => index.toString()}
             ItemSeparatorComponent={() => <View style={{ width: 10 }} />}
             horizontal={true}
+            showsHorizontalScrollIndicator={false}
+            style={{ width: "100%" }}
+            contentContainerStyle={{
+              minWidth: "100%",
+              justifyContent: "center",
+            }}
           />
           <TouchableOpacity
             onPress={onClose}
@@ -61,7 +67,7 @@ const LikesModal = ({ isVisible, onClose, profiles }) => {
             <CustomText text="Close" font="bold" />
           </TouchableOpacity>
         </View>
-      </TouchableOpacity>
+      </View>
     </Modal>
   );
 };

@@ -34,7 +34,8 @@ import { useTheme } from "@react-navigation/native";
 import * as Clipboard from "expo-clipboard";
 // calendar
 import * as Calendar from "expo-calendar";
-import { set } from "firebase/database";
+// modal
+import Modal from "react-native-modal";
 
 const EventScreen = ({ route, navigation }) => {
   const { eventId, fromScreen, showDate } = route.params;
@@ -50,6 +51,7 @@ const EventScreen = ({ route, navigation }) => {
   const [loading, setLoading] = useState(true);
   // rsvp modal
   const [rsvpModalVisible, setRsvpModalVisible] = useState(false);
+  const [rsvpConfirmModalVisible, setRsvpConfirmModalVisible] = useState(false);
   const [rsvpProfileData, setRsvpProfileData] = useState(null);
 
   const { colors } = useTheme();
@@ -108,7 +110,7 @@ const EventScreen = ({ route, navigation }) => {
   useEffect(() => {
     if (event != undefined) {
       const asyncFunc = async () => {
-        await getRSVPProfileData(event.rsvps, setRsvpProfileData);
+        await getRSVPProfileData(Object.keys(RSVPList), setRsvpProfileData);
       };
 
       asyncFunc();
@@ -185,16 +187,13 @@ const EventScreen = ({ route, navigation }) => {
   };
 
   // toggle RSVP
-  const toggleRSVP = async () => {
+  const setRSVP = async (going) => {
     let newRSVPList = RSVPList;
 
-    if (RSVPList.includes(userData.id)) {
-      // remove user from rsvp list
-      newRSVPList = RSVPList.filter((id) => id != userData.id);
-    } else {
-      // add user to rsvp list
-      newRSVPList = [...RSVPList, userData.id];
-    }
+    newRSVPList = {
+      ...newRSVPList,
+      [userData.id]: going,
+    };
 
     setRSVPList(newRSVPList);
 
@@ -220,6 +219,10 @@ const EventScreen = ({ route, navigation }) => {
     const minutes = newDuration.getMinutes();
     return `${hours} hr ${minutes} min`;
   };
+
+  const positiveRSVPs = Object.keys(RSVPList).filter(
+    (key) => RSVPList[key]
+  ).length;
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
@@ -294,7 +297,7 @@ const EventScreen = ({ route, navigation }) => {
               <View style={{ flexDirection: "row", gap: 12, marginTop: 16 }}>
                 <TouchableOpacity
                   onPress={() => {
-                    if (rsvpProfileData.length > 0) {
+                    if (Object.keys(RSVPList).length > 0) {
                       setRsvpModalVisible(true);
                     }
                   }}
@@ -304,8 +307,8 @@ const EventScreen = ({ route, navigation }) => {
 
                 <CustomText
                   style={{ ...styles.textNormal, color: colors.textLight }}
-                  text={`${RSVPList.length} ${
-                    RSVPList.length === 1 ? "person is" : "people are"
+                  text={`${positiveRSVPs} ${
+                    positiveRSVPs ? "person is" : "people are"
                   } going`}
                 />
               </View>
@@ -425,10 +428,22 @@ const EventScreen = ({ route, navigation }) => {
       {userData != null && userData.id && (
         <View style={{ position: "absolute", alignSelf: "center", bottom: 32 }}>
           <CustomButton
-            icon={RSVPList.includes(userData.id) ? "checkmark" : "people"}
-            color={RSVPList.includes(userData.id) ? colors.gray : colors.button}
+            icon={
+              Object.keys(RSVPList).includes(userData.id)
+                ? RSVPList[userData.id] == true
+                  ? "checkmark"
+                  : "close"
+                : "add"
+            }
+            color={
+              Object.keys(RSVPList).includes(userData.id)
+                ? RSVPList[userData.id] == true
+                  ? colors.green
+                  : colors.red
+                : colors.button
+            }
             text={`RSVP`}
-            onPress={toggleRSVP}
+            onPress={() => setRsvpConfirmModalVisible(true)}
           />
         </View>
       )}
@@ -452,7 +467,7 @@ const EventScreen = ({ route, navigation }) => {
             position={{ bottom: 0, right: 0 }}
             size={60}
           />
-          
+
           <CircleButton
             icon="megaphone-outline"
             onPress={onAttendanceButtonPress}
@@ -466,7 +481,42 @@ const EventScreen = ({ route, navigation }) => {
         isVisible={rsvpModalVisible}
         setVisible={setRsvpModalVisible}
         rsvpProfileData={rsvpProfileData}
+        rsvpData={RSVPList}
       />
+
+      <Modal isVisible={rsvpConfirmModalVisible}>
+        <View style={[styles.modalContainer, { backgroundColor: colors.card }]}>
+          <CustomText
+            style={[styles.modalText, { color: colors.text }]}
+            text="Are you attending this event?"
+          />
+          <View style={styles.modalButtons}>
+            <CustomButton
+              text="Yes"
+              onPress={() => {
+                setRSVP(true);
+                setRsvpConfirmModalVisible(false);
+              }}
+              color={colors.green}
+            />
+            <CustomButton
+              text="No"
+              onPress={() => {
+                setRSVP(false);
+                setRsvpConfirmModalVisible(false);
+              }}
+              color={colors.red}
+            />
+          </View>
+          <TouchableOpacity style={{ marginTop: 12 }}>
+            <CustomText
+              style={{ color: colors.textLight, fontSize: 16 }}
+              text="Cancel"
+              onPress={() => setRsvpConfirmModalVisible(false)}
+            />
+          </TouchableOpacity>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -529,6 +579,25 @@ const styles = StyleSheet.create({
   popUpText: {
     fontSize: 25,
     textAlign: "right",
+  },
+
+  // modal
+  modalContainer: {
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+    margin: 20,
+    borderRadius: 20,
+  },
+  modalText: {
+    textAlign: "center",
+    fontSize: 18,
+    marginBottom: 20,
+  },
+  modalButtons: {
+    flexDirection: "row",
+    gap: 80,
+    justifyContent: "space-between",
   },
 });
 

@@ -15,14 +15,14 @@ import { Ionicons } from "@expo/vector-icons";
 // colors
 import { useTheme } from "@react-navigation/native";
 
-const RSVPModal = ({ isVisible, setVisible, rsvpProfileData }) => {
+const RSVPModal = ({ isVisible, setVisible, rsvpProfileData, rsvpData }) => {
   const { colors } = useTheme();
   // change to make users contain usernames and profile pictures
   console.log("RSVP Profile Data: ", rsvpProfileData);
 
   return (
     <Modal visible={isVisible} animationType="slide" transparent={true}>
-      <TouchableOpacity style={styles.modalOverlay} activeOpacity={1}>
+      <View style={styles.modalOverlay}>
         <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
           <FlatList
             data={rsvpProfileData}
@@ -50,9 +50,11 @@ const RSVPModal = ({ isVisible, setVisible, rsvpProfileData }) => {
                   />
                   {/* checkmark icon */}
                   <Ionicons
-                    name="checkmark-circle"
+                    name={
+                      rsvpData[item.id] ? "checkmark-circle" : "close-circle"
+                    }
                     size={28}
-                    color={colors.green}
+                    color={rsvpData[item.id] ? colors.green : colors.red}
                   />
                 </View>
               </View>
@@ -65,7 +67,7 @@ const RSVPModal = ({ isVisible, setVisible, rsvpProfileData }) => {
             textColor={colors.text}
           />
         </View>
-      </TouchableOpacity>
+      </View>
     </Modal>
   );
 };

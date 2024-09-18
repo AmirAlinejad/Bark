@@ -279,7 +279,7 @@ const SplashScreen = ({ navigation }) => {
               // navigate to the event screen
               navigation.navigate("Main", { screen: "HomeScreen" });
               navigation.navigate("Main", {
-                screen: "AttendanceScreen",
+                screen: "Attendees",
                 params: { eventId: eventId },
               });
             } else if (screenName == "chat") {

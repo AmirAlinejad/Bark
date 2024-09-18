@@ -5,6 +5,7 @@ import {
   TouchableOpacity,
   Text,
   Animated,
+  Easing,
 } from "react-native";
 // functions
 import { updateProfileData } from "../../functions/profileFunctions";
@@ -45,6 +46,18 @@ const MessageItem = ({
 }) => {
   const { colors } = useTheme();
   const maxReplyToTextLength = 20; // Maximum length of the reply to text
+
+  // animate poll results
+  const pollResults = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.timing(pollResults, {
+      toValue: 1,
+      duration: 800,
+      easing: Easing.bounce,
+      useNativeDriver: false,
+    }).start();
+  }, []);
 
   // format date time
   formatDateTime = (date) => {
@@ -339,7 +352,15 @@ const MessageItem = ({
                       text={`(${votesArray()[option.id]})  `}
                     />
 
-                    <View style={[styles.pollGraph]}>
+                    <Animated.View
+                      style={[
+                        styles.pollGraph,
+                        {
+                          transform: [{ scaleX: pollResults }],
+                          transformOrigin: "left",
+                        },
+                      ]}
+                    >
                       <LinearGradient // Background Linear Gradient
                         colors={[colors.purple, colors.button]}
                         locations={[0, 1]}
@@ -354,7 +375,7 @@ const MessageItem = ({
                           borderRadius: 8,
                         }}
                       />
-                    </View>
+                    </Animated.View>
 
                     {!item.voters.includes(userId) && (
                       <View style={styles.pollOptionButton}>

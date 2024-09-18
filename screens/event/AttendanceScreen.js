@@ -26,6 +26,8 @@ import {
 } from "../../functions/eventFunctions";
 // logo
 import logo from "../../assets/brand/QRCodeLogo.png";
+// icons
+import { Ionicons } from "react-native-vector-icons";
 
 const AttendanceScreen = ({ route, navigation }) => {
   const { name, eventId } = route.params;
@@ -51,20 +53,24 @@ const AttendanceScreen = ({ route, navigation }) => {
 
   // state
   const [copied, setCopied] = useState(false);
-  const [attendees, setAttendees] = useState([
-    {
-      id: "1",
-      name: "John Doe",
-      image: "https://randomuser.me/api/portraits",
-    },
-  ]);
-  const [attendeesData, setAttendeesData] = useState([
-    {
-      id: "1",
-      name: "John Doe",
-      image: "https://randomuser.me/api/portraits",
-    },
-  ]);
+  const [attendees, setAttendees] = useState([]);
+  const [attendeesData, setAttendeesData] = useState([]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      await getSetEventAttendance(eventId, setAttendees);
+    };
+
+    fetchData();
+  }, []);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      await getAttendeesData(attendees, setAttendeesData);
+    };
+
+    fetchData();
+  }, [attendees]);
 
   // colors
   const { colors } = useTheme();
@@ -82,6 +88,20 @@ const AttendanceScreen = ({ route, navigation }) => {
       easing: Easing.bounce,
       useNativeDriver: false,
     }).start();
+  };
+
+  const renderMember = ({ item }) => {
+    return (
+      <View style={styles.memberContainer}>
+        <ProfileImg profileImg={item.profileImg} width={50} />
+
+        <CustomText
+          style={[styles.memberName, { color: colors.text }]}
+          text={`${item.firstName} ${item.lastName}`}
+          font="bold"
+        />
+      </View>
+    );
   };
 
   return (
@@ -120,8 +140,9 @@ const AttendanceScreen = ({ route, navigation }) => {
           <View
             style={{
               flex: 1,
-              justifyContent: "flex-start",
-              height: 100,
+              justifyContent: "center",
+
+              height: 180,
             }}
           >
             {copied && (
@@ -132,46 +153,47 @@ const AttendanceScreen = ({ route, navigation }) => {
                   alignItems: "center",
                 }}
               >
+                <Ionicons
+                  name="checkmark-circle"
+                  size={50}
+                  color={colors.textLight}
+                />
                 <CustomText
                   text="Link copied to clipboard!"
                   font="bold"
-                  style={[styles.text, { fontSize: 24, color: colors.text }]}
+                  style={[
+                    styles.text,
+                    { fontSize: 24, color: colors.textLight },
+                  ]}
                 />
               </Animated.View>
             )}
           </View>
-          <FlatList
-            data={attendeesData}
-            renderItem={({ item }) => (
-              <View
-                style={{
-                  margin: 5,
-                  width: "100%",
-                  height: 100,
-                  flexDirection: "row",
-                  alignItems: "center",
-                  justifyContent: "flex-start",
-                  padding: 20,
-                }}
-              >
-                <CustomText
-                  text={item.name}
-                  style={{
-                    fontSize: 18,
-                    textAlign: "center",
-                    color: colors.text,
-                  }}
-                  font="bold"
-                />
-              </View>
-            )}
-            keyExtractor={(item) => item.id}
-            numColumns={3}
-            style={{ flex: 1 }}
-            contentContainerStyle={{ justifyContent: "center" }}
-            scrollEnabled={false}
-          />
         </View>
+        {attendeesData.length > 0 && (
+          <View style={{ flex: 1 }}>
+            <CustomText
+              text="Who made it?"
+              font="bold"
+              style={[
+                styles.text,
+                {
+                  textAlign: "center",
+                  color: colors.text,
+                  fontSize: 24,
+                  marginBottom: 20,
+                },
+              ]}
+            />
+            <FlatList
+              data={attendeesData}
+              renderItem={renderMember}
+              keyExtractor={(item) => item.id}
+              numColumns={3}
+              scrollEnabled={false}
+            />
+          </View>
+        )}
       </ScrollView>
     </View>
   );
@@ -205,6 +227,18 @@ const styles = StyleSheet.create({
   text: {
     marginTop: 20,
     fontSize: 18,
+  },
+
+  memberContainer: {
+    flex: 1,
+    flexDirection: "column",
+    alignItems: "center",
+    padding: 10,
+  },
+  memberName: {
+    fontSize: 18,
+    fontWeight: "bold",
+    textAlign: "center",
   },
 });
 

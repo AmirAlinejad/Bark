@@ -75,7 +75,7 @@ const VerifyEmail = ({ navigation }) => {
 
         <CustomText
           style={{ ...styles.text, color: colors.textLight }}
-          text="This may take a few minutes."
+          text="You may need to check your spam folder."
         />
 
         {isSending ? (
@@ -85,7 +85,12 @@ const VerifyEmail = ({ navigation }) => {
         )}
 
         <CustomText
-          style={{ ...styles.text, marginBottom: 0, marginTop: 20, color: colors.textLight }}
+          style={{
+            ...styles.text,
+            marginBottom: 0,
+            marginTop: 20,
+            color: colors.textLight,
+          }}
           text="Already verified?"
         />
         <TouchableOpacity onPress={goToSignIn}>

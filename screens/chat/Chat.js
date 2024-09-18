@@ -667,6 +667,30 @@ export default function Chat({ route, navigation }) {
     }
   }, [messageText, tempImageUrl, gifUrl]);
 
+  // animate scroll to bottom button
+  const scrollButtonSize = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.timing(scrollButtonSize, {
+      toValue: isAtBottom ? 0 : 1,
+      duration: 150,
+      easing: Easing.linear,
+      useNativeDriver: false,
+    }).start();
+  }, [isAtBottom]);
+
+  // scroll button style
+  const scrollButtonStyle = {
+    transform: [
+      {
+        scale: scrollButtonSize.interpolate({
+          inputRange: [0, 1],
+          outputRange: [0, 1],
+        }),
+      },
+    ],
+  };
+
   return (
     <TouchableWithoutFeedback
       onPress={() => {
@@ -680,9 +704,7 @@ export default function Chat({ route, navigation }) {
           onWillShow={openKeyboard}
           onWillHide={closeKeyboard}
         />
-
         <View style={{ height: 39 }} />
-
         {/* Admin Chat */}
         {chatName === "admin" && (
           <View
@@ -695,7 +717,6 @@ export default function Chat({ route, navigation }) {
             />
           </View>
         )}
-
         {/* Pinned Messages */}
         {pinnedMessageCount > 0 && (
           <TouchableOpacity
@@ -712,25 +733,32 @@ export default function Chat({ route, navigation }) {
             />
           </TouchableOpacity>
         )}
-
         {/* Scroll to bottom button */}
-        {!isAtBottom && (
+        <Animated.View
+          style={{
+            position: "absolute", // Ensures it's positioned relative to the container.
+            right: 20, // Adjust this value to ensure it's comfortably reachable.
+            bottom: 100, // Adjust this so it's above your keyboard avoiding view or other lower components.
+            zIndex: 1, // Only if necessary, to ensure it's above other components.
+            ...scrollButtonStyle,
+          }}
+        >
           <TouchableOpacity
             style={{
-              position: "absolute", // Ensures it's positioned relative to the container.
-              right: 20, // Adjust this value to ensure it's comfortably reachable.
-              bottom: 100, // Adjust this so it's above your keyboard avoiding view or other lower components.
-              backgroundColor: "rgba(255,255,255,0.7)",
+              backgroundColor: colors.button,
               borderRadius: 25,
               padding: 10, // Increasing padding can help with touchability.
               zIndex: 1, // Only if necessary, to ensure it's above other components.
+              shadowColor: "black",
+              shadowOffset: { width: 0, height: 3 },
+              shadowOpacity: 0.1,
+              shadowRadius: 3,
             }}
             onPress={scrollToBottom}
           >
-            <Ionicons name="arrow-down" size={24} color="black" />
+            <Ionicons name="arrow-down" size={24} color="white" />
           </TouchableOpacity>
-        )}
-
+        </Animated.View>
         {/* Show if no messages */}
         {messages.length === 0 && (
           <View
@@ -754,7 +782,6 @@ export default function Chat({ route, navigation }) {
             </View>
           </View>
         )}
-
         {/* Messages */}
         <GestureHandlerRootView style={{ flex: 1 }}>
           <FlatList
@@ -773,21 +800,18 @@ export default function Chat({ route, navigation }) {
             contentContainerStyle={{ justifyContent: "flex-end", flexGrow: 1 }}
           />
         </GestureHandlerRootView>
-
         {/* Likes Bottom Modal */}
         <LikesModal
           isVisible={isLikesModalVisible}
           onClose={() => setIsLikesModalVisible(false)}
           profiles={likedProfiles}
         />
-
         {/* Poll Bottom Modal */}
         <PollModal
           isVisible={isPollModalVisible}
           onClose={() => setIsPollModalVisible(false)}
           profiles={pollProfiles}
         />
-
         {/* Toolbar */}
         <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -967,7 +991,6 @@ export default function Chat({ route, navigation }) {
             }}
           />
         </KeyboardAvoidingView>
-
         {/* Profile Overlay */}
         <ProfileOverlay
           visible={overlayVisible}
@@ -1067,21 +1090,20 @@ const styles = StyleSheet.create({
   clubNameButton: {
     alignItems: "center",
     justifyContent: "center",
-    marginRight: 20,
+    marginRight: 80,
   },
   clubNameText: {
     fontSize: 20,
     fontWeight: "bold",
     color: "black",
+    maxWidth: 140,
   },
   clubNameContainer: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 5,
-    marginLeft: 20,
     flex: 1,
-    maxWidth: 160,
   },
 
   // admin chat banner

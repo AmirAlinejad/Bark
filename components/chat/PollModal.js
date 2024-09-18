@@ -5,6 +5,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   FlatList,
+  ScrollView,
 } from "react-native";
 // my components
 import CustomText from "../display/CustomText";
@@ -27,8 +28,8 @@ const PollModal = ({ isVisible, onClose, profiles }) => {
       transparent={true}
       onRequestClose={onClose}
     >
-      <TouchableOpacity style={styles.modalOverlay} activeOpacity={1}>
-        <View style={[ styles.modalContent, { backgroundColor: colors.card }]}>
+      <View style={styles.modalOverlay}>
+        <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
           <FlatList
             data={profilesArray}
             renderItem={({ item, index }) => (
@@ -51,6 +52,12 @@ const PollModal = ({ isVisible, onClose, profiles }) => {
             keyExtractor={(item, index) => index.toString()}
             ItemSeparatorComponent={() => <View style={{ width: 10 }} />}
             horizontal={true}
+            showsHorizontalScrollIndicator={false}
+            style={{ width: "100%" }}
+            contentContainerStyle={{
+              minWidth: "100%",
+              justifyContent: "center",
+            }}
           />
           <TouchableOpacity
             onPress={onClose}
@@ -59,7 +66,7 @@ const PollModal = ({ isVisible, onClose, profiles }) => {
             <CustomText text="Close" font="bold" />
           </TouchableOpacity>
         </View>
-      </TouchableOpacity>
+      </View>
     </Modal>
   );
 };
@@ -73,7 +80,7 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     alignItems: "center",
-    width: "90%", // Adjust
+    width: "80%", // Adjust
     margin: 20,
     backgroundColor: "white",
     borderRadius: 25,
